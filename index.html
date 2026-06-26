@@ -1238,12 +1238,12 @@ function openSettings(){const s=db.settings;
     <div class="modal-foot"><button class="btn" onclick="resetSettings()">Restaurar padrão</button><button class="btn primary" onclick="saveSettings()">Salvar</button></div>
   </div>`);}
 
-// Firebase sync — sem configuração necessáriafunction setTheme(v){db.settings.theme=v;applyTheme();document.querySelectorAll('.set-sec .seg button').forEach(b=>{});openSettingsRefreshTheme(v);}
-function openSettingsRefreshTheme(v){const btns=document.querySelectorAll('.set-sec')[0].querySelectorAll('button');const map=['claro','lilas','roxo','dark'];btns.forEach((b,i)=>b.classList.toggle('on',map[i]===v));}
-function setSize(k){db.settings.fontSize=k;applyTheme();const segs=document.querySelectorAll('.set-sec .seg');const sizeSeg=segs[segs.length-1];const map=['sm','md','lg','xl'];sizeSeg.querySelectorAll('button').forEach((b,i)=>b.classList.toggle('on',map[i]===k));}
-function setBodyFont(v){db.settings.bodyFont=v;applyTheme();}
-function setTitleFont(v){db.settings.titleFont=v;applyTheme();}
-function saveSettings(){document.querySelectorAll('[data-tit]').forEach(i=>{db.settings.titles[i.dataset.tit]=i.value.trim()||DEFAULT_TITLES[i.dataset.tit];});savePrefs();applyTheme();closeModal();render();toast('Configurações salvas');}
+// Firebase sync — sem configuração necessária
+function setTheme(v){db.settings.theme=v;applyTheme();savePrefs();openSettingsRefreshTheme(v);}
+function openSettingsRefreshTheme(v){const btns=document.querySelectorAll('.set-sec')[0]?.querySelectorAll('button');const map=['claro','lilas','roxo','dark'];btns&&btns.forEach((b,i)=>b.classList.toggle('on',map[i]===v));}
+function setSize(k){db.settings.fontSize=k;applyTheme();savePrefs();const segs=document.querySelectorAll('.set-sec .seg');const sizeSeg=segs[segs.length-1];const map=['sm','md','lg','xl'];sizeSeg&&sizeSeg.querySelectorAll('button').forEach((b,i)=>b.classList.toggle('on',map[i]===k));}
+function setBodyFont(v){db.settings.bodyFont=v;applyTheme();savePrefs();}
+function setTitleFont(v){db.settings.titleFont=v;applyTheme();savePrefs();}
 function resetSettings(){db.settings=defaultSettings();savePrefs();applyTheme();closeModal();render();toast('Padrão restaurado');}
 
 /* ===== misc ===== */
