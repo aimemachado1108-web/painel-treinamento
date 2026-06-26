@@ -1221,7 +1221,7 @@ function saveTeam(){const name=document.getElementById('tt_name').value.trim();i
 
 /* ===== settings ===== */
 function openSettings(){const s=db.settings;
-  const themeBtn=(v,l,sw)=>`<button class="${s.theme===v?'on':''}" onclick="setTheme('${v}')"><div class="swatch" style="background:${sw}"></div>${l}</button>`;
+  const themeBtn=(v,l,sw)=>`<button class="${s.theme===v?'on':''}" data-theme="${v}" onclick="setTheme('${v}')"><div class="swatch" style="background:${sw}"></div>${l}</button>`;
   const fontOpts=k=>Object.keys(FONTS).map(f=>`<option value="${f}" ${s[k]===f?'selected':''} style="font-family:${FONTS[f]}">${f}</option>`).join('');
   const sizeBtn=k=>`<button class="${s.fontSize===k?'on':''}" onclick="setSize('${k}')">${SIZES[k]}</button>`;
   const titleInputs=Object.keys(DEFAULT_TITLES).map(id=>`<div class="fld" style="margin-bottom:10px"><label>${DEFAULT_TITLES[id]}</label><input data-tit="${id}" value="${esc(T(id))}"></div>`).join('');
@@ -1239,7 +1239,16 @@ function openSettings(){const s=db.settings;
   </div>`);}
 
 // Firebase sync — sem configuração necessária
-function setTheme(v){db.settings.theme=v;applyTheme();savePrefs();openSettingsRefreshTheme(v);}
+function setTheme(v){
+  db.settings.theme=v;
+  applyTheme();
+  try{localStorage.setItem(KEY_PREFS,JSON.stringify(db.settings));}catch(e){}
+  // Atualiza botões do modal visualmente
+  document.querySelectorAll('.seg button[data-theme]').forEach(b=>b.classList.toggle('on',b.dataset.theme===v));
+  // Fecha e reabre o modal para refletir o novo tema
+  closeModal();
+  setTimeout(openSettings,50);
+}
 function openSettingsRefreshTheme(v){const btns=document.querySelectorAll('.set-sec')[0]?.querySelectorAll('button');const map=['claro','lilas','roxo','dark'];btns&&btns.forEach((b,i)=>b.classList.toggle('on',map[i]===v));}
 function setSize(k){db.settings.fontSize=k;applyTheme();savePrefs();const segs=document.querySelectorAll('.set-sec .seg');const sizeSeg=segs[segs.length-1];const map=['sm','md','lg','xl'];sizeSeg&&sizeSeg.querySelectorAll('button').forEach((b,i)=>b.classList.toggle('on',map[i]===k));}
 function setBodyFont(v){db.settings.bodyFont=v;applyTheme();savePrefs();}
