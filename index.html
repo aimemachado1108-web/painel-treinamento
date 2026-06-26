@@ -335,6 +335,7 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 <script>
 /* ===== Firebase Realtime Database sync ===== */
 const KEY='painel_treino_suporte_v2';
+const KEY_PREFS='painel_prefs_local'; // aparência — só local, não sincroniza
 const FB_URL='https://painel-aime-default-rtdb.firebaseio.com/painel.json';
 let mem=null;
 let syncTimer=null;
@@ -342,13 +343,25 @@ let syncStatus='syncing';
 let lastSyncTime=null;
 let pendingSync=false;
 
+/* Preferências visuais ficam APENAS no navegador local de cada pessoa */
+function loadPrefs(){
+  try{const r=localStorage.getItem(KEY_PREFS);if(r)return JSON.parse(r);}catch(e){}
+  return null;
+}
+function savePrefs(){
+  try{localStorage.setItem(KEY_PREFS,JSON.stringify(db.settings));}catch(e){}
+}
+
 function load(){
   try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}
   return mem?JSON.parse(JSON.stringify(mem)):null;
 }
 
 function persist(){
+  /* Separa settings antes de sincronizar — aparência não vai pro Firebase */
+  const settingsBackup=db.settings;
   try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){mem=JSON.parse(JSON.stringify(db));}
+  savePrefs();
   pendingSync=true;
   if(syncTimer)clearTimeout(syncTimer);
   syncTimer=setTimeout(pushToFirebase,1500);
@@ -359,7 +372,10 @@ async function pushToFirebase(){
   if(!pendingSync)return;
   pendingSync=false;syncStatus='syncing';updateSyncBadge();
   try{
-    const r=await fetch(FB_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(db)});
+    /* Envia dados SEM as configurações de aparência */
+    const payload={...db,settings:undefined};
+    delete payload.settings;
+    const r=await fetch(FB_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     if(r.ok){syncStatus='ok';lastSyncTime=new Date();}
     else{syncStatus='error';console.warn('Firebase PUT error:',r.status);}
   }catch(e){syncStatus='error';console.warn('Firebase push error:',e);}
@@ -373,8 +389,10 @@ async function pullFromFirebase(){
     if(!r.ok){syncStatus='error';updateSyncBadge();return false;}
     const data=await r.json();
     if(data&&typeof data==='object'&&data.months){
+      /* Preserva as preferências visuais locais ao puxar dados */
+      const localPrefs=loadPrefs()||db.settings||defaultSettings();
       db=data;
-      if(!db.settings)db.settings=defaultSettings();
+      db.settings=localPrefs; // restaura aparência local
       db.settings.titles=Object.assign({},DEFAULT_TITLES,db.settings.titles||{});
       if(!db.caixas||!db.caixas.length)db.caixas=DEFAULT_CAIXAS.slice();
       if(db.caixas.indexOf('Suporte Max')<0)db.caixas.push('Suporte Max');
@@ -484,6 +502,9 @@ function seed(){
 }
 
 let db=load(); if(!db)db=seed();
+/* Aplica preferências visuais locais imediatamente (antes do Firebase responder) */
+const _localPrefs=loadPrefs();
+if(_localPrefs)db.settings=_localPrefs;
 if(!db.settings)db.settings=defaultSettings();
 db.settings.titles=Object.assign({},DEFAULT_TITLES,db.settings.titles||{});
 if(!db.caixas||!db.caixas.length)db.caixas=DEFAULT_CAIXAS.slice();
@@ -1222,8 +1243,8 @@ function openSettingsRefreshTheme(v){const btns=document.querySelectorAll('.set-
 function setSize(k){db.settings.fontSize=k;applyTheme();const segs=document.querySelectorAll('.set-sec .seg');const sizeSeg=segs[segs.length-1];const map=['sm','md','lg','xl'];sizeSeg.querySelectorAll('button').forEach((b,i)=>b.classList.toggle('on',map[i]===k));}
 function setBodyFont(v){db.settings.bodyFont=v;applyTheme();}
 function setTitleFont(v){db.settings.titleFont=v;applyTheme();}
-function saveSettings(){document.querySelectorAll('[data-tit]').forEach(i=>{db.settings.titles[i.dataset.tit]=i.value.trim()||DEFAULT_TITLES[i.dataset.tit];});persist();applyTheme();closeModal();render();toast('Configurações salvas');}
-function resetSettings(){db.settings=defaultSettings();persist();applyTheme();closeModal();render();toast('Padrão restaurado');}
+function saveSettings(){document.querySelectorAll('[data-tit]').forEach(i=>{db.settings.titles[i.dataset.tit]=i.value.trim()||DEFAULT_TITLES[i.dataset.tit];});savePrefs();applyTheme();closeModal();render();toast('Configurações salvas');}
+function resetSettings(){db.settings=defaultSettings();savePrefs();applyTheme();closeModal();render();toast('Padrão restaurado');}
 
 /* ===== misc ===== */
 document.getElementById('monthSel').addEventListener('change',e=>{db.current=e.target.value;persist();render();});
