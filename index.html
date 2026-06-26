@@ -320,7 +320,7 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
       <div><div class="tt" id="tb-title">Visão Geral</div><div class="dt">terça-feira, 9 de junho de 2026</div></div>
       <div class="actions">
         <span id="sync-badge" style="font-size:.78em;padding:4px 8px"></span>
-        <button class="btn sm" id="btn-pull" title="Buscar dados do servidor" onclick="pullFromSheets().then(()=>toast('Atualizado!'))" style="display:none">↻ Atualizar</button>
+        <button class="btn sm" id="btn-pull" title="Buscar dados atualizados" onclick="pullFromFirebase().then(ok=>toast(ok?'✓ Atualizado!':'Sem dados novos'))">↻ Atualizar</button>
         <select class="selpill" id="monthSel"></select>
         <button class="btn icon" title="Novo mês" onclick="addMonth()">+</button>
         <button class="btn" onclick="exportCSV()">↓ CSV</button>
@@ -333,68 +333,47 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 <div class="toast" id="toast"></div>
 
 <script>
-/* ===== storage + Google Sheets sync ===== */
+/* ===== Firebase Realtime Database sync ===== */
 const KEY='painel_treino_suporte_v2';
+const FB_URL='https://painel-aime-default-rtdb.firebaseio.com/painel.json';
 let mem=null;
-let SYNC_URL=''; // preenchida nas configurações
 let syncTimer=null;
-let syncStatus='local'; // 'local' | 'syncing' | 'ok' | 'error'
+let syncStatus='syncing';
 let lastSyncTime=null;
 let pendingSync=false;
 
 function load(){
-  // Tenta carregar URL do sync salva no localStorage
-  try{SYNC_URL=localStorage.getItem(KEY+'_sync_url')||'';}catch(e){}
   try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}
   return mem?JSON.parse(JSON.stringify(mem)):null;
 }
 
 function persist(){
-  // 1. Salva local sempre (rápido, garante que não perde nada)
   try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){mem=JSON.parse(JSON.stringify(db));}
-  // 2. Agenda sync remoto com debounce de 1,5s (não sobrecarrega a API)
-  if(SYNC_URL){
-    pendingSync=true;
-    if(syncTimer)clearTimeout(syncTimer);
-    syncTimer=setTimeout(pushToSheets,1500);
-  }
+  pendingSync=true;
+  if(syncTimer)clearTimeout(syncTimer);
+  syncTimer=setTimeout(pushToFirebase,1500);
   updateSyncBadge();
 }
 
-/* ── JSONP: único método que funciona com Apps Script + GitHub Pages ── */
-function jsonp(url,params,timeout){
-  return new Promise((resolve,reject)=>{
-    const cb='_cb'+Date.now()+Math.floor(Math.random()*9999);
-    const t=setTimeout(()=>{cleanup();reject(new Error('timeout'));},timeout||12000);
-    function cleanup(){try{delete window[cb];const s=document.getElementById(cb);if(s)s.remove();}catch(e){}}
-    window[cb]=function(data){clearTimeout(t);cleanup();resolve(data);};
-    const qs=Object.entries(Object.assign({callback:cb},params)).map(([k,v])=>k+'='+encodeURIComponent(v)).join('&');
-    const s=document.createElement('script');s.id=cb;s.src=url+'?'+qs;
-    s.onerror=()=>{clearTimeout(t);cleanup();reject(new Error('script error'));};
-    document.head.appendChild(s);
-  });
-}
-
-async function pushToSheets(){
-  if(!SYNC_URL||!pendingSync)return;
+async function pushToFirebase(){
+  if(!pendingSync)return;
   pendingSync=false;syncStatus='syncing';updateSyncBadge();
   try{
-    const json=JSON.stringify({action:'write',data:db});
-    const b64=btoa(unescape(encodeURIComponent(json)));
-    const res=await jsonp(SYNC_URL,{action:'write',payload:b64});
-    if(res&&res.ok){syncStatus='ok';lastSyncTime=new Date();}
-    else{syncStatus='error';console.warn('Sheets:',res);}
-  }catch(e){syncStatus='error';console.warn('Push error:',e);}
+    const r=await fetch(FB_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(db)});
+    if(r.ok){syncStatus='ok';lastSyncTime=new Date();}
+    else{syncStatus='error';console.warn('Firebase PUT error:',r.status);}
+  }catch(e){syncStatus='error';console.warn('Firebase push error:',e);}
   updateSyncBadge();
 }
 
-async function pullFromSheets(){
-  if(!SYNC_URL)return false;
+async function pullFromFirebase(){
   syncStatus='syncing';updateSyncBadge();
   try{
-    const res=await jsonp(SYNC_URL,{action:'read'});
-    if(res&&res.ok&&res.data){
-      db=res.data;
+    const r=await fetch(FB_URL);
+    if(!r.ok){syncStatus='error';updateSyncBadge();return false;}
+    const data=await r.json();
+    if(data&&typeof data==='object'&&data.months){
+      db=data;
       if(!db.settings)db.settings=defaultSettings();
       db.settings.titles=Object.assign({},DEFAULT_TITLES,db.settings.titles||{});
       if(!db.caixas||!db.caixas.length)db.caixas=DEFAULT_CAIXAS.slice();
@@ -404,27 +383,22 @@ async function pullFromSheets(){
       try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
       syncStatus='ok';lastSyncTime=new Date();updateSyncBadge();
       applyTheme();render();
-      toast('✓ Dados sincronizados');
       return true;
     }
-    syncStatus='error';updateSyncBadge();return false;
-  }catch(e){syncStatus='error';updateSyncBadge();console.warn('Pull:',e);return false;}
+    syncStatus='ok';updateSyncBadge();return false;
+  }catch(e){syncStatus='error';updateSyncBadge();console.warn('Firebase pull:',e);return false;}
 }
 
 function updateSyncBadge(){
-  const el=document.getElementById('sync-badge');
-  if(!el)return;
-  if(!SYNC_URL){el.innerHTML='<span style="color:var(--text-3)">● local</span>';return;}
+  const el=document.getElementById('sync-badge');if(!el)return;
   const icons={syncing:'⟳',ok:'●',error:'●'};
   const colors={syncing:'var(--amber-text)',ok:'var(--green-text)',error:'var(--red-text)'};
-  const labels={syncing:'sincronizando…',ok:'sincronizado'+(lastSyncTime?' '+lastSyncTime.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):''),error:'erro de sync'};
-  el.innerHTML=`<span style="color:${colors[syncStatus]}">${icons[syncStatus]} ${labels[syncStatus]}</span>`;
+  const lbl={syncing:'sincronizando…',ok:'sincronizado'+(lastSyncTime?' '+lastSyncTime.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):''),error:'erro de conexão'};
+  el.innerHTML=`<span style="color:${colors[syncStatus]}">${icons[syncStatus]} ${lbl[syncStatus]}</span>`;
 }
 
-async function pingSync(url){try{const r=await jsonp(url,{action:'ping'},8000);return !!(r&&r.ok);}catch(e){return false;}}
-
-// Auto-pull a cada 30s se URL configurada
-setInterval(()=>{if(SYNC_URL&&!pendingSync)pullFromSheets();},30000);
+// Auto-pull a cada 30s
+setInterval(()=>{if(!pendingSync)pullFromFirebase();},30000);
 /* ===== config ===== */
 const TYPES={
   'Onboarding':{badge:'--blue',bar:'#3b82f6'},
@@ -567,11 +541,8 @@ function upsertRoster(name,email,caixa){
 /* ===== render ===== */
 function applyTheme(){const s=db.settings;document.body.dataset.theme=s.theme;document.body.dataset.fs=s.fontSize;document.body.style.setProperty('--font-body',FONTS[s.bodyFont]||FONTS.Moderna);document.body.style.setProperty('--font-title',FONTS[s.titleFont]||FONTS.Serifada);}
 function initSync(){
-  if(SYNC_URL){
-    document.getElementById('btn-pull').style.display='';
-    // Ao abrir, tenta buscar dados atualizados do servidor
-    pullFromSheets();
-  }
+  // Ao abrir, busca dados atualizados do Firebase
+  pullFromFirebase();
   updateSyncBadge();
 }
 function render(){
@@ -1233,24 +1204,11 @@ function openSettings(){const s=db.settings;
   const fontOpts=k=>Object.keys(FONTS).map(f=>`<option value="${f}" ${s[k]===f?'selected':''} style="font-family:${FONTS[f]}">${f}</option>`).join('');
   const sizeBtn=k=>`<button class="${s.fontSize===k?'on':''}" onclick="setSize('${k}')">${SIZES[k]}</button>`;
   const titleInputs=Object.keys(DEFAULT_TITLES).map(id=>`<div class="fld" style="margin-bottom:10px"><label>${DEFAULT_TITLES[id]}</label><input data-tit="${id}" value="${esc(T(id))}"></div>`).join('');
-  const syncConnected=!!SYNC_URL;
   show(`<div class="modal" style="width:640px;max-height:90vh;overflow-y:auto"><h2>⚙ Configurações <button class="close" onclick="closeModal()">✕</button></h2>
-
-    <div class="set-sec" style="background:${syncConnected?'var(--green-soft)':'var(--purple-soft)'};border-radius:12px;padding:16px;margin-bottom:20px">
-      <h3 style="color:${syncConnected?'var(--green-text)':'var(--purple-dark)'}">
-        ${syncConnected?'✓ Sincronização ativa com Google Sheets':'☁ Sincronização com Google Sheets'}
-      </h3>
-      <p style="font-size:.85em;color:var(--text-2);margin:8px 0 12px">Cole aqui a URL do seu Web App (Google Apps Script). Todos que tiverem essa URL e o arquivo HTML verão os mesmos dados em tempo real.</p>
-      <div class="fld" style="margin-bottom:10px"><label>URL do Web App</label>
-        <input id="set_sync_url" value="${esc(SYNC_URL)}" placeholder="https://script.google.com/macros/s/…/exec" style="font-size:.82em"></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn sm" onclick="testSyncUrl()">🔌 Testar conexão</button>
-        <button class="btn sm primary" onclick="saveSyncUrl()">Salvar URL</button>
-        ${syncConnected?`<button class="btn sm" onclick="clearSyncUrl()" style="color:var(--red-text)">Desconectar</button>`:''}
-      </div>
-      <div id="sync-test-result" style="margin-top:8px;font-size:.82em"></div>
+    <div class="set-sec" style="background:var(--green-soft);border-radius:12px;padding:12px 16px;margin-bottom:20px">
+      <span style="color:var(--green-text);font-weight:600">● Sincronização ativa — Firebase</span>
+      <span style="color:var(--text-2);font-size:.85em;margin-left:10px">painel-aime-default-rtdb.firebaseio.com</span>
     </div>
-
     <div class="set-sec"><h3>Tema de cor</h3><div class="seg">${themeBtn('claro','Claro','linear-gradient(135deg,#f5f4fb,#6d5de0)')}${themeBtn('lilas','Lilás','linear-gradient(135deg,#f7f1fc,#a78bfa)')}${themeBtn('roxo','Roxo','linear-gradient(135deg,#efe9fb,#6d28d9)')}${themeBtn('dark','Escuro','linear-gradient(135deg,#16141f,#8b7df0)')}</div></div>
     <div class="set-sec"><h3>Fonte dos textos (barra lateral e corpo)</h3><div class="fld"><select id="set_body" onchange="setBodyFont(this.value)">${fontOpts('bodyFont')}</select></div></div>
     <div class="set-sec"><h3>Fonte dos títulos</h3><div class="fld"><select id="set_title" onchange="setTitleFont(this.value)">${fontOpts('titleFont')}</select></div></div>
@@ -1259,32 +1217,7 @@ function openSettings(){const s=db.settings;
     <div class="modal-foot"><button class="btn" onclick="resetSettings()">Restaurar padrão</button><button class="btn primary" onclick="saveSettings()">Salvar</button></div>
   </div>`);}
 
-async function testSyncUrl(){
-  const url=(document.getElementById('set_sync_url').value||'').trim();
-  const el=document.getElementById('sync-test-result');
-  if(!url){el.innerHTML='<span style="color:var(--red-text)">Cole uma URL primeiro.</span>';return;}
-  el.innerHTML='<span style="color:var(--amber-text)">⟳ Testando…</span>';
-  const ok=await pingSync(url);
-  el.innerHTML=ok
-    ?'<span style="color:var(--green-text)">✓ Conexão bem-sucedida! Agora clique em Salvar URL.</span>'
-    :'<span style="color:var(--red-text)">✕ Não foi possível conectar. Verifique a URL e as permissões do script.</span>';
-}
-function saveSyncUrl(){
-  const url=(document.getElementById('set_sync_url').value||'').trim();
-  SYNC_URL=url;
-  try{localStorage.setItem(KEY+'_sync_url',url);}catch(e){}
-  if(url){document.getElementById('btn-pull').style.display='';pushToSheets();}
-  else{document.getElementById('btn-pull').style.display='none';}
-  updateSyncBadge();closeModal();
-  toast(url?'URL salva! Sincronizando dados…':'Sincronização desativada');
-  if(url)setTimeout(()=>pullFromSheets(),800);
-}
-function clearSyncUrl(){
-  SYNC_URL='';
-  try{localStorage.removeItem(KEY+'_sync_url');}catch(e){}
-  document.getElementById('btn-pull').style.display='none';
-  updateSyncBadge();closeModal();toast('Sincronização desconectada');
-}function setTheme(v){db.settings.theme=v;applyTheme();document.querySelectorAll('.set-sec .seg button').forEach(b=>{});openSettingsRefreshTheme(v);}
+// Firebase sync — sem configuração necessáriafunction setTheme(v){db.settings.theme=v;applyTheme();document.querySelectorAll('.set-sec .seg button').forEach(b=>{});openSettingsRefreshTheme(v);}
 function openSettingsRefreshTheme(v){const btns=document.querySelectorAll('.set-sec')[0].querySelectorAll('button');const map=['claro','lilas','roxo','dark'];btns.forEach((b,i)=>b.classList.toggle('on',map[i]===v));}
 function setSize(k){db.settings.fontSize=k;applyTheme();const segs=document.querySelectorAll('.set-sec .seg');const sizeSeg=segs[segs.length-1];const map=['sm','md','lg','xl'];sizeSeg.querySelectorAll('button').forEach((b,i)=>b.classList.toggle('on',map[i]===k));}
 function setBodyFont(v){db.settings.bodyFont=v;applyTheme();}
