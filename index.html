@@ -1143,22 +1143,40 @@ function viewMacros(){
   const cards=macros.map(m=>{
     const dias=m.dataSolic&&m.dateConc?Math.round((new Date(m.dateConc.split('/').reverse().join('-'))-new Date(m.dataSolic.split('/').reverse().join('-')))/(864e5)):null;
     return '<div class="acard '+(m.status==='Concluído'?'done':'')+'" style="border-left-color:var(--purple)">'
-      +'<div class="top"><div><h3>⚡ '+esc(m.topic)+'</h3>'
-      +'<div class="who">'
-      +(m.caixa?'<span>📥 '+esc(m.caixa)+'</span>':'')
-      +(m.dataSolic?'<span>📋 Solic.: '+esc(m.dataSolic)+'</span>':'')
-      +(m.dateConc?'<span>✓ Conc.: '+esc(m.dateConc)+'</span>':'')
-      +(dias!==null&&!isNaN(dias)&&dias>=0?'<span style="color:var(--purple-dark)">⏱ '+dias+'d</span>':'')
-      +'</div></div>'
-      +'<div class="rt">'+statusSelect(m.status,'setMacroStatus(\''+m.id+'\',this.value)',TRAIN_STATUS)
-      +'<button class="x" title="Editar" onclick="editMacroModal(\''+m.id+'\')">✎</button>'
-      +'<button class="x" onclick="delMacro(\''+m.id+'\')">✕</button></div></div>'
+      // linha 1: ícone + título + botões (canto direito)
+      +'<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">'
+        +'<div style="flex:1;min-width:0">'
+          +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px">'
+            +'<span style="font-size:.82em">⚡</span>'
+            +'<b style="font-size:.97em;line-height:1.3">'+esc(m.topic)+'</b>'
+          +'</div>'
+          // badges: caixa + status
+          +'<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'
+            +(m.caixa?'<span class="badge" style="background:var(--purple-soft);color:var(--purple-dark)">'+esc(m.caixa)+'</span>':'')
+            +statusSelect(m.status,'setMacroStatus(\''+m.id+'\',this.value)',TRAIN_STATUS)
+          +'</div>'
+        +'</div>'
+        // botões no canto direito
+        +'<div style="display:flex;gap:5px;flex-shrink:0">'
+          +'<button class="x" title="Editar" onclick="editMacroModal(\''+m.id+'\')">✎</button>'
+          +'<button class="x" title="Remover" onclick="delMacro(\''+m.id+'\')">✕</button>'
+        +'</div>'
+      +'</div>'
+      // linha 2: datas + tempo
+      +(m.dataSolic||m.dateConc?
+        '<div style="font-size:.8em;color:var(--text-2);display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px">'
+          +(m.dataSolic?'<span>📋 '+esc(m.dataSolic)+'</span>':'')
+          +(m.dateConc?'<span>✓ '+esc(m.dateConc)+'</span>':'')
+          +(dias!==null&&!isNaN(dias)&&dias>=0?'<span style="color:var(--purple-dark);font-weight:600">⏱ '+dias+'d</span>':'')
+        +'</div>':'')
+      // linha 3: detalhamento
       +(m.detail?'<div class="desc">'+esc(m.detail)+'</div>':'')
       +'</div>';
   }).join('');
   return '<div class="page-h"><h1>'+esc(T('macros'))+'</h1><p>Macros criadas por mês. Não somadas no total de ações — contabilizadas separadamente.</p></div>'
     +'<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn primary" onclick="openMacroModal()">+ Nova Macro</button></div>'
-    +(macros.length?cards:'<div class="empty">Nenhuma macro registrada neste mês.</div>');
+    +(macros.length?'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">'+cards+'</div>'
+    :'<div class="empty">Nenhuma macro registrada neste mês.</div>');
 }
 function setMacroStatus(id,s){(db.macros||[]).find(m=>m.id===id).status=s;persist();render();}
 function delMacro(id){if(confirm('Remover esta macro?')){db.macros=db.macros.filter(m=>m.id!==id);persist();render();}}
