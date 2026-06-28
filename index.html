@@ -573,9 +573,9 @@ function upsertRoster(name,email,caixa){
 /* ===== render ===== */
 function applyTheme(){const s=db.settings;document.body.dataset.theme=s.theme;document.body.dataset.fs=s.fontSize;document.body.style.setProperty('--font-body',FONTS[s.bodyFont]||FONTS.Moderna);document.body.style.setProperty('--font-title',FONTS[s.titleFont]||FONTS.Serifada);}
 function initSync(){
-  // Ao abrir, busca dados atualizados do Firebase
-  pullFromFirebase();
   updateSyncBadge();
+  // Busca dados do Firebase em background — nunca bloqueia a renderização
+  setTimeout(()=>pullFromFirebase().catch(()=>{}), 100);
 }
 function render(){
   renderNav();
