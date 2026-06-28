@@ -400,15 +400,28 @@ async function pullFromFirebase(){
     if(!r.ok){syncStatus='error';updateSyncBadge();return false;}
     const data=await r.json();
     if(data&&typeof data==='object'&&data.months){
-      /* Preserva as preferências visuais locais ao puxar dados */
       const localPrefs=loadPrefs()||db.settings||defaultSettings();
       db=data;
-      db.settings=localPrefs; // restaura aparência local
+      db.settings=localPrefs;
       db.settings.titles=Object.assign({},DEFAULT_TITLES,db.settings.titles||{});
+      /* Firebase omite arrays vazios e converte arrays em objetos — corrigir tudo */
+      const toArr=v=>!v?[]:Array.isArray(v)?v:Object.values(v);
+      db.pdis=toArr(db.pdis);
+      db.actions=toArr(db.actions);
+      db.docs=toArr(db.docs);
+      db.teamTrainings=toArr(db.teamTrainings);
+      db.macros=toArr(db.macros);
+      db.roster=toArr(db.roster);
+      db.months=toArr(db.months);
       if(!db.caixas||!db.caixas.length)db.caixas=DEFAULT_CAIXAS.slice();
+      else db.caixas=toArr(db.caixas);
       if(db.caixas.indexOf('Suporte Max')<0)db.caixas.push('Suporte Max');
-      if(!db.roster)db.roster=defaultRoster();
-      if(!db.macros)db.macros=[];
+      /* Garantir arrays dentro de teamTrainings */
+      db.teamTrainings.forEach(t=>{
+        t.results=toArr(t.results);
+        t.caixas=toArr(t.caixas);
+        t.questions=toArr(t.questions);
+      });
       try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
       syncStatus='ok';lastSyncTime=new Date();updateSyncBadge();
       applyTheme();render();
