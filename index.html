@@ -627,8 +627,9 @@ function viewVisao(){
   const totalAc=allResults.reduce((s,r)=>s+(typeof r.ac==='number'?r.ac:0),0);
   const totalTot=allResults.reduce((s,r)=>s+(typeof r.ac==='number'?r.ac+(typeof r.er==='number'?r.er:0):0),0);
   const avgAcert=totalTot?Math.round(totalAc/totalTot*100):0;
-  const all=[...pdis.map(p=>({type:'PDI',status:p.status})),...acts.map(a=>({type:a.type,status:a.status})),...docs.map(d=>({type:'Documentação',status:d.status})),...teams.map(t=>({type:'Treinamento de time',status:t.status}))];
-  const total=all.length,concl=all.filter(x=>x.status==='Concluído').length,pend=all.filter(x=>x.status==='Pendente').length,andamento=total-concl-pend;
+  const isDone=x=>x.status==='Concluído'||(x.status==='Material pronto'&&x._tipo==='doc');
+  const all=[...pdis.map(p=>({type:'PDI',status:p.status})),...acts.map(a=>({type:a.type,status:a.status})),...docs.map(d=>({type:'Documentação',status:d.status,_tipo:'doc'})),...teams.map(t=>({type:'Treinamento de time',status:t.status}))];
+  const total=all.length,concl=all.filter(x=>isDone(x)).length,pend=all.filter(x=>x.status==='Pendente').length,andamento=total-concl-pend;
   const done=pdis.filter(p=>p.hasResults);
   const melhora=done.length?round(done.reduce((s,p)=>s+pdiOverall(p),0)/done.length,1):0;
   const byType={};all.forEach(x=>byType[x.type]=(byType[x.type]||0)+1);
@@ -1275,7 +1276,8 @@ function delAct(id){if(confirm('Remover esta ação?')){db.actions=db.actions.fi
 /* ---------- DOCUMENTAÇÃO ---------- */
 function cardDoc(d){
   const dias=parseDateBR(d.dataSolic)&&parseDateBR(d.dateConc)?Math.round((parseDateBR(d.dateConc)-parseDateBR(d.dataSolic))/(864e5)):null;
-  return '<div class="acard" style="border-left-color:'+PRIO[d.priority]+'">'
+  const done=d.status==='Material pronto';
+  return '<div class="acard '+(done?'done':'')+'" style="border-left-color:'+PRIO[d.priority]+'">'
     +'<div class="top"><div class="top-left"><h3>📄 '+esc(d.title)+'</h3>'
     +'<div class="badges"><span class="badge" style="background:var(--pink-soft);color:var(--pink-text)">Documentação</span>'
     +statusSelect(d.status,'setDocStatus(\''+d.id+'\',this.value)',DOC_STATUS)+'</div>'
