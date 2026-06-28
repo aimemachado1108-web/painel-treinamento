@@ -99,8 +99,8 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 .brand .badge-wrap{display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--purple-2),var(--purple-dark));border-radius:12px;padding:10px 12px;box-shadow:0 4px 12px rgba(109,93,224,.25)}
 .brand .star{font-size:18px;flex-shrink:0}
 .brand .brand-text{flex:1;min-width:0}
-.brand .name{font-family:var(--font-body);font-weight:700;font-size:12.5px;color:#fff;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.brand .sub{font-size:10px;color:rgba(255,255,255,.72);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand .name{font-family:var(--font-body);font-weight:700;font-size:12px;color:#fff;line-height:1.25;white-space:normal;word-break:break-word}
+.brand .sub{font-size:9.5px;color:rgba(255,255,255,.72);margin-top:2px;white-space:normal;word-break:break-word}
 .navgroup{margin-top:18px}
 .navgroup .label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);font-weight:600;padding:0 8px 6px}
 .navitem{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:none;color:var(--text-2);padding:8px 10px;border-radius:9px;font-size:.96em;font-weight:500;margin-bottom:2px;font-family:inherit}
@@ -114,12 +114,12 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 .sidefoot .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--purple-2),var(--purple-dark));color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
 .sidefoot .cog{margin-left:auto;color:var(--text-3);font-size:15px}
 
-.main{flex:1;min-width:0;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
+.main{flex:1;width:0;min-width:0;display:flex;flex-direction:column;overflow-x:hidden}
 .topbar{display:flex;align-items:flex-start;gap:14px;padding:18px 28px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:30;flex-wrap:wrap}
 .topbar .tt{font-size:.95em;font-weight:600}
 .topbar .dt{font-size:.8em;color:var(--text-3);margin-top:1px}
 .topbar .actions{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.content{padding:24px 28px 60px;max-width:1400px;width:100%}
+.content{padding:24px 28px 60px;width:100%;box-sizing:border-box}
 
 .btn{border:1px solid var(--border-2);background:var(--surface);color:var(--text);border-radius:9px;padding:7px 12px;font-size:.86em;font-weight:500;display:inline-flex;align-items:center;gap:6px;transition:.12s;font-family:inherit}
 .btn:hover{background:var(--hover);border-color:var(--purple-2)}
@@ -710,7 +710,7 @@ function viewImpactoPdi(){
   if(!pdis.length)return `<div class="page-h"><h1>${esc(T('impacto-pdi'))}</h1><p>Consolidado automático de todos os PDIs com resultados preenchidos.</p></div><div class="empty">Nenhum PDI com resultados neste mês ainda.</div>`;
   const avg=k=>round(pdis.reduce((s,p)=>s+pdiMetrics(p)[k],0)/pdis.length,1);
   const A={sla:avg('sla'),cr:avg('cr'),cf:avg('cf'),tma:avg('tma'),cs:avg('cs')};
-  const card=(l,v)=>`<div style="background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:14px 16px"><div style="font-size:10px;letter-spacing:.05em;text-transform:uppercase;opacity:.85">${l}</div><div class="tfont" style="font-size:1.7em;font-weight:700;margin-top:4px">+${v}%</div><div style="font-size:.78em;opacity:.8">↑ melhora</div></div>`;
+  const card=(l,v)=>`<div style="background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:14px 16px"><div style="font-size:10px;letter-spacing:.05em;text-transform:uppercase;opacity:.85">${l}</div><div style="font-family:'Inter',sans-serif;font-size:1.9em;font-weight:700;margin-top:6px;letter-spacing:-.5px;color:#fff">+${v}%</div><div style="font-size:.78em;opacity:.8;margin-top:2px">↑ melhora</div></div>`;
   const mt=[['SLA 1ª resp / média (min)','sla'],['Chats resp / média dia','cr'],['Chats fech / média dia','cf'],['TMA / média dia (h)','tma'],['CSAT / semanal','cs']];
   const maxA=Math.max(...mt.map(([_,k])=>Math.abs(A[k])),1);
   const evol=mt.map(([l,k])=>`<div class="barrow"><div class="nm">${l}</div><div class="track"><div class="fill" style="width:${Math.abs(A[k])/maxA*100}%;background:var(--green)"></div></div><div class="vl" style="color:var(--green-text)">+${A[k]}%</div></div>`).join('');
@@ -719,7 +719,7 @@ function viewImpactoPdi(){
   const ad=(b,a,u,im)=>`${fmt(b)}${u}→<b>${fmt(a)}${u}</b> <span class="${im>=0?'pos':'neg'}">(${im>=0?'+':''}${round(im,1)}%)</span>`;
   const rt=pdis.map(p=>{const x=pdiMetrics(p),m=p.m;return `<tr><td><b>${esc(p.analyst)}</b></td><td style="color:var(--text-2)">${esc(p.title)}</td><td>${ad(m.slaB,m.slaA,'min',x.sla)}</td><td>${ad(m.crB,m.crA,'',x.cr)}</td><td>${ad(m.cfB,m.cfA,'',x.cf)}</td><td>${ad(m.tmaB,m.tmaA,'h',x.tma)}</td><td>${ad(m.csB,m.csA,'%',x.cs)}</td><td class="pos">+${round(pdiOverall(p),1)}%</td></tr>`;}).join('');
   return `<div class="page-h"><h1>${esc(T('impacto-pdi'))}</h1><p>Consolidado automático de todos os PDIs com resultados preenchidos.</p></div>
-  <div style="background:linear-gradient(120deg,var(--purple),var(--purple-dark));color:#fff;border-radius:var(--radius);padding:20px 22px;margin-bottom:18px"><div style="font-family:var(--font-title);font-size:1.25em;font-weight:600;margin-bottom:14px">Impacto consolidado dos PDIs — ${db.current} ✦</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">${card('SLA 1ª resp / média (min)',A.sla)}${card('Chats resp / média dia',A.cr)}${card('Chats fech / média dia',A.cf)}${card('TMA / média dia (h)',A.tma)}${card('CSAT / semanal',A.cs)}</div></div>
+  <div style="background:linear-gradient(120deg,#6d5de0,#5848c4);color:#fff;border-radius:var(--radius);padding:20px 22px;margin-bottom:18px"><div style="font-family:'Inter',sans-serif;font-size:1.25em;font-weight:700;margin-bottom:14px;color:#fff">Impacto consolidado dos PDIs — ${db.current} ✦</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">${card('SLA 1ª resp / média (min)',A.sla)}${card('Chats resp / média dia',A.cr)}${card('Chats fech / média dia',A.cf)}${card('TMA / média dia (h)',A.tma)}${card('CSAT / semanal',A.cs)}</div></div>
   <div class="grid2"><div class="panel"><div class="panel-h"><div class="pi">↑</div><h2>Evolução por métrica</h2></div>${evol}</div><div class="panel"><div class="panel-h"><div class="pi">◉</div><h2>Melhora por analista</h2></div>${impa}</div></div>
   <div class="panel"><div class="panel-h"><div class="pi">▦</div><h2>Detalhe por PDI</h2></div><div class="wrap-x"><table class="tbl"><thead><tr><th>Analista</th><th>PDI</th><th>SLA 1ª resp</th><th>Chats resp</th><th>Chats fech</th><th>TMA (h)</th><th>CSAT</th><th>Melhora geral</th></tr></thead><tbody>${rt}</tbody></table></div></div>`;
 }
