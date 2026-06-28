@@ -95,10 +95,12 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 
 .app{display:flex;min-height:100vh}
 .sidebar{width:212px;flex-shrink:0;background:var(--sidebar);border-right:1px solid var(--border);padding:18px 14px;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
-.brand{display:flex;align-items:center;gap:10px;padding:4px 4px 2px}
-.brand .badge{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,var(--purple-2),var(--purple-dark));display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;box-shadow:0 4px 10px rgba(109,93,224,.3)}
-.brand .name{font-family:var(--font-title);font-weight:700;font-size:15px;line-height:1.1}
-.brand .sub{font-size:10.5px;color:var(--text-3);margin-top:2px}
+.brand{display:block;padding:4px}
+.brand .badge-wrap{display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--purple-2),var(--purple-dark));border-radius:12px;padding:10px 12px;box-shadow:0 4px 12px rgba(109,93,224,.25)}
+.brand .star{font-size:18px;flex-shrink:0}
+.brand .brand-text{flex:1;min-width:0}
+.brand .name{font-family:var(--font-body);font-weight:700;font-size:12.5px;color:#fff;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand .sub{font-size:10px;color:rgba(255,255,255,.72);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .navgroup{margin-top:18px}
 .navgroup .label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);font-weight:600;padding:0 8px 6px}
 .navitem{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:none;color:var(--text-2);padding:8px 10px;border-radius:9px;font-size:.96em;font-weight:500;margin-bottom:2px;font-family:inherit}
@@ -112,12 +114,12 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 .sidefoot .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--purple-2),var(--purple-dark));color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0}
 .sidefoot .cog{margin-left:auto;color:var(--text-3);font-size:15px}
 
-.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.main{flex:1;min-width:0;display:flex;flex-direction:column;min-width:0;overflow-x:hidden}
 .topbar{display:flex;align-items:flex-start;gap:14px;padding:18px 28px;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0;z-index:30;flex-wrap:wrap}
 .topbar .tt{font-size:.95em;font-weight:600}
 .topbar .dt{font-size:.8em;color:var(--text-3);margin-top:1px}
 .topbar .actions{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.content{padding:24px 28px 60px;max-width:1500px}
+.content{padding:24px 28px 60px;max-width:1400px;width:100%}
 
 .btn{border:1px solid var(--border-2);background:var(--surface);color:var(--text);border-radius:9px;padding:7px 12px;font-size:.86em;font-weight:500;display:inline-flex;align-items:center;gap:6px;transition:.12s;font-family:inherit}
 .btn:hover{background:var(--hover);border-color:var(--purple-2)}
@@ -134,13 +136,12 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 .mcards{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:22px}
 @media(max-width:1200px){.mcards{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:700px){.mcards{grid-template-columns:repeat(2,1fr)}}
-.mcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;min-height:118px}
-.mcard::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--purple-2),var(--purple))}
-.mcard .lbl{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);font-weight:600;line-height:1.3;padding-right:14px}
+.mcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:118px}
+.mcard .lbl{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);font-weight:600;line-height:1.3;padding-right:14px;min-height:28px;display:flex;align-items:flex-start}
 .mcard .lbl-ic{position:absolute;top:14px;right:14px;color:var(--text-3);font-size:13px}
-.mcard .val{font-family:var(--font-title);font-size:2.1em;font-weight:700;margin-top:6px;letter-spacing:-.5px;line-height:1}
-.mcard .foot{font-size:.82em;color:var(--text-3);margin-top:3px}
-.mcard .tag{display:inline-block;font-size:10.5px;font-weight:600;border-radius:20px;padding:1px 8px;margin-top:6px;white-space:nowrap}
+.mcard .val{font-family:'Inter',var(--font-body);font-size:2.2em;font-weight:700;margin-top:6px;letter-spacing:-.5px;line-height:1;height:44px;display:flex;align-items:center}
+.mcard .foot{font-size:.82em;color:var(--text-3);margin-top:auto;padding-top:6px}
+.mcard .tag{display:inline-block;font-size:10.5px;font-weight:600;border-radius:20px;padding:1px 8px;margin-top:auto;white-space:nowrap}
 
 .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin-bottom:18px}
 .panel-h{display:flex;align-items:center;gap:9px;margin-bottom:16px}
@@ -158,7 +159,7 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 .donut-wrap{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:230px}
 .donut{position:relative;width:170px;height:170px;border-radius:50%}
 .donut .hole{position:absolute;inset:26px;background:var(--surface);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.donut .hole b{font-family:var(--font-title);font-size:1.9em;font-weight:700}
+.donut .hole b{font-family:'Inter',var(--font-body);font-size:1.9em;font-weight:700}
 .donut .hole span{font-size:.78em;color:var(--text-3)}
 .legend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;font-size:.85em;color:var(--text-2)}
 .legend span{display:inline-flex;align-items:center;gap:5px}
@@ -190,7 +191,7 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 .metgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:6px}
 .metcell{background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px}
 .metcell .k{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--text-3);font-weight:600}
-.metcell .v{font-size:1.05em;margin-top:6px}
+.metcell .v{font-family:'Inter',var(--font-body);font-size:1.1em;font-weight:600;margin-top:6px}
 .metcell .v b{font-weight:700}.metcell .v .ar{color:var(--text-3);margin:0 4px}
 .delta{display:inline-block;margin-top:7px;font-size:.78em;font-weight:600;border-radius:6px;padding:1px 7px}
 .delta.up{background:var(--green-soft);color:var(--green-text)}
@@ -204,14 +205,19 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 .filters{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
 .filters .ft{border:1px solid var(--border-2);background:var(--surface);border-radius:8px;padding:6px 13px;font-size:.86em;color:var(--text-2);font-weight:500}
 .filters .ft.on{background:var(--purple-soft);border-color:var(--purple-2);color:var(--purple-dark)}
-.acard{position:relative;background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--red);border-radius:var(--radius);padding:16px 18px 16px 20px;margin-bottom:13px}
+.acards-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+@media(max-width:800px){.acards-grid{grid-template-columns:1fr}}
+.acard{position:relative;background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--red);border-radius:var(--radius);padding:16px 18px 14px 18px}
 .acard.done{background:var(--card-done);border-color:var(--card-done-bd)}
-.acard .top{display:flex;align-items:flex-start;gap:10px}
-.acard h3{font-size:1.05em;font-weight:600}
-.acard .who{font-size:.86em;color:var(--text-2);margin-top:3px;display:flex;gap:12px;flex-wrap:wrap}
-.acard .desc{font-size:.92em;color:var(--text-2);margin-top:9px;line-height:1.5}
-.acard .rt{margin-left:auto;display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
-.acard .x{border:1px solid var(--border-2);background:var(--surface);border-radius:8px;width:30px;height:28px;display:flex;align-items:center;justify-content:center;color:var(--text-3)}
+.acard .top{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
+.acard .top-left{flex:1;min-width:0}
+.acard h3{font-size:1em;font-weight:600;line-height:1.3}
+.acard .badges{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;align-items:center}
+.acard .dates{font-size:.8em;color:var(--text-2);margin-top:7px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.acard .timer{display:inline-flex;align-items:center;gap:4px;font-size:.8em;font-weight:600;color:var(--purple-dark);margin-top:5px}
+.acard .desc{font-size:.88em;color:var(--text-2);margin-top:8px;line-height:1.5;border-top:1px solid var(--border);padding-top:8px}
+.acard .rt{display:flex;gap:6px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
+.acard .x{border:1px solid var(--border-2);background:var(--surface);border-radius:8px;width:28px;height:26px;display:flex;align-items:center;justify-content:center;color:var(--text-3);font-size:.85em}
 .acard .x:hover{color:var(--red);border-color:var(--red)}
 
 .badge{font-size:.78em;font-weight:600;border-radius:7px;padding:3px 9px;white-space:nowrap}
@@ -309,8 +315,13 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 <div class="app">
   <aside class="sidebar">
     <div class="brand">
-      <div class="badge">★</div>
-      <div><div class="name">Treinamento Suporte</div><div class="sub">Desenvolvimento &amp; Impacto B2B</div></div>
+      <div class="badge-wrap">
+        <span class="star">★</span>
+        <div class="brand-text">
+          <div class="name">Treinamento Suporte</div>
+          <div class="sub">Desenvolvimento &amp; Impacto B2B</div>
+        </div>
+      </div>
     </div>
     <nav id="nav"></nav>
     <div class="sidefoot" onclick="openSettings()"><div class="av">A</div><div><div style="font-size:.86em;font-weight:600">Aimê</div><div style="font-size:.74em;color:var(--text-3)">Treinamento Suporte</div></div><span class="cog">⚙</span></div>
@@ -326,7 +337,7 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
         <button class="btn" onclick="exportCSV()">↓ CSV</button>
       </div>
     </header>
-    <main class="content" id="content"></main>
+    <main class="content" id="content" style="width:100%;box-sizing:border-box"></main>
   </div>
 </div>
 <div class="overlay" id="overlay"></div>
@@ -607,46 +618,42 @@ function viewVisao(){
   return `<div class="page-h"><h1>${esc(T('visao'))} ✦</h1><p>Resumo mensal — selecione um mês no topo para navegar.</p></div>
   <div class="mcards">
 
-    <!-- 1. Total de ações programadas -->
     <div class="mcard">
-      <div><div class="lbl">Total de ações programadas<span class="lbl-ic">◈</span></div><div class="val">${total}</div></div>
+      <div class="lbl">Total de ações programadas<span class="lbl-ic">◈</span></div>
+      <div class="val">${total}</div>
       <div class="foot">${db.current}</div>
     </div>
 
-    <!-- 2. Total de ações concluídas -->
     <div class="mcard">
-      <div><div class="lbl">Total de ações concluídas<span class="lbl-ic">✓</span></div><div class="val">${concl}</div></div>
+      <div class="lbl">Total de ações concluídas<span class="lbl-ic">✓</span></div>
+      <div class="val">${concl}</div>
       <span class="tag" style="background:var(--green-soft);color:var(--green-text)">↑ ${total?Math.round(concl/total*100):0}%</span>
     </div>
 
-    <!-- 3. Ações pendentes -->
     <div class="mcard">
-      <div><div class="lbl">Ações pendentes<span class="lbl-ic">⌛</span></div><div class="val">${andamento+pend}</div></div>
+      <div class="lbl">Ações pendentes<span class="lbl-ic">⌛</span></div>
+      <div class="val">${andamento+pend}</div>
       <span class="tag" style="background:var(--amber-soft);color:var(--amber-text)">em progresso</span>
     </div>
 
-    <!-- 4. Macros criadas -->
     <div class="mcard">
-      <div><div class="lbl">Macros criadas<span class="lbl-ic">⚡</span></div><div class="val">${macros.length}</div></div>
+      <div class="lbl">Macros criadas<span class="lbl-ic">⚡</span></div>
+      <div class="val">${macros.length}</div>
       <div class="foot">não somada em ações</div>
     </div>
 
-    <!-- 5. Melhora média PDIs -->
     <div class="mcard">
-      <div><div class="lbl">Melhora média PDIs<span class="lbl-ic">↑</span></div><div class="val">+${melhora}%</div></div>
+      <div class="lbl">Melhora média PDIs<span class="lbl-ic">↑</span></div>
+      <div class="val">+${melhora}%</div>
       <span class="tag" style="background:var(--green-soft);color:var(--green-text)">consolidado métricas</span>
     </div>
 
-    <!-- 6. Média: Avaliação dos treinamentos -->
     <div class="mcard" style="cursor:pointer" onclick="go('impacto-treino')">
-      <div><div class="lbl">Média: Avaliação dos treinamentos<span class="lbl-ic">★</span></div>
-        <div class="val" style="font-size:1.7em">${avgStarsAll?avgStarsAll+' ★':'—'}</div>
-      </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
-        ${totalAval
-          ? `<span class="tag" style="background:var(--green-soft);color:var(--green-text)">✓ ${avgAcert}% acertos</span>`
-          : '<span class="tag" style="background:var(--slate-soft);color:var(--slate-text)">sem dados ainda</span>'}
-      </div>
+      <div class="lbl">Média: Avaliação dos treinamentos<span class="lbl-ic">★</span></div>
+      <div class="val">${avgStarsAll?avgStarsAll+'/5 ★':'—'}</div>
+      ${totalAval
+        ? `<span class="tag" style="background:var(--green-soft);color:var(--green-text)">✓ ${avgAcert}% acertos</span>`
+        : '<span class="tag" style="background:var(--slate-soft);color:var(--slate-text)">sem dados ainda</span>'}
     </div>
 
   </div>
@@ -666,8 +673,8 @@ function viewVisao(){
 function viewPdis(){
   if(route.pdiId)return viewPdiDetail(route.pdiId);
   const pdis=inMonth(db.pdis),byA={};pdis.forEach(p=>(byA[p.analyst]=byA[p.analyst]||[]).push(p));
-  const cards=Object.keys(byA).map(a=>{const l=byA[a],done=l.filter(p=>p.status==='Concluído').length,res=l.some(p=>p.hasResults);
-    return `<div class="folder" onclick="openPdi('${l[0].id}')"><div class="ico">📁</div><h3>${esc(a)}</h3><div class="meta">${l.length} PDI · ${done} concluído${done!==1?'s':''}</div>${res?'<span class="chip">✓ com resultados</span>':'<span class="chip" style="color:var(--amber-text);border-color:var(--amber-soft)">resultados pendentes</span>'}</div>`;}).join('');
+  const cards=Object.keys(byA).sort((a,b)=>{const da=Math.max(...(byA[a].map(p=>parseDateBR(p.dataSolic)||new Date(0)).map(d=>d.getTime())));const db2=Math.max(...(byA[b].map(p=>parseDateBR(p.dataSolic)||new Date(0)).map(d=>d.getTime())));return db2-da;}).map(a=>{const l=byA[a],done=l.filter(p=>p.status==='Concluído').length,res=l.some(p=>p.hasResults);
+    return `<div class="folder" onclick="openPdi('${l[0].id}')"><div class="ico">📁</div><h3>${esc(a)}</h3><div class="meta">${l.length} PDI · ${done} concluído${done!==1?'s':''}</div>${l[0].dataSolic?`<div class="meta">Solic.: ${esc(l[0].dataSolic)}</div>`:''} ${res?'<span class="chip">✓ com resultados</span>':'<span class="chip" style="color:var(--amber-text);border-color:var(--amber-soft)">resultados pendentes</span>'}</div>`;}).join('');
   return `<div class="page-h"><h1>${esc(T('pdis'))}</h1><p>Cada pastinha reúne todos os PDIs de um analista.</p></div>${pdis.length?`<div class="folders">${cards}</div>`:'<div class="empty">Nenhum PDI neste mês. Clique em “+ Novo PDI”.</div>'}`;
 }
 function openPdi(id){route.pdiId=id;render();window.scrollTo(0,0);}
@@ -736,7 +743,7 @@ function viewImpactoTreino(){
     const worst=worstCaixa(c.caixaArr);
     const allStars=c.res.map(r=>r.stars).filter(Boolean);const avgS=allStars.length?round(allStars.reduce((s,x)=>s+x,0)/allStars.length,1):0;
     return `<div class="folder neutral" style="position:relative"><button onclick="delTeam('${t.id}')" style="position:absolute;top:10px;right:10px;border:none;background:none;color:var(--text-3);font-size:15px;cursor:pointer;padding:2px 5px;border-radius:6px;line-height:1" title="Excluir treino">✕</button><div style="cursor:pointer" onclick="openTeam('${t.id}')"><div class="ico">★</div><h3>${esc(t.title)}</h3><div class="meta">${esc(t.date)} · ${(t.caixas||[]).length} caixas · ${totA} avaliações</div>
-      <div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">${totA?`<span class="chip" style="color:var(--purple-dark);border-color:var(--purple-soft)">acerto ${tot?Math.round(accRate/tot*100):0}%</span>${avgS?`<span class="chip" style="color:var(--amber-text);border-color:var(--amber-soft)">★ ${avgS}</span>`:''}${worst?`<span class="chip" style="color:var(--red-text);border-color:var(--red-soft)">⚠ ${esc(worst.name)}</span>`:''}`:'<span class="chip" style="color:var(--amber-text);border-color:var(--amber-soft)">aguardando importação</span>'}</div></div></div>`;}).join('');
+      <div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">${totA?`<span class="chip" style="color:var(--purple-dark);border-color:var(--purple-soft)">acerto ${tot?Math.round(accRate/tot*100):0}%</span>${avgS?`<span class="chip" style="color:var(--amber-text);border-color:var(--amber-soft)">${avgS}/5 ★</span>`:''}${worst?`<span class="chip" style="color:var(--red-text);border-color:var(--red-soft)">⚠ ${esc(worst.name)}</span>`:''}`:'<span class="chip" style="color:var(--amber-text);border-color:var(--amber-soft)">aguardando importação</span>'}</div></div></div>`;}).join('');
   return `<div class="page-h"><h1>${esc(T('impacto-treino'))}</h1><p>Treinamentos de lançamento de produto e padronização de processo. Avaliações pós-treino por analista e por caixa de atendimento.</p></div>
     <div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn primary" onclick="openTeamModal()">+ Novo treinamento de time</button></div>
     ${teams.length?`<div class="folders">${cards}</div>`:'<div class="empty">Nenhum treinamento de time neste mês.</div>'}`;
@@ -764,25 +771,40 @@ function viewTeamDetail(id){
   const rank=[...c.analysts].sort((a,b)=>b.ac-a.ac||a.er-b.er);const maxT=Math.max(...rank.map(a=>a.total),1);
   const rankHtml=rank.map(a=>`<div class="impa"><div class="av">${esc(ini(a.name))}</div><div class="nm">${esc(a.name)}<div style="font-size:.78em;color:var(--text-3)">${esc(a.caixa)}</div></div><div class="track"><div class="fill" style="width:${a.ac/maxT*100}%"></div></div><div class="vl"><span style="color:var(--green-text)">${a.ac}✓</span> / <span style="color:var(--red-text)">${a.er}✕</span></div></div>`).join('');
   const top=c.qErr.filter(q=>q.er>0).slice(0,3);const maxQ=Math.max(...c.qErr.map(q=>q.er),1);
-  const topHtml=top.length?top.map((q,i)=>`<div class="qrow"><div class="rk">${i+1}</div><div class="nm" title="${esc(q.q)}">${esc(truncate(q.q,54))}</div><div class="track"><div class="fill" style="width:${q.er/maxQ*100}%"></div></div><div class="vl">${q.er} erro${q.er!==1?'s':''}</div></div>`).join(''):'<div class="empty" style="padding:20px">Sem erros registrados 🎉</div>';
+  const topHtml=top.length?top.map((q,i)=>`<div class="qrow" style="align-items:flex-start"><div class="rk" style="margin-top:2px">${i+1}</div><div class="nm" style="width:auto;flex:1;white-space:normal;line-height:1.45">${esc(q.q)}</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;min-width:70px"><div class="track" style="width:70px"><div class="fill" style="width:${q.er/maxQ*100}%"></div></div><div class="vl">${q.er} erro${q.er!==1?'s':''}</div></div></div>`).join(''):'<div class="empty" style="padding:20px">Sem erros registrados 🎉</div>';
   const starSorted=[...c.caixaArr].filter(cx=>cx.avgStars).sort((a,b)=>b.avgStars-a.avgStars);
-  const starHtml=starSorted.length?starSorted.map(cx=>`<div class="starrow"><div class="nm">${esc(cx.name)}</div><div class="stars">${starStr(cx.avgStars)}</div><div class="track"><div class="fill" style="width:${cx.avgStars/5*100}%"></div></div><div class="vl">${round(cx.avgStars,1)}</div></div>`).join(''):'<div class="empty" style="padding:20px">Sem avaliações de estrelas.</div>';
+  const starHtml=starSorted.length?starSorted.map(cx=>`<div class="starrow"><div class="nm">${esc(cx.name)}</div><div class="stars">${starStr(cx.avgStars)}</div><div class="track"><div class="fill" style="width:${cx.avgStars/5*100}%"></div></div><div class="vl">${round(cx.avgStars,1)}/5 ★</div></div>`).join(''):'<div class="empty" style="padding:20px">Sem avaliações de estrelas.</div>';
   const unassigned=(t.results||[]).map((r,i)=>({r,i})).filter(o=>!o.r.caixa||o.r.caixa==='Não atribuído');
   const cxOpts=cur=>[...(db.caixas||[]),'Não atribuído'].map(o=>`<option ${o===cur?'selected':''}>${esc(o)}</option>`).join('');
   const assignPanel=unassigned.length?`<div class="panel"><div class="panel-h"><div class="pi">⇄</div><h2>Atribuir caixa de atendimento</h2><button class="btn sm" style="margin-left:auto" onclick="applyRoster('${t.id}')">↺ Aplicar organograma</button></div><p class="hint" style="margin:-6px 0 14px">${unassigned.length} analista(s) sem caixa. Use o <b>organograma</b> para preencher automaticamente, ou selecione abaixo (a escolha é salva no organograma).</p>${unassigned.map(o=>`<div class="impa"><div class="av">${esc(ini(o.r.analista))}</div><div class="nm" style="width:auto;flex:1">${esc(o.r.analista)}${o.r.email?`<div style="font-size:.78em;color:var(--text-3)">${esc(o.r.email)}</div>`:''}</div><select onchange="setResultCaixa('${t.id}',${o.i},this.value)" style="border:1px solid var(--border-2);border-radius:9px;padding:7px 9px;background:var(--input-bg);color:var(--text);min-width:170px">${cxOpts(o.r.caixa)}</select></div>`).join('')}</div>`:'';
+  // Feedbacks — coluna "Quer deixar algum recado..."
+  const feedbacks=(t.results||[]).map(r=>r.feedback).filter(Boolean);
+  const feedbackPanel=feedbacks.length?`<div class="panel"><div class="panel-h"><div class="pi">💬</div><h2>Feedbacks dos analistas</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
+      ${feedbacks.map((fb,i)=>{const r=(t.results||[]).filter(x=>x.feedback)[i];return `<div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px">
+        <div style="font-size:.82em;font-weight:600;color:var(--purple-dark);margin-bottom:6px">${esc(r?r.analista:'Analista')}</div>
+        <div style="font-size:.9em;color:var(--text-2);line-height:1.55;font-style:italic">"${esc(fb)}"</div>
+      </div>`;}).join('')}
+    </div></div>`:'';
   const stat=(l,v,clr)=>`<div class="mcard"><div class="lbl">${l}</div><div class="val" style="${clr?`color:${clr}`:''}">${v}</div></div>`;
   return `<button class="btn sm" style="margin-bottom:16px" onclick="route.teamId=null;render()">← Voltar</button>
   <div class="page-h" style="margin-bottom:16px"><h1 style="font-size:1.7em">${esc(t.title)}</h1><p>${esc(t.date)} · caixas: ${esc((t.caixas||[]).join(', '))}</p></div>
-  <div class="mcards">${stat('Avaliações',totA)}${stat('Taxa de acerto média',accRate+'%','var(--green)')}${stat('Caixa com mais erros',worst?esc(worst.name):'—','var(--red)')}${stat('Nota do treinamento',avgS?avgS+' ★':'—','var(--gold)')}</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 2fr;gap:14px;margin-bottom:22px">
+    ${stat('Avaliações',totA)}
+    ${stat('Taxa de acerto média',accRate+'%','var(--green)')}
+    ${stat('Nota do treinamento',avgS?avgS+'/5 ★':'—','var(--gold)')}
+    <div class="mcard" style="border-left:4px solid var(--red)"><div class="lbl">Caixa com mais erros</div><div class="val" style="color:var(--red);font-size:1.6em;margin-top:8px;line-height:1.2;word-break:break-word;white-space:normal">${worst?esc(worst.name):'—'}</div></div>
+  </div>
   ${assignPanel}
   <div class="grid2">
     <div class="panel"><div class="panel-h"><div class="pi">▦</div><h2>Desempenho por caixa de atendimento</h2></div>${caixaHtml}</div>
     <div class="panel"><div class="panel-h"><div class="pi">◉</div><h2>Ranking de analistas (acertos/erros)</h2></div>${rankHtml}</div>
   </div>
   <div class="grid2">
-    <div class="panel"><div class="panel-h"><div class="pi">⚠</div><h2>Top tópicos com mais erros</h2></div>${t.errMode==='estimado'?'<p class="hint" style="margin:-6px 0 12px">Estimado pela divergência da resposta mais comum — a planilha de respostas não traz o gabarito por questão.</p>':''}${topHtml}</div>
+    <div class="panel"><div class="panel-h"><div class="pi">⚠</div><h2>Questões com mais erros</h2></div>${t.errMode==='estimado'?'<p class="hint" style="margin:-6px 0 12px">Estimado pela divergência da resposta mais comum — a planilha de respostas não traz o gabarito por questão.</p>':''}${topHtml}</div>
     <div class="panel"><div class="panel-h"><div class="pi">★</div><h2>Avaliação do treinamento por caixa</h2></div><p style="color:var(--text-3);font-size:.82em;margin-bottom:14px;margin-top:-6px">Nota de 1 a 5 estrelas que os analistas deram ao treinamento.</p>${starHtml}</div>
   </div>
+  ${feedbackPanel}
   ${importPanel}`;
 }
 function parseCSV(text,delim){const rows=[];let row=[],f='',i=0,q=false;const D=delim||',';while(i<text.length){const c=text[i];if(q){if(c==='"'){if(text[i+1]==='"'){f+='"';i+=2;continue;}q=false;i++;continue;}f+=c;i++;continue;}if(c==='"'){q=true;i++;continue;}if(c===D){row.push(f);f='';i++;continue;}if(c==='\r'){i++;continue;}if(c==='\n'){row.push(f);rows.push(row);row=[];f='';i++;continue;}f+=c;i++;}if(f!==''||row.length){row.push(f);rows.push(row);}return rows;}
@@ -849,6 +871,8 @@ function importTeamResults(id){
       if(!h||/^colun[ao]\s*\d+$/i.test(h)||/^pontos?$/i.test(h)) excl.add(i);
       if(h.includes('%')||h.includes('porcent')) excl.add(i);
       if(isGabaritoCol(i)) excl.add(i); // gabarito não é pergunta
+      // Coluna de feedback/recado — não pontua, não conta como questão
+      if(h.includes('recado')||h.includes('mensagem')||h.includes('feedback')||(h.includes('deixar')&&h.includes('algum'))) excl.add(i);
     });
 
     /* pares (pergunta, gabarito) para o padrão intercalado */
@@ -921,7 +945,11 @@ function importTeamResults(id){
       let stars=0;
       if(starsI>=0){const s=parseFloat(cell(starsI).replace(',','.'));if(!isNaN(s))stars=Math.max(0,Math.min(5,s));}
 
-      results.push({analista:name,email,caixa,answers,stars,ac,er});
+      // Captura feedback ("recado" ou última coluna de texto livre)
+      let feedback='';
+      const fbIdx=low.findIndex(h=>h.includes('recado')||h.includes('mensagem')||h.includes('feedback')||h.includes('deixar'));
+      if(fbIdx>=0){const fv=String(rw[fbIdx]===null||rw[fbIdx]===undefined?'':rw[fbIdx]).trim();if(fv)feedback=fv;}
+      results.push({analista:name,email,caixa,answers,stars,ac,er,feedback});
     });
 
     if(!results.length){toast('Nenhuma linha de resposta válida encontrada');return;}
@@ -953,55 +981,63 @@ function downloadTeamTemplate(id){
 
 /* ---------- TREINAMENTOS ---------- */
 let trainFilter='Todos';
+function parseDateBR(s){if(!s)return null;const p=s.split('/').reverse().join('-');const d=new Date(p);return isNaN(d)?null:d;}
+function sortByDateSolic(arr){return [...arr].sort((a,b)=>{const da=parseDateBR(a.dataSolic)||new Date(0),db2=parseDateBR(b.dataSolic)||new Date(0);return db2-da;});}
+function cardAcao(a){
+  const dias=parseDateBR(a.dataSolic)&&parseDateBR(a.dateConc)?Math.round((parseDateBR(a.dateConc)-parseDateBR(a.dataSolic))/(864e5)):null;
+  return '<div class="acard '+(a.status==='Concluído'?'done':'')+'" style="border-left-color:'+PRIO[a.priority]+'">'
+    +'<div class="top"><div class="top-left"><h3>'+esc(a.title)+'</h3>'
+    +'<div class="badges">'+badge(a.type)+statusSelect(a.status,'setActStatus(\''+a.id+'\',this.value)',TRAIN_STATUS)+'</div>'
+    +(a.who?'<div class="dates" style="margin-top:5px">👤 '+esc(a.who)+'</div>':'')
+    +'<div class="dates">'
+    +(a.dataSolic?'<span>📋 Solic.: <b>'+esc(a.dataSolic)+'</b></span>':'')
+    +(a.dateConc?'<span>✓ Conc.: <b>'+esc(a.dateConc)+'</b></span>':'')
+    +(dias!==null?'<span class="timer">⏱ '+dias+'d</span>':'')
+    +'</div></div>'
+    +'<div class="rt"><button class="x" title="Editar" onclick="editActionModal(\''+a.id+'\')">✎</button>'
+    +'<button class="x" title="Remover" onclick="delAct(\''+a.id+'\')">✕</button></div></div>'
+    +(a.desc?'<div class="desc">'+esc(a.desc)+'</div>':'')
+    +'</div>';
+}
 function viewTreinos(){
-  const acts=inMonth(db.actions);
+  const acts=sortByDateSolic(inMonth(db.actions));
   const fopts=['Todos','Onboarding','Treinamento individual','Imersão Suporte','Treinamento de time'];
   const filtered=trainFilter==='Todos'?acts:acts.filter(a=>a.type===trainFilter);
-  const cards=filtered.map(a=>{
-    const dias=a.dataSolic&&a.dateConc?Math.round((new Date(a.dateConc.split('/').reverse().join('-'))-new Date(a.dataSolic.split('/').reverse().join('-')))/(864e5)):null;
-    return '<div class="acard '+(a.status==='Concluído'?'done':'')+'" style="border-left-color:'+PRIO[a.priority]+'">'
-      +'<div class="top"><div><h3>'+esc(a.title)+'</h3>'
-      +'<div class="who"><span>\u{1F464} '+esc(a.who||'\u2014')+'</span>'
-      +(a.dataSolic?'<span>\u{1F4CB} Solic.: '+esc(a.dataSolic)+'</span>':'')
-      +(a.dateConc?'<span>\u2713 Conc.: '+esc(a.dateConc)+'</span>':'')
-      +(dias!==null&&!isNaN(dias)&&dias>=0?'<span style="color:var(--purple-dark)">\u23f1 '+dias+'d</span>':'')
-      +'</div></div>'
-      +'<div class="rt">'+badge(a.type)+statusSelect(a.status,'setActStatus(\''+a.id+'\',this.value)',TRAIN_STATUS)
-      +'<button class="x" title="Editar" onclick="editActionModal(\''+a.id+'\')">\u270e</button>'
-      +'<button class="x" title="Remover" onclick="delAct(\''+a.id+'\')">\u2715</button></div></div>'
-      +'<div class="desc">'+esc(a.desc)+'</div></div>';
-  }).join('');
-  return '<div class="page-h"><h1>'+esc(T('treinamentos'))+' </h1><p>Onboardings, imers\u00f5es e treinamentos do m\u00eas.</p></div>'
+  return '<div class="page-h"><h1>'+esc(T('treinamentos'))+'</h1><p>Onboardings, imersões e treinamentos do mês. Ordenados por data de solicitação.</p></div>'
     +'<div class="filters">'+fopts.map(f=>'<button class="ft '+(trainFilter===f?'on':'')+'" onclick="trainFilter=\''+f+'\';render()">'+f+'</button>').join('')
-    +'<button class="btn primary" style="margin-left:auto" onclick="openActionModal()">+ Nova A\u00e7\u00e3o</button></div>'
-    +(filtered.length?cards:'<div class="empty">Nenhuma a\u00e7\u00e3o neste filtro. Clique em &quot;+ Nova A\u00e7\u00e3o&quot;.</div>');
+    +'<button class="btn primary" style="margin-left:auto" onclick="openActionModal()">+ Nova Ação</button></div>'
+    +(filtered.length?'<div class="acards-grid">'+filtered.map(a=>cardAcao(a)).join('')+'</div>'
+    :'<div class="empty">Nenhuma ação neste filtro.</div>');
 }
 function setActStatus(id,s){db.actions.find(a=>a.id===id).status=s;persist();render();}
-function delAct(id){if(confirm('Remover esta a\u00e7\u00e3o?')){db.actions=db.actions.filter(a=>a.id!==id);persist();render();}}
+function delAct(id){if(confirm('Remover esta ação?')){db.actions=db.actions.filter(a=>a.id!==id);persist();render();}}
 
-/* ---------- DOCUMENTA\u00c7\u00c3O ---------- */
+/* ---------- DOCUMENTAÇÃO ---------- */
+function cardDoc(d){
+  const dias=parseDateBR(d.dataSolic)&&parseDateBR(d.dateConc)?Math.round((parseDateBR(d.dateConc)-parseDateBR(d.dataSolic))/(864e5)):null;
+  return '<div class="acard" style="border-left-color:'+PRIO[d.priority]+'">'
+    +'<div class="top"><div class="top-left"><h3>📄 '+esc(d.title)+'</h3>'
+    +'<div class="badges"><span class="badge" style="background:var(--pink-soft);color:var(--pink-text)">Documentação</span>'
+    +statusSelect(d.status,'setDocStatus(\''+d.id+'\',this.value)',DOC_STATUS)+'</div>'
+    +'<div class="dates">'
+    +(d.dataSolic?'<span>📋 Solic.: <b>'+esc(d.dataSolic)+'</b></span>':'')
+    +(d.dateConc?'<span>✓ Conc.: <b>'+esc(d.dateConc)+'</b></span>':'')
+    +(dias!==null?'<span class="timer">⏱ '+dias+'d</span>':'')
+    +'</div></div>'
+    +'<div class="rt"><button class="x" title="Editar" onclick="editDocModal(\''+d.id+'\')">✎</button>'
+    +'<button class="x" onclick="delDoc(\''+d.id+'\')">✕</button></div></div>'
+    +(d.desc?'<div class="desc">'+esc(d.desc)+'</div>':'')
+    +'</div>';
+}
 function viewDocs(){
-  const docs=inMonth(db.docs);
-  const cards=docs.map(d=>{
-    const dias=d.dataSolic&&d.dateConc?Math.round((new Date(d.dateConc.split('/').reverse().join('-'))-new Date(d.dataSolic.split('/').reverse().join('-')))/(864e5)):null;
-    return '<div class="acard" style="border-left-color:'+PRIO[d.priority]+'">'
-      +'<div class="top"><div><h3>\u{1F4C4} '+esc(d.title)+'</h3>'
-      +'<div class="who">'
-      +(d.dataSolic?'<span>\u{1F4CB} Solic.: '+esc(d.dataSolic)+'</span>':'')
-      +(d.dateConc?'<span>\u2713 Conc.: '+esc(d.dateConc)+'</span>':'')
-      +(dias!==null&&!isNaN(dias)&&dias>=0?'<span style="color:var(--purple-dark)">\u23f1 '+dias+'d</span>':'')
-      +'</div></div>'
-      +'<div class="rt">'+statusSelect(d.status,'setDocStatus(\''+d.id+'\',this.value)',DOC_STATUS)
-      +'<button class="x" title="Editar" onclick="editDocModal(\''+d.id+'\')">\u270e</button>'
-      +'<button class="x" onclick="delDoc(\''+d.id+'\')">\u2715</button></div></div>'
-      +'<div class="desc">'+esc(d.desc)+'</div></div>';
-  }).join('');
-  return '<div class="page-h"><h1>'+esc(T('documentacao'))+'</h1><p>Playbooks e materiais do m\u00eas.</p></div>'
+  const docs=sortByDateSolic(inMonth(db.docs));
+  return '<div class="page-h"><h1>'+esc(T('documentacao'))+'</h1><p>Playbooks e materiais do mês. Ordenados por data de solicitação.</p></div>'
     +'<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn primary" onclick="openDocModal()">+ Nova Doc</button></div>'
-    +(docs.length?cards:'<div class="empty">Nenhuma documenta\u00e7\u00e3o neste m\u00eas.</div>');
+    +(docs.length?'<div class="acards-grid">'+docs.map(d=>cardDoc(d)).join('')+'</div>'
+    :'<div class="empty">Nenhuma documentação neste mês.</div>');
 }
 function setDocStatus(id,s){db.docs.find(d=>d.id===id).status=s;persist();render();}
-function delDoc(id){if(confirm('Remover esta documenta\u00e7\u00e3o?')){db.docs=db.docs.filter(d=>d.id!==id);persist();render();}}
+function delDoc(id){if(confirm('Remover esta documentação?')){db.docs=db.docs.filter(d=>d.id!==id);persist();render();}}
 
 /* ---------- ORGANOGRAMA ---------- */
 function viewOrganograma(){
@@ -1151,10 +1187,9 @@ function _actionFormBody(a){
   const opts=Object.keys(TYPES).filter(t=>t!=='PDI'&&t!=='Documentação').map(t=>'<option '+(a&&a.type===t?'selected':'')+'>'+t+'</option>').join('');
   const st=TRAIN_STATUS.map(s=>'<option '+(a&&a.status===s?'selected':'')+'>'+s+'</option>').join('');
   const p=a?a.priority:'Alta';if(a)modalPrio=p;
-  return '<div class="row"><div class="fld"><label>Analista / Time</label><input id="m_who" value="'+(a?esc(a.who||''):'')+'" placeholder="Nome do analista ou time"></div>'
-    +'<div class="fld"><label>Data</label><input id="m_date" value="'+(a?esc(a.date||''):'')+'" placeholder="Ex: 01/06"></div></div>'
-    +'<div class="row"><div class="fld"><label>Data da solicitação</label><input id="m_solic" value="'+(a?esc(a.dataSolic||''):'')+'" placeholder="dd/mm"></div>'
-    +'<div class="fld"><label>Data de conclusão</label><input id="m_conc" value="'+(a?esc(a.dateConc||''):'')+'" placeholder="dd/mm"></div></div>'
+  return '<div class="full fld"><label>Analista / Time</label><input id="m_who" value="'+(a?esc(a.who||''):'')+'" placeholder="Nome do analista ou time"></div>'
+    +'<div class="row"><div class="fld"><label>Data da solicitação</label><input id="m_solic" value="'+(a?esc(a.dataSolic||''):'')+'" placeholder="dd/mm/aaaa"></div>'
+    +'<div class="fld"><label>Data de conclusão</label><input id="m_conc" value="'+(a?esc(a.dateConc||''):'')+'" placeholder="dd/mm/aaaa"></div></div>'
     +'<div class="full fld"><label>Tipo de ação</label><select id="m_type">'+opts+'</select></div>'
     +'<div class="full fld"><label>Tema / Título</label><input id="m_title" value="'+(a?esc(a.title):'')+'" placeholder="Ex: Treinamento saques — Kendra"></div>'
     +prioBlock().replace('class="on" data-p="Alta"',`class="${p==='Alta'?'on':''}" data-p="Alta"`).replace('data-p="Média"','data-p="Média" class="'+(p==='Média'?'on':'')+'"').replace('data-p="Baixa"','data-p="Baixa" class="'+(p==='Baixa'?'on':'')+'"')
@@ -1182,8 +1217,8 @@ function saveAction(){const title=document.getElementById('m_title').value.trim(
 function openDocModal(){modalPrio='Alta';show('<div class="modal"><h2>Nova Documentação <button class="close" onclick="closeModal()">✕</button></h2>'+_docFormBody(null)+'<div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveDoc()">Salvar Doc</button></div></div>');}
 function saveDoc(){const title=document.getElementById('d_title').value.trim();if(!title){toast('Informe o título');return;}db.docs.push({id:'d'+Date.now(),title,dataSolic:document.getElementById('d_solic').value.trim(),dateConc:document.getElementById('d_conc').value.trim(),priority:modalPrio,status:document.getElementById('d_status').value,month:db.current,desc:document.getElementById('d_desc').value.trim()});persist();closeModal();go('documentacao');toast('Documentação salva');}
 function openPdiModal(){show(`<div class="modal"><h2>Novo PDI <button class="close" onclick="closeModal()">✕</button></h2>
-    <div class="row"><div class="fld"><label>Analista</label><input id="pd_an" placeholder="Nome do analista"></div><div class="fld"><label>Data aplicação</label><input id="pd_date" placeholder="Ex: 13–14/05"></div></div>
-    <div class="row"><div class="fld"><label>Data da solicitação</label><input id="pd_solic" placeholder="dd/mm"></div><div class="fld"><label>Data de conclusão</label><input id="pd_conc" placeholder="dd/mm"></div></div>
+    <div class="full fld"><label>Analista</label><input id="pd_an" placeholder="Nome do analista"></div>
+    <div class="row"><div class="fld"><label>Data da solicitação</label><input id="pd_solic" placeholder="dd/mm/aaaa"></div><div class="fld"><label>Data de conclusão</label><input id="pd_conc" placeholder="dd/mm/aaaa"></div></div>
     <div class="full fld"><label>Tema / Título</label><input id="pd_title" placeholder="Ex: Organização e produtividade nos chats"></div>
     <div class="full fld"><label>Observação</label><textarea id="pd_obs" rows="2" placeholder="Objetivo do acompanhamento…"></textarea></div>
     <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--text-3);font-weight:600;margin:6px 0 8px">Métricas — antes (preencha agora ou depois na tela do PDI)</div>
@@ -1194,11 +1229,11 @@ function openPdiModal(){show(`<div class="modal"><h2>Novo PDI <button class="clo
 function gv(id){const v=document.getElementById(id).value.replace(',','.').trim();return v===''?0:parseFloat(v)||0;}
 function savePdi(editId){const an=document.getElementById('pd_an').value.trim(),title=document.getElementById('pd_title').value.trim();if(!an||!title){toast('Informe analista e título');return;}
   const m={slaB:gv('pd_sla'),slaA:0,crB:gv('pd_cr'),crA:0,cfB:gv('pd_cf'),cfA:0,tmaB:gv('pd_tma'),tmaA:0,csB:gv('pd_cs'),csA:0};
-  if(editId){const p=db.pdis.find(x=>x.id===editId);if(p){p.analyst=an;p.title=title;p.date=document.getElementById('pd_date').value.trim();p.dataSolic=document.getElementById('pd_solic').value.trim();p.dateConc=document.getElementById('pd_conc').value.trim();p.obs=document.getElementById('pd_obs').value.trim();p.m.slaB=m.slaB||p.m.slaB;p.m.crB=m.crB||p.m.crB;p.m.cfB=m.cfB||p.m.cfB;p.m.tmaB=m.tmaB||p.m.tmaB;p.m.csB=m.csB||p.m.csB;}}
-  else db.pdis.push({id:'p'+Date.now(),analyst:an,title,date:document.getElementById('pd_date').value.trim(),dataSolic:document.getElementById('pd_solic').value.trim(),dateConc:document.getElementById('pd_conc').value.trim(),priority:'Média',status:'Concluído',month:db.current,obs:document.getElementById('pd_obs').value.trim(),m,hasResults:false});
+  if(editId){const p=db.pdis.find(x=>x.id===editId);if(p){p.analyst=an;p.title=title;p.dataSolic=document.getElementById('pd_solic').value.trim();p.dateConc=document.getElementById('pd_conc').value.trim();p.obs=document.getElementById('pd_obs').value.trim();p.m.slaB=m.slaB||p.m.slaB;p.m.crB=m.crB||p.m.crB;p.m.cfB=m.cfB||p.m.cfB;p.m.tmaB=m.tmaB||p.m.tmaB;p.m.csB=m.csB||p.m.csB;}}
+  else db.pdis.push({id:'p'+Date.now(),analyst:an,title,dataSolic:document.getElementById('pd_solic').value.trim(),dateConc:document.getElementById('pd_conc').value.trim(),priority:'Média',status:'Concluído',month:db.current,obs:document.getElementById('pd_obs').value.trim(),m,hasResults:false});
   persist();closeModal();go('pdis');toast(editId?'PDI atualizado':'PDI criado');}
 function editPdiModal(id){const p=db.pdis.find(x=>x.id===id);if(!p)return;show(`<div class="modal"><h2>Editar PDI <button class="close" onclick="closeModal()">✕</button></h2>
-    <div class="row"><div class="fld"><label>Analista</label><input id="pd_an" value="${esc(p.analyst)}"></div><div class="fld"><label>Data aplicação</label><input id="pd_date" value="${esc(p.date||'')}"></div></div>
+    <div class="full fld"><label>Analista</label><input id="pd_an" value="${esc(p.analyst)}"></div>
     <div class="row"><div class="fld"><label>Data da solicitação</label><input id="pd_solic" value="${esc(p.dataSolic||'')}"></div><div class="fld"><label>Data de conclusão</label><input id="pd_conc" value="${esc(p.dateConc||'')}"></div></div>
     <div class="full fld"><label>Tema / Título</label><input id="pd_title" value="${esc(p.title)}"></div>
     <div class="full fld"><label>Observação</label><textarea id="pd_obs" rows="2">${esc(p.obs||'')}</textarea></div>
