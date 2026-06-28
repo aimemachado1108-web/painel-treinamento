@@ -476,7 +476,7 @@ const FONTS={
   'Arredondada':"'Nunito',-apple-system,sans-serif"
 };
 const SIZES={sm:'Pequeno',md:'Médio',lg:'Grande',xl:'Extra'};
-const DEFAULT_TITLES={visao:'Visão Geral','impacto-pdi':'Impacto - PDI','impacto-treino':'Impacto - Treinamento',pdis:'PDIs',treinamentos:'Treinamentos',documentacao:'Documentação',macros:'Macros',organograma:'Organograma',planilha:'Planilha',importar:'Importar'};
+const DEFAULT_TITLES={visao:'Visão Geral','impacto-pdi':'Impacto - PDI','impacto-treino':'Impacto - Treinamento',pdis:'PDIs',treinamentos:'Treinamentos',documentacao:'Documentação',macros:'Macros',onboarding:'Onboarding B2B',organograma:'Organograma',planilha:'Planilha',importar:'Importar'};
 function defaultSettings(){return{theme:'claro',bodyFont:'Moderna',titleFont:'Serifada',fontSize:'md',titles:Object.assign({},DEFAULT_TITLES)};}
 
 function badgeStyle(t){const v=(TYPES[t]||{badge:'--slate'}).badge;return `background:var(${v}-soft);color:var(${v}-text)`;}
@@ -549,11 +549,14 @@ db.teamTrainings.forEach(t=>{
   t.caixas=toArr(t.caixas);
   t.questions=toArr(t.questions);
 });
+if(!db.onboardingFeedbacks)db.onboardingFeedbacks=[];
+else db.onboardingFeedbacks=toArr(db.onboardingFeedbacks);
+if(!db.onboardingBimestre)db.onboardingBimestre=currentBimestreKey();
 persist();
 
 /* ===== nav / routing ===== */
 const NAV=[
-  {grp:'Principal',items:[{id:'visao',ic:'◈'},{id:'impacto-pdi',ic:'◇'},{id:'impacto-treino',ic:'★'}]},
+  {grp:'Principal',items:[{id:'visao',ic:'◈'},{id:'impacto-pdi',ic:'◇'},{id:'impacto-treino',ic:'★'},{id:'onboarding',ic:'🎓'}]},
   {grp:'Ações',items:[{id:'pdis',ic:'📁'},{id:'treinamentos',ic:'◎'},{id:'documentacao',ic:'▤'},{id:'macros',ic:'⚡'}]},
   {grp:'Registros',items:[{id:'organograma',ic:'🗂'},{id:'planilha',ic:'▦'},{id:'importar',ic:'↥'}]}
 ];
@@ -608,7 +611,7 @@ function render(){
   renderNav();
   document.getElementById('monthSel').innerHTML=db.months.map(m=>`<option ${m===db.current?'selected':''}>${m}</option>`).join('');
   document.getElementById('tb-title').textContent=T(route.page);
-  const fn={visao:viewVisao,'impacto-pdi':viewImpactoPdi,'impacto-treino':viewImpactoTreino,pdis:viewPdis,treinamentos:viewTreinos,documentacao:viewDocs,macros:viewMacros,organograma:viewOrganograma,planilha:viewPlanilha,importar:viewImportar}[route.page];
+  const fn={visao:viewVisao,'impacto-pdi':viewImpactoPdi,'impacto-treino':viewImpactoTreino,pdis:viewPdis,treinamentos:viewTreinos,documentacao:viewDocs,macros:viewMacros,onboarding:viewOnboarding,organograma:viewOrganograma,planilha:viewPlanilha,importar:viewImportar}[route.page];
   document.getElementById('content').innerHTML=fn();
 }
 function renderNav(){document.getElementById('nav').innerHTML=NAV.map(g=>`<div class="navgroup"><div class="label">${g.grp}</div>${g.items.map(it=>`<button class="navitem ${route.page===it.id?'active':''}" onclick="go('${it.id}')"><span class="ic">${it.ic}</span><span>${esc(T(it.id))}</span>${COUNTS[it.id]?`<span class="ct">${COUNTS[it.id]()}</span>`:''}</button>`).join('')}</div>`).join('');}
@@ -700,17 +703,29 @@ function viewVisao(){
 function viewPdis(){
   if(route.pdiId)return viewPdiDetail(route.pdiId);
   const pdis=inMonth(db.pdis),byA={};pdis.forEach(p=>(byA[p.analyst]=byA[p.analyst]||[]).push(p));
-  const cards=Object.keys(byA).sort((a,b)=>{const da=Math.max(...(byA[a].map(p=>parseDateBR(p.dataSolic)||new Date(0)).map(d=>d.getTime())));const db2=Math.max(...(byA[b].map(p=>parseDateBR(p.dataSolic)||new Date(0)).map(d=>d.getTime())));return db2-da;}).map(a=>{const l=byA[a],done=l.filter(p=>p.status==='Concluído').length,res=l.some(p=>p.hasResults);
-    return `<div class="folder" onclick="openPdi('${l[0].id}')"><div class="ico">📁</div><h3>${esc(a)}</h3><div class="meta">${l.length} PDI · ${done} concluído${done!==1?'s':''}</div>${l[0].dataSolic?`<div class="meta">Solic.: ${esc(l[0].dataSolic)}</div>`:''} ${res?'<span class="chip">✓ com resultados</span>':'<span class="chip" style="color:var(--amber-text);border-color:var(--amber-soft)">resultados pendentes</span>'}</div>`;}).join('');
-  return `<div class="page-h"><h1>${esc(T('pdis'))}</h1><p>Cada pastinha reúne todos os PDIs de um analista.</p></div>${pdis.length?`<div class="folders">${cards}</div>`:'<div class="empty">Nenhum PDI neste mês. Clique em “+ Novo PDI”.</div>'}`;
+  const cards=Object.keys(byA).sort((a,b)=>{const da=Math.max(...(byA[a].map(p=>parseDateBR(p.dataSolic)||new Date(0)).map(d=>d.getTime())));const db2=Math.max(...(byA[b].map(p=>parseDateBR(p.dataSolic)||new Date(0)).map(d=>d.getTime())));return db2-da;}).map(a=>{
+    const l=byA[a],done=l.filter(p=>p.status==='Concluído').length,res=l.some(p=>p.hasResults);
+    const ids=l.map(p=>p.id).join(',');
+    return '<div class="folder" style="position:relative">'
+      +'<button onclick="delPdiGroup(\''+ids+'\')" style="position:absolute;top:10px;right:10px;border:none;background:none;color:var(--text-3);font-size:15px;cursor:pointer;padding:2px 5px;border-radius:6px" title="Excluir PDI">✕</button>'
+      +'<div style="cursor:pointer" onclick="openPdi(\''+l[0].id+'\')">'
+      +'<div class="ico">📁</div><h3>'+esc(a)+'</h3>'
+      +'<div class="meta">'+l.length+' PDI · '+done+' concluído'+(done!==1?'s':'')+'</div>'
+      +(l[0].dataSolic?'<div class="meta">Solic.: '+esc(l[0].dataSolic)+'</div>':'')
+      +(res?'<span class="chip">✓ com resultados</span>':'<span class="chip" style="color:var(--amber-text);border-color:var(--amber-soft)">resultados pendentes</span>')
+      +'</div></div>';
+  }).join('');
+  return `<div class="page-h"><h1>${esc(T('pdis'))}</h1><p>Cada pastinha reúne todos os PDIs de um analista.</p></div>${pdis.length?`<div class="folders">${cards}</div>`:'<div class="empty">Nenhum PDI neste mês. Clique em "+ Novo PDI".</div>'}`;
 }
 function openPdi(id){route.pdiId=id;render();window.scrollTo(0,0);}
+function delPdiGroup(ids){const list=ids.split(',');const p=db.pdis.find(x=>x.id===list[0]);if(!p)return;if(!confirm('Excluir o(s) PDI(s) de "'+p.analyst+'"? Esta ação não pode ser desfeita.'))return;db.pdis=db.pdis.filter(x=>!list.includes(x.id));persist();render();toast('PDI excluído');}
+function delPdi(id){const p=db.pdis.find(x=>x.id===id);if(!p)return;if(!confirm('Excluir o PDI "'+p.title+'"?'))return;db.pdis=db.pdis.filter(x=>x.id!==id);persist();route.pdiId=null;render();toast('PDI excluído');}
 function viewPdiDetail(id){
   const p=db.pdis.find(x=>x.id===id);if(!p)return '<div class="empty">PDI não encontrado.</div>';
   const m=p.m,x=pdiMetrics(p);
   const cell=(k,b,a,u,im)=>`<div class="metcell"><div class="k">${k}</div><div class="v">${fmt(b)}${u}<span class="ar">→</span><b>${fmt(a)}${u}</b></div>${p.hasResults?deltaTag(im):''}</div>`;
   return `<button class="btn sm" style="margin-bottom:16px" onclick="route.pdiId=null;render()">← Voltar para PDIs</button>
-  <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px"><div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--purple-2),var(--purple-dark));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600">${esc(ini(p.analyst))}</div><div style="flex:1"><h1 class="tfont" style="font-size:1.85em;font-weight:600">${esc(p.analyst)}</h1><div style="color:var(--text-2);font-size:.92em">${esc(p.title)}</div></div><button class="btn" onclick="editPdiModal('${p.id}')">✎ Editar PDI</button></div>
+  <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px"><div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--purple-2),var(--purple-dark));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600">${esc(ini(p.analyst))}</div><div style="flex:1"><h1 class="tfont" style="font-size:1.85em;font-weight:600">${esc(p.analyst)}</h1><div style="color:var(--text-2);font-size:.92em">${esc(p.title)}</div></div><button class="btn" onclick="editPdiModal('${p.id}')">✎ Editar PDI</button><button class="btn" style="color:var(--red-text);border-color:var(--red)" onclick="delPdi('${p.id}')">✕ Excluir</button></div>
   <div class="acard ${p.status==='Concluído'?'done':''}" style="border-left-color:${PRIO[p.priority]}">
     <div class="top"><div><h3>🎯 ${esc(p.title)}</h3><div class="who"><span>📅 ${esc(p.date)}</span><span>Prioridade: ${esc(p.priority)}</span></div></div><div class="rt">${statusSelect(p.status,`setPdiStatus('${p.id}',this.value)`,TRAIN_STATUS)}</div></div>
     <div class="desc">${esc(p.obs)}</div>
@@ -1004,6 +1019,224 @@ function downloadTeamTemplate(id){
   const ex=['Maria Silva',(t.caixas&&t.caixas[0])||'Silver','5',...qs.map((_,i)=>i%2?'erro':'acerto')];
   const csv=[head,ex].map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
   dl(csv,`modelo-${t.title.slice(0,20).replace(/\W+/g,'-')}.csv`);
+}
+
+/* ========================================================
+   ONBOARDING B2B — feedback semestral
+   ======================================================== */
+function currentBimestreKey(){
+  const now=new Date();const y=now.getFullYear();const m=now.getMonth();
+  const start=m<6?0:6;
+  return y+'-'+(start===0?'01':'07');
+}
+function bimestreLabel(key){
+  if(!key)return '';
+  const [y,ms]=key.split('-');const s=parseInt(ms);
+  const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const ini=MESES[s-1];const fim=MESES[s+4];
+  return `${ini} – ${fim} ${y}`;
+}
+function bimestreKeys(){
+  // Gera chaves de Jan/2025 até 1 semestre à frente
+  const keys=[];
+  const now=new Date();
+  for(let y=2025;y<=now.getFullYear()+1;y++){
+    keys.push(y+'-01');keys.push(y+'-07');
+  }
+  // Filtra até 1 semestre à frente
+  const limit=now.getFullYear()+(now.getMonth()>=6?1:0)+'-'+(now.getMonth()>=6?'01':'07');
+  return keys.filter(k=>k<=limit);
+}
+function inBimestre(dateStr,key){
+  if(!dateStr||!key)return false;
+  try{
+    const d=new Date(dateStr);
+    const [y,ms]=key.split('-');const s=parseInt(ms);
+    return d.getFullYear()===parseInt(y)&&d.getMonth()>=(s-1)&&d.getMonth()<=(s+3);
+  }catch(e){return false;}
+}
+function onboardingInBimestre(){
+  return (db.onboardingFeedbacks||[]).filter(f=>inBimestre(f.date,db.onboardingBimestre));
+}
+
+/* Definição das perguntas e seus tipos */
+const OB_QUESTIONS=[
+  {key:'geral',      label:'Avaliação geral do treinamento',                    type:'star5',   emoji:'⭐'},
+  {key:'duracao',    label:'A duração foi adequada para o aprendizado?',        type:'choice',  emoji:'⏱',
+   options:['Sim, o tempo de duração foi perfeito.','Não, gostaria que o treinamento tivesse durado mais alguns dias','Não, gostaria que o treinamento fosse mais curto']},
+  {key:'materiais',  label:'Os materiais apresentados ajudaram no aprendizado?',type:'star5',   emoji:'📚'},
+  {key:'aprofundar', label:'Tema que gostaria que fosse mais aprofundado',       type:'text',    emoji:'🔍'},
+  {key:'clareza',    label:'Clareza e didática da Aimê',                        type:'star5',   emoji:'🎙'},
+  {key:'receptiva',  label:'A Aimê foi receptiva às dúvidas?',                  type:'choice',  emoji:'💬',
+   options:['Sim, totalmente','Sim, mas poderia ser mais','Não, tive dificuldades para tirar dúvidas']},
+  {key:'avontade',   label:'Se sentiu à vontade para participar e interagir?',  type:'choice',  emoji:'🙌',
+   options:['Sim, totalmente','Sim, mas poderia ser mais','Não muito']},
+  {key:'comentario', label:'Comentário sobre como o treinamento foi conduzido',  type:'text',    emoji:'📝'},
+  {key:'preparado',  label:'O treinamento te ajudou a se sentir mais preparado?',type:'choice', emoji:'🚀',
+   options:['Sim, totalmente','Sim, mas ainda tenho dúvidas pontuais','Parcialmente','Não muito']},
+  {key:'gostou',     label:'O que você mais gostou no treinamento?',             type:'text',    emoji:'❤️'},
+  {key:'melhorar',   label:'O que poderia ser melhorado nas próximas turmas?',   type:'text',    emoji:'💡'},
+  {key:'recado',     label:'Recado ou mensagem para a Aimê',                     type:'text',    emoji:'💌'},
+];
+
+function viewOnboarding(){
+  if(!db.onboardingBimestre)db.onboardingBimestre=currentBimestreKey();
+  const feedbacks=onboardingInBimestre();
+  const keys=bimestreKeys();
+  const bSel=keys.map(k=>`<option value="${k}" ${k===db.onboardingBimestre?'selected':''}>${bimestreLabel(k)}</option>`).join('');
+  const hasName=db.onboardingBimestre>='2026-07';
+
+  /* ── Cards de métricas de topo ── */
+  const total=feedbacks.length;
+  const geralVals=feedbacks.map(f=>parseFloat(f.geral)).filter(v=>!isNaN(v));
+  const avgGeral=geralVals.length?round(geralVals.reduce((s,v)=>s+v,0)/geralVals.length,1):0;
+  const clarVals=feedbacks.map(f=>parseFloat(f.clareza)).filter(v=>!isNaN(v));
+  const avgClar=clarVals.length?round(clarVals.reduce((s,v)=>s+v,0)/clarVals.length,1):0;
+  const matVals=feedbacks.map(f=>parseFloat(f.materiais)).filter(v=>!isNaN(v));
+  const avgMat=matVals.length?round(matVals.reduce((s,v)=>s+v,0)/matVals.length,1):0;
+  const totPrepared=feedbacks.filter(f=>f.preparado==='Sim, totalmente').length;
+  const pctPrepared=total?Math.round(totPrepared/total*100):0;
+
+  /* ── Função para renderizar cada card de pergunta ── */
+  function renderCard(q){
+    const vals=feedbacks.map(f=>f[q.key]).filter(Boolean);
+    if(!vals.length) return `<div class="panel" style="opacity:.55"><div class="panel-h"><div class="pi">${q.emoji}</div><h2>${esc(q.label)}</h2></div><div class="empty" style="padding:20px 0">Sem respostas ainda</div></div>`;
+
+    if(q.type==='star5'){
+      const nums=vals.map(v=>parseFloat(v)).filter(v=>!isNaN(v));
+      const avg=nums.length?round(nums.reduce((s,v)=>s+v,0)/nums.length,1):0;
+      const dist=[5,4,3,2,1].map(n=>({n,c:nums.filter(v=>Math.round(v)===n).length}));
+      const maxC=Math.max(...dist.map(d=>d.c),1);
+      return `<div class="panel"><div class="panel-h"><div class="pi">${q.emoji}</div><h2>${esc(q.label)}</h2></div>
+        <div style="display:flex;align-items:center;gap:24px;margin-bottom:16px">
+          <div style="text-align:center">
+            <div style="font-family:'Inter',sans-serif;font-size:3em;font-weight:700;color:var(--gold);line-height:1">${avg}</div>
+            <div style="color:var(--gold);font-size:1.3em;margin-top:4px">${starStr(avg)}</div>
+            <div style="font-size:.8em;color:var(--text-3);margin-top:2px">de 5 · ${nums.length} respostas</div>
+          </div>
+          <div style="flex:1">${dist.map(d=>`<div class="barrow" style="margin-bottom:7px"><div class="nm" style="width:24px;color:var(--gold);font-weight:600">${d.n}★</div><div class="track"><div class="fill" style="width:${d.c/maxC*100}%;background:var(--gold)"></div></div><div class="vl" style="width:28px">${d.c}</div></div>`).join('')}</div>
+        </div></div>`;
+    }
+
+    if(q.type==='choice'){
+      const opts=q.options||[...new Set(vals)];
+      const counts=opts.map(o=>({o,c:vals.filter(v=>v===o).length}));
+      const maxC=Math.max(...counts.map(d=>d.c),1);
+      const colors=['var(--green)','var(--amber)','var(--red)','var(--blue)','var(--purple)'];
+      return `<div class="panel"><div class="panel-h"><div class="pi">${q.emoji}</div><h2>${esc(q.label)}</h2><span style="margin-left:auto;font-size:.8em;color:var(--text-3)">${vals.length} respostas</span></div>
+        ${counts.map((d,i)=>`<div class="barrow" style="margin-bottom:10px"><div class="nm" style="width:auto;flex:1;text-align:left;padding-right:12px;font-size:.85em;white-space:normal;line-height:1.3">${esc(d.o)}</div><div class="track" style="width:120px;flex:none"><div class="fill" style="width:${d.c/maxC*100}%;background:${colors[i%colors.length]}"></div></div><div class="vl" style="width:60px;text-align:right"><b>${d.c}</b> <span style="color:var(--text-3)">(${total?Math.round(d.c/total*100):0}%)</span></div></div>`).join('')}
+      </div>`;
+    }
+
+    if(q.type==='text'){
+      const nonEmpty=vals.filter(v=>v&&v.length>2&&!/^(n(ão|ao|enhum)|nada|ok|não sei|sem|\/|-|\.+)$/i.test(v.trim()));
+      if(!nonEmpty.length) return `<div class="panel"><div class="panel-h"><div class="pi">${q.emoji}</div><h2>${esc(q.label)}</h2></div><div class="empty" style="padding:16px 0">Nenhuma resposta com conteúdo relevante</div></div>`;
+      return `<div class="panel"><div class="panel-h"><div class="pi">${q.emoji}</div><h2>${esc(q.label)}</h2><span style="margin-left:auto;font-size:.8em;color:var(--text-3)">${nonEmpty.length} respostas</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">
+          ${nonEmpty.map(v=>`<div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-size:.88em;color:var(--text-2);line-height:1.55;font-style:italic">"${esc(v)}"</div>`).join('')}
+        </div></div>`;
+    }
+    return '';
+  }
+
+  /* ── Tabela de analistas (só a partir de Jul/2026) ── */
+  const tabelaAnalistas=hasName&&feedbacks.some(f=>f.nome)?`
+    <div class="panel"><div class="panel-h"><div class="pi">👤</div><h2>Respostas por analista</h2></div>
+    <div class="wrap-x"><table class="tbl"><thead><tr><th>Analista</th><th>Caixa</th><th>Geral</th><th>Materiais</th><th>Clareza</th><th>Preparado?</th></tr></thead><tbody>
+    ${feedbacks.filter(f=>f.nome).map(f=>`<tr><td><b>${esc(f.nome)}</b></td><td>${esc(f.caixa||'—')}</td><td style="color:var(--gold)">${f.geral||'—'} ★</td><td style="color:var(--gold)">${f.materiais||'—'} ★</td><td style="color:var(--gold)">${f.clareza||'—'} ★</td><td>${esc(f.preparado||'—')}</td></tr>`).join('')}
+    </tbody></table></div></div>`:'';
+
+  return `<div class="page-h"><h1>${esc(T('onboarding'))} 🎓</h1><p>Avaliações de satisfação dos analistas após o Onboarding B2B — visão semestral.</p></div>
+
+  <!-- Seletor de semestre -->
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+    <label style="font-size:.85em;font-weight:600;color:var(--text-2)">Período:</label>
+    <select style="border:1px solid var(--border-2);background:var(--surface);border-radius:9px;padding:8px 14px;font-size:.95em;color:var(--text);font-weight:500" onchange="db.onboardingBimestre=this.value;render()">${bSel}</select>
+    <span style="font-size:.82em;color:var(--text-3)">${total} avaliação${total!==1?'ões':''} neste período</span>
+    <button class="btn primary sm" style="margin-left:auto" onclick="openOnboardingImport()">↥ Importar planilha</button>
+  </div>
+
+  <!-- Cards de resumo -->
+  ${total?`<div class="mcards" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px">
+    <div class="mcard"><div class="lbl">Avaliações coletadas</div><div class="val">${total}</div><div class="foot">${bimestreLabel(db.onboardingBimestre)}</div></div>
+    <div class="mcard"><div class="lbl">Nota geral média</div><div class="val" style="color:var(--gold)">${avgGeral}/5 ★</div></div>
+    <div class="mcard"><div class="lbl">Clareza e didática</div><div class="val" style="color:var(--gold)">${avgClar}/5 ★</div></div>
+    <div class="mcard"><div class="lbl">Sentiu-se preparado</div><div class="val" style="color:var(--green-text)">${pctPrepared}%</div><span class="tag" style="background:var(--green-soft);color:var(--green-text)">${totPrepared} de ${total}</span></div>
+  </div>`:''}
+
+  <!-- Cards por questão -->
+  ${total?OB_QUESTIONS.map(q=>renderCard(q)).join(''):'<div class="empty">Nenhuma avaliação importada para este período.<br><br><button class="btn primary" onclick="openOnboardingImport()">↥ Importar planilha de feedback</button></div>'}
+
+  ${tabelaAnalistas}`;
+}
+
+function openOnboardingImport(){
+  show(`<div class="modal" style="width:580px"><h2>🎓 Importar Feedback Onboarding B2B <button class="close" onclick="closeModal()">✕</button></h2>
+    <p style="color:var(--text-2);font-size:.9em;margin-bottom:12px">Aceita a planilha de respostas do <b>Google Forms</b> exportada em <b>.xlsx</b>. As respostas serão adicionadas ao período selecionado: <b>${bimestreLabel(db.onboardingBimestre)}</b>.</p>
+    <p class="hint" style="margin-bottom:12px">As respostas são <b>anônimas</b> por padrão. A partir de Julho/2026, se a planilha contiver colunas "Nome" e "Caixa", elas serão capturadas.</p>
+    <div class="fld" style="margin-bottom:8px"><label>Arquivo (.xlsx ou .csv)</label><input type="file" accept=".xlsx,.xls,.csv" id="ob_file"></div>
+    <div class="fld" style="margin-bottom:14px"><label>Substituir respostas existentes deste período?</label>
+      <select id="ob_replace"><option value="add">Não — adicionar às existentes</option><option value="replace">Sim — substituir este período</option></select></div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="importOnboarding()">Importar e calcular</button></div>
+  </div>`);
+}
+
+function importOnboarding(){
+  const f=document.getElementById('ob_file').files[0];if(!f){toast('Selecione um arquivo');return;}
+  const replace=document.getElementById('ob_replace').value==='replace';
+  const isXlsx=/\.xlsx?$/i.test(f.name);
+  const r=new FileReader();
+  r.onload=()=>{try{
+    let rows;
+    if(isXlsx){
+      const wb=XLSX.read(r.result,{type:'array',cellDates:true});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false}).filter(rw=>rw.some(c=>String(c).trim()));
+    } else {
+      const text=r.result;
+      rows=parseCSV(text,detectDelim(text)).filter(rw=>rw.some(c=>c&&c.trim()));
+    }
+    if(rows.length<2){toast('Arquivo vazio');return;}
+    const raw=rows[0].map(h=>String(h||'').trim());
+    const low=raw.map(h=>h.toLowerCase().replace(/\s+/g,' ').replace(/\n/g,' '));
+    const fi=i=>low.findIndex(h=>h.includes(i));
+    const dateI=fi('carimbo');
+    const geralI=low.findIndex(h=>h.includes('avaliaria')&&h.includes('geral'));
+    const duracaoI=low.findIndex(h=>h.includes('dura')&&(h.includes('adequada')||h.includes('aprendizado')));
+    const matI=low.findIndex(h=>h.includes('materiai')||h.includes('ajudaram no aprendizado'));
+    const aprofI=low.findIndex(h=>h.includes('aprofund'));
+    const clarI=low.findIndex(h=>h.includes('clareza')||h.includes('did'));
+    const recepI=low.findIndex(h=>h.includes('receptiva')||h.includes('aberta'));
+    const avontI=low.findIndex(h=>h.includes('vontade')||h.includes('interagir'));
+    const comI=low.findIndex(h=>h.includes('coment')&&(h.includes('forma')||h.includes('sugestão')||h.includes('sugestao')));
+    const prepI=low.findIndex(h=>h.includes('preparad')&&h.includes('suporte'));
+    const gostouI=low.findIndex(h=>h.includes('mais gostou'));
+    const melhI=low.findIndex(h=>h.includes('melhorad')&&h.includes('turma'));
+    const recadoI=low.findIndex(h=>h.includes('recado')||h.includes('mensagem'));
+    const nomeI=low.findIndex(h=>h==='nome'||h==='analista'||h==='nome do analista');
+    const caixaI=fi('caixa');
+    console.log('Colunas detectadas:',{dateI,geralI,duracaoI,matI,aprofI,clarI,recepI,avontI,comI,prepI,gostouI,melhI,recadoI,nomeI,caixaI});
+    const get=(rw,i)=>i>=0?String(rw[i]===null||rw[i]===undefined?'':rw[i]).trim():'';
+    const newFb=[];
+    rows.slice(1).forEach(rw=>{
+      const dateRaw=get(rw,dateI);
+      let date=null;
+      try{date=dateRaw?new Date(dateRaw).toISOString():new Date().toISOString();}catch(e){date=new Date().toISOString();}
+      newFb.push({
+        date,
+        geral:get(rw,geralI),duracao:get(rw,duracaoI),materiais:get(rw,matI),
+        aprofundar:get(rw,aprofI),clareza:get(rw,clarI),receptiva:get(rw,recepI),
+        avontade:get(rw,avontI),comentario:get(rw,comI),preparado:get(rw,prepI),
+        gostou:get(rw,gostouI),melhorar:get(rw,melhI),recado:get(rw,recadoI),
+        nome:get(rw,nomeI),caixa:get(rw,caixaI)
+      });
+    });
+    if(!db.onboardingFeedbacks)db.onboardingFeedbacks=[];
+    if(replace)db.onboardingFeedbacks=db.onboardingFeedbacks.filter(f=>!inBimestre(f.date,db.onboardingBimestre));
+    db.onboardingFeedbacks.push(...newFb);
+    persist();closeModal();render();toast(newFb.length+' avaliações importadas para '+bimestreLabel(db.onboardingBimestre));
+  }catch(e){toast('Erro: '+e.message);console.error(e);}};
+  if(isXlsx)r.readAsArrayBuffer(f);else r.readAsText(f,'utf-8');
 }
 
 /* ---------- TREINAMENTOS ---------- */
