@@ -388,7 +388,8 @@ function persist(){
   savePrefs();
   pendingSync=true;
   if(syncTimer)clearTimeout(syncTimer);
-  syncTimer=setTimeout(pushToFirebase,2000);
+  // Usa forceSyncAll direto — é o método que funciona com o Firebase
+  syncTimer=setTimeout(()=>{forceSyncAll().catch(()=>{});},2000);
   updateSyncBadge();
 }
 
@@ -1716,20 +1717,20 @@ function openSettings(){const s=db.settings;
     <div class="modal-foot"><button class="btn" onclick="resetSettings()">Restaurar padrão</button><button class="btn primary" onclick="saveSettings()">Salvar</button></div>
   </div>`);}
 
-async function forceSyncAll(){
+async function forceSyncAll(silent){
   const el=document.getElementById('force-sync-result');
-  if(el)el.innerHTML='<span style="color:var(--amber-text)">⟳ Enviando dados...</span>';
+  if(!silent&&el)el.innerHTML='<span style="color:var(--amber-text)">⟳ Enviando dados...</span>';
+  syncStatus='syncing';updateSyncBadge();
   const BASE=FB_URL.replace('.json','');
   const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks','onboardingBimestre'];
-  let ok=true,sent=0;
+  let ok=true;
   for(const field of fields){
     const val=db[field];if(val===undefined)continue;
     try{
       const r=await fetch(`${BASE}/${field}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
-      if(r.ok){sent++;}else{ok=false;console.warn('forceSyncAll fail:',field,r.status);}
-    }catch(e){ok=false;console.warn('forceSyncAll error:',field,e);}
+      if(!r.ok){ok=false;console.warn('forceSyncAll fail:',field,r.status);}
+    }catch(e){ok=false;}
   }
-  // teamTrainings com answers serializados
   try{
     const cleaned=(db.teamTrainings||[]).map(t=>({
       id:t.id||'',title:t.title||'',date:t.date||'',month:t.month||'',
@@ -1743,17 +1744,19 @@ async function forceSyncAll(){
       }))
     }));
     const r=await fetch(`${BASE}/teamTrainings.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(cleaned)});
-    if(r.ok){sent++;}else{ok=false;console.warn('forceSyncAll fail: teamTrainings',r.status);}
-  }catch(e){ok=false;console.warn('forceSyncAll error: teamTrainings',e);}
-  if(el){
-    if(ok){
-      el.innerHTML='<span style="color:var(--green-text)">✓ Dados enviados com sucesso! Os outros já podem ver.</span>';
-      syncStatus='ok';lastSyncTime=new Date();updateSyncBadge();
-    } else {
-      el.innerHTML='<span style="color:var(--red-text)">⚠ Alguns campos falharam. Tente novamente.</span>';
-    }
+    if(!r.ok)ok=false;
+  }catch(e){ok=false;}
+  pendingSync=false;
+  if(ok){
+    syncStatus='ok';lastSyncTime=new Date();
+    if(!silent&&el)el.innerHTML='<span style="color:var(--green-text)">✓ Dados enviados! Os outros já podem ver.</span>';
+    if(!silent)toast('✓ Sincronizado!');
+  } else {
+    syncStatus='error';
+    if(!silent&&el)el.innerHTML='<span style="color:var(--red-text)">⚠ Erro. Tente novamente.</span>';
   }
-  if(ok)toast('✓ Sincronizado com sucesso!');
+  updateSyncBadge();
+  return ok;
 }
 function setTheme(v){
   db.settings.theme=v;
