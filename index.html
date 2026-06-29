@@ -1679,9 +1679,11 @@ function openSettings(){const s=db.settings;
   const sizeBtn=k=>`<button class="${s.fontSize===k?'on':''}" onclick="setSize('${k}')">${SIZES[k]}</button>`;
   const titleInputs=Object.keys(DEFAULT_TITLES).map(id=>`<div class="fld" style="margin-bottom:10px"><label>${DEFAULT_TITLES[id]}</label><input data-tit="${id}" value="${esc(T(id))}"></div>`).join('');
   show(`<div class="modal" style="width:640px;max-height:90vh;overflow-y:auto"><h2>⚙ Configurações <button class="close" onclick="closeModal()">✕</button></h2>
-    <div class="set-sec" style="background:var(--green-soft);border-radius:12px;padding:12px 16px;margin-bottom:20px">
-      <span style="color:var(--green-text);font-weight:600">● Sincronização ativa — Firebase</span>
-      <span style="color:var(--text-2);font-size:.85em;margin-left:10px">painel-aime-default-rtdb.firebaseio.com</span>
+    <div class="set-sec" style="background:var(--red-soft);border-radius:12px;padding:12px 16px;margin-bottom:20px">
+      <h3 style="color:var(--red-text)">🔄 Forçar sincronização</h3>
+      <p style="font-size:.85em;color:var(--red-text);margin:6px 0 10px">Use se os outros não estão vendo seus dados. Envia campo por campo para o Firebase.</p>
+      <button class="btn" style="background:var(--red);color:#fff;border-color:var(--red)" onclick="forceSyncAll()">Enviar todos os dados agora</button>
+      <div id="force-sync-result" style="margin-top:8px;font-size:.82em"></div>
     </div>
     <div class="set-sec"><h3>Tema de cor</h3><div class="seg">${themeBtn('claro','Claro','linear-gradient(135deg,#f5f4fb,#6d5de0)')}${themeBtn('lilas','Lilás','linear-gradient(135deg,#f7f1fc,#a78bfa)')}${themeBtn('roxo','Roxo','linear-gradient(135deg,#efe9fb,#6d28d9)')}${themeBtn('dark','Escuro','linear-gradient(135deg,#16141f,#8b7df0)')}</div></div>
     <div class="set-sec"><h3>Fonte dos textos (barra lateral e corpo)</h3><div class="fld"><select id="set_body" onchange="setBodyFont(this.value)">${fontOpts('bodyFont')}</select></div></div>
@@ -1691,7 +1693,45 @@ function openSettings(){const s=db.settings;
     <div class="modal-foot"><button class="btn" onclick="resetSettings()">Restaurar padrão</button><button class="btn primary" onclick="saveSettings()">Salvar</button></div>
   </div>`);}
 
-// Firebase sync — sem configuração necessária
+async function forceSyncAll(){
+  const el=document.getElementById('force-sync-result');
+  if(el)el.innerHTML='<span style="color:var(--amber-text)">⟳ Enviando dados...</span>';
+  const BASE=FB_URL.replace('.json','');
+  const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks','onboardingBimestre'];
+  let ok=true,sent=0;
+  for(const field of fields){
+    const val=db[field];if(val===undefined)continue;
+    try{
+      const r=await fetch(`${BASE}/${field}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
+      if(r.ok){sent++;}else{ok=false;console.warn('forceSyncAll fail:',field,r.status);}
+    }catch(e){ok=false;console.warn('forceSyncAll error:',field,e);}
+  }
+  // teamTrainings com answers serializados
+  try{
+    const cleaned=(db.teamTrainings||[]).map(t=>({
+      id:t.id,title:t.title,date:t.date||'',month:t.month,status:t.status,
+      errMode:t.errMode||'',
+      caixas:t.caixas||[],
+      questions:t.questions||[],
+      results:(t.results||[]).map(r=>({
+        analista:r.analista||'',email:r.email||'',caixa:r.caixa||'',
+        stars:r.stars||0,ac:r.ac||0,er:r.er||0,feedback:r.feedback||'',
+        answersArr:(t.questions||[]).map(q=>r.answers?!!r.answers[q]:null)
+      }))
+    }));
+    const r=await fetch(`${BASE}/teamTrainings.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(cleaned)});
+    if(r.ok){sent++;}else{ok=false;console.warn('forceSyncAll fail: teamTrainings',r.status);}
+  }catch(e){ok=false;console.warn('forceSyncAll error: teamTrainings',e);}
+  if(el){
+    if(ok){
+      el.innerHTML='<span style="color:var(--green-text)">✓ Dados enviados com sucesso! Os outros já podem ver.</span>';
+      syncStatus='ok';lastSyncTime=new Date();updateSyncBadge();
+    } else {
+      el.innerHTML='<span style="color:var(--red-text)">⚠ Alguns campos falharam. Tente novamente.</span>';
+    }
+  }
+  if(ok)toast('✓ Sincronizado com sucesso!');
+}
 function setTheme(v){
   db.settings.theme=v;
   applyTheme();
