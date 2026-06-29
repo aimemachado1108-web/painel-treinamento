@@ -742,8 +742,17 @@ function viewVisao(){
   const stops=seg.map(([_,v,c])=>{const a=acc/Math.max(1,total)*360;acc+=v;return `${c} ${a}deg ${acc/Math.max(1,total)*360}deg`;}).join(',');
   /* comparativo por mês — inclui TODAS as coleções */
   const ms=db.months.map(mn=>{
-    const a=[...db.pdis,...db.actions,...db.docs,...db.teamTrainings].filter(x=>x.month===mn);
-    return{mn,total:a.length,done:a.filter(x=>x.status==='Concluído').length,mac:(db.macros||[]).filter(x=>x.month===mn).length};
+    const allItens=[
+      ...db.pdis.filter(x=>x.month===mn),
+      ...db.actions.filter(x=>x.month===mn),
+      ...db.docs.filter(x=>x.month===mn),
+      ...db.teamTrainings.filter(x=>x.month===mn)
+    ];
+    const total=allItens.length;
+    const done=allItens.filter(x=>x.status==='Concluído'||(x.status==='Material pronto'&&db.docs.find(d=>d.id===x.id))).length;
+    const mac=(db.macros||[]).filter(x=>x.month===mn).length;
+    const pdiCount=db.pdis.filter(x=>x.month===mn).length;
+    return{mn,total,done,mac,pdiCount};
   });
   const maxM=Math.max(1,...ms.map(s=>s.total));
   const cmp=ms.map(s=>`<div class="mbg"><div class="pair"><div class="b" style="height:${Math.max(4,s.total/maxM*100)}%;min-height:4px">${s.total}</div><div class="b alt" style="height:${s.done?Math.max(4,s.done/maxM*100):0}%;min-height:${s.done?4:0}px">${s.done||''}</div></div><div class="cap">${s.mn.replace(' 20',"'")}</div></div>`).join('');
@@ -798,7 +807,7 @@ function viewVisao(){
   <div class="panel"><div class="panel-h"><div class="pi">↑</div><h2>Comparativo — todos os meses</h2></div><div class="mbars">${cmp}</div>
     <div class="legend" style="margin-top:6px"><span><i style="background:var(--purple-2)"></i>Total</span><span><i style="background:var(--bar-alt)"></i>Concluídos</span></div></div>
   <div class="panel"><div class="panel-h"><div class="pi">◆</div><h2>Resumo por mês</h2></div>
-    <div class="msum">${ms.map(s=>`<div class="c ${s.mn===db.current?'cur':''}"><h3>${s.mn}</h3><p>${s.mn===db.current?'Treinamentos e PDIs — dados reais':'Registro do mês'}</p><div class="st">${s.total} ações · ${db.pdis.filter(p=>p.month===s.mn).length} PDIs · ${s.done} conc.${s.mac?` · ${s.mac} macros`:''}</div></div>`).join('')}</div></div>`;
+    <div class="msum">${ms.map(s=>`<div class="c ${s.mn===db.current?'cur':''}"><h3>${s.mn}</h3><p>${s.mn===db.current?'Treinamentos e PDIs — dados reais':'Registro do mês'}</p><div class="st">${s.total} ações · ${s.pdiCount} PDIs · ${s.done} conc.${s.mac?` · ${s.mac} macros`:''}</div></div>`).join('')}</div></div>`;
 }
 
 /* ---------- PDIs ---------- */
