@@ -383,13 +383,13 @@ function loadPrefs(){try{const r=localStorage.getItem(KEY_PREFS);if(r)return JSO
 function savePrefs(){try{localStorage.setItem(KEY_PREFS,JSON.stringify(db.settings));}catch(e){}}
 function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}return mem?JSON.parse(JSON.stringify(mem)):null;}
 
-function persist(){
-  // 1. Salva local imediatamente
+function persist(skipRender){
+  _lastEdit=Date.now();
   try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){mem=JSON.parse(JSON.stringify(db));}
   savePrefs();
-  // 2. Envia para Firebase com debounce de 1s
+  if(!skipRender)render();
   if(syncTimer)clearTimeout(syncTimer);
-  syncTimer=setTimeout(sendToFirebase,1000);
+  syncTimer=setTimeout(sendToFirebase,1500);
   updateSyncBadge();
 }
 
@@ -517,7 +517,11 @@ function updateSyncBadge(){
 }
 
 // Auto-pull a cada 10s — sem bloqueio
-setInterval(()=>{if(!_syncing)pullFromFirebase();},10000);
+let _lastEdit=0;
+setInterval(()=>{
+  // Não puxa do Firebase se editou nos últimos 30s — evita sobrescrever dados locais
+  if(!_syncing&&(Date.now()-_lastEdit)>30000)pullFromFirebase();
+},10000);
 /* ===== config ===== */
 const TYPES={
   'Onboarding':{badge:'--blue',bar:'#3b82f6'},
@@ -1586,7 +1590,7 @@ function saveMacro(id){
   const obj={id:id||'mc'+Date.now(),topic,dataSolic:document.getElementById('mc_solic').value.trim(),dateConc:document.getElementById('mc_conc').value.trim(),caixa:document.getElementById('mc_caixa').value,status:document.getElementById('mc_status').value,detail:document.getElementById('mc_detail').value.trim(),month:db.current};
   if(!db.macros)db.macros=[];
   if(id){const i=db.macros.findIndex(m=>m.id===id);if(i>=0)db.macros[i]=obj;}else db.macros.push(obj);
-  persist();closeModal();render();toast(id?'Macro atualizada':'Macro salva');
+  persist(true);closeModal();render();toast(id?'Macro atualizada':'Macro salva');
 }
 
 /* ===== MODAIS DE EDIÇÃO ===== */
@@ -1604,7 +1608,7 @@ function _actionFormBody(a){
     +'<div class="full fld"><label>Observação</label><textarea id="m_obs" rows="3">'+(a?esc(a.desc||''):'')+'</textarea></div>';
 }
 function editActionModal(id){const a=db.actions.find(x=>x.id===id);if(!a)return;modalPrio=a.priority||'Alta';show('<div class="modal"><h2>Editar Ação <button class="close" onclick="closeModal()">✕</button></h2>'+_actionFormBody(a)+'<div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="updateAction(\''+id+'\')">Salvar</button></div></div>');}
-function updateAction(id){const a=db.actions.find(x=>x.id===id);if(!a)return;const title=document.getElementById('m_title').value.trim();if(!title){toast('Informe o título');return;}a.type=document.getElementById('m_type').value;a.title=title;a.who=document.getElementById('m_who').value.trim();a.dataSolic=document.getElementById('m_solic').value.trim();a.dateConc=document.getElementById('m_conc').value.trim();a.priority=modalPrio;a.status=document.getElementById('m_status').value;a.desc=document.getElementById('m_obs').value.trim();persist();closeModal();render();toast('Ação atualizada');}
+function updateAction(id){const a=db.actions.find(x=>x.id===id);if(!a)return;const title=document.getElementById('m_title').value.trim();if(!title){toast('Informe o título');return;}a.type=document.getElementById('m_type').value;a.title=title;a.who=document.getElementById('m_who').value.trim();a.dataSolic=document.getElementById('m_solic').value.trim();a.dateConc=document.getElementById('m_conc').value.trim();a.priority=modalPrio;a.status=document.getElementById('m_status').value;a.desc=document.getElementById('m_obs').value.trim();persist(true);closeModal();render();toast('Ação atualizada');}
 
 function _docFormBody(d){
   const st=DOC_STATUS.map(s=>'<option '+(d&&d.status===s?'selected':'')+'>'+s+'</option>').join('');
@@ -1617,12 +1621,12 @@ function _docFormBody(d){
     +'<div class="full fld"><label>Descrição</label><textarea id="d_desc" rows="3">'+(d?esc(d.desc||''):'')+'</textarea></div>';
 }
 function editDocModal(id){const d=db.docs.find(x=>x.id===id);if(!d)return;modalPrio=d.priority||'Alta';show('<div class="modal"><h2>Editar Documentação <button class="close" onclick="closeModal()">✕</button></h2>'+_docFormBody(d)+'<div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="updateDoc(\''+id+'\')">Salvar</button></div></div>');}
-function updateDoc(id){const d=db.docs.find(x=>x.id===id);if(!d)return;const title=document.getElementById('d_title').value.trim();if(!title){toast('Informe o título');return;}d.title=title;d.dataSolic=document.getElementById('d_solic').value.trim();d.dateConc=document.getElementById('d_conc').value.trim();d.priority=modalPrio;d.status=document.getElementById('d_status').value;d.desc=document.getElementById('d_desc').value.trim();persist();closeModal();render();toast('Documentação atualizada');}
+function updateDoc(id){const d=db.docs.find(x=>x.id===id);if(!d)return;const title=document.getElementById('d_title').value.trim();if(!title){toast('Informe o título');return;}d.title=title;d.dataSolic=document.getElementById('d_solic').value.trim();d.dateConc=document.getElementById('d_conc').value.trim();d.priority=modalPrio;d.status=document.getElementById('d_status').value;d.desc=document.getElementById('d_desc').value.trim();persist(true);closeModal();render();toast('Documentação atualizada');}
 
 function openActionModal(){modalPrio='Alta';show('<div class="modal"><h2>Nova Ação <button class="close" onclick="closeModal()">✕</button></h2>'+_actionFormBody(null)+'<div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveAction()">Salvar Ação</button></div></div>');}
-function saveAction(){const title=document.getElementById('m_title').value.trim();if(!title){toast('Informe o tema/título');return;}db.actions.push({id:'a'+Date.now(),type:document.getElementById('m_type').value,title,who:document.getElementById('m_who').value.trim(),dataSolic:document.getElementById('m_solic').value.trim(),dateConc:document.getElementById('m_conc').value.trim(),priority:modalPrio,status:document.getElementById('m_status').value,month:db.current,desc:document.getElementById('m_obs').value.trim()});persist();closeModal();go('treinamentos');toast('Ação salva');}
+function saveAction(){const title=document.getElementById('m_title').value.trim();if(!title){toast('Informe o tema/título');return;}db.actions.push({id:'a'+Date.now(),type:document.getElementById('m_type').value,title,who:document.getElementById('m_who').value.trim(),dataSolic:document.getElementById('m_solic').value.trim(),dateConc:document.getElementById('m_conc').value.trim(),priority:modalPrio,status:document.getElementById('m_status').value,month:db.current,desc:document.getElementById('m_obs').value.trim()});persist(true);closeModal();go('treinamentos');toast('Ação salva');}
 function openDocModal(){modalPrio='Alta';show('<div class="modal"><h2>Nova Documentação <button class="close" onclick="closeModal()">✕</button></h2>'+_docFormBody(null)+'<div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveDoc()">Salvar Doc</button></div></div>');}
-function saveDoc(){const title=document.getElementById('d_title').value.trim();if(!title){toast('Informe o título');return;}db.docs.push({id:'d'+Date.now(),title,dataSolic:document.getElementById('d_solic').value.trim(),dateConc:document.getElementById('d_conc').value.trim(),priority:modalPrio,status:document.getElementById('d_status').value,month:db.current,desc:document.getElementById('d_desc').value.trim()});persist();closeModal();go('documentacao');toast('Documentação salva');}
+function saveDoc(){const title=document.getElementById('d_title').value.trim();if(!title){toast('Informe o título');return;}db.docs.push({id:'d'+Date.now(),title,dataSolic:document.getElementById('d_solic').value.trim(),dateConc:document.getElementById('d_conc').value.trim(),priority:modalPrio,status:document.getElementById('d_status').value,month:db.current,desc:document.getElementById('d_desc').value.trim()});persist(true);closeModal();go('documentacao');toast('Documentação salva');}
 function openPdiModal(){modalPrio='Média';show(`<div class="modal"><h2>Novo PDI <button class="close" onclick="closeModal()">✕</button></h2>
     <div class="full fld"><label>Analista</label><input id="pd_an" placeholder="Nome do analista"></div>
     <div class="row"><div class="fld"><label>Data da solicitação</label><input id="pd_solic" placeholder="dd/mm/aaaa"></div><div class="fld"><label>Data de conclusão</label><input id="pd_conc" placeholder="dd/mm/aaaa"></div></div>
@@ -1639,7 +1643,7 @@ function savePdi(editId){const an=document.getElementById('pd_an').value.trim(),
   const m={slaB:gv('pd_sla'),slaA:0,crB:gv('pd_cr'),crA:0,cfB:gv('pd_cf'),cfA:0,tmaB:gv('pd_tma'),tmaA:0,csB:gv('pd_cs'),csA:0};
   if(editId){const p=db.pdis.find(x=>x.id===editId);if(p){p.analyst=an;p.title=title;p.dataSolic=document.getElementById('pd_solic').value.trim();p.dateConc=document.getElementById('pd_conc').value.trim();p.obs=document.getElementById('pd_obs').value.trim();p.m.slaB=m.slaB||p.m.slaB;p.m.crB=m.crB||p.m.crB;p.m.cfB=m.cfB||p.m.cfB;p.m.tmaB=m.tmaB||p.m.tmaB;p.m.csB=m.csB||p.m.csB;}}
   else db.pdis.push({id:'p'+Date.now(),analyst:an,title,dataSolic:document.getElementById('pd_solic').value.trim(),dateConc:document.getElementById('pd_conc').value.trim(),priority:modalPrio,status:'Pendente',month:db.current,obs:document.getElementById('pd_obs').value.trim(),m,hasResults:false});
-  persist();closeModal();go('pdis');toast(editId?'PDI atualizado':'PDI criado');}
+  persist(true);closeModal();go('pdis');toast(editId?'PDI atualizado':'PDI criado');}
 function editPdiModal(id){const p=db.pdis.find(x=>x.id===id);if(!p)return;show(`<div class="modal"><h2>Editar PDI <button class="close" onclick="closeModal()">✕</button></h2>
     <div class="full fld"><label>Analista</label><input id="pd_an" value="${esc(p.analyst)}"></div>
     <div class="row"><div class="fld"><label>Data da solicitação</label><input id="pd_solic" value="${esc(p.dataSolic||'')}"></div><div class="fld"><label>Data de conclusão</label><input id="pd_conc" value="${esc(p.dateConc||'')}"></div></div>
