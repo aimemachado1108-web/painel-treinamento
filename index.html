@@ -473,12 +473,14 @@ async function pullFromFirebase(){
     const prefs=loadPrefs()||db.settings||defaultSettings();
     const curMonth=db.current;
     let bim=null;try{bim=localStorage.getItem('ob_bimestre');}catch(e){}
-    const curBim=db.onboardingBimestre; // preservar seleção atual
+    const curBim=db.onboardingBimestre;
+    // Preservar feedbacks locais se existirem (podem ser mais recentes que Firebase)
+    const localFeedbacks=db.onboardingFeedbacks&&db.onboardingFeedbacks.length?db.onboardingFeedbacks:null;
+    const localFeedbacksCount=localFeedbacks?localFeedbacks.length:0;
     db=data;
     db.settings=prefs;
     db.settings.titles=Object.assign({},DEFAULT_TITLES,db.settings.titles||{});
     if(curMonth&&db.months&&toArr(db.months).includes(curMonth))db.current=curMonth;
-    // Bimestre: localStorage > seleção atual > Firebase > padrão
     db.onboardingBimestre=bim||curBim||db.onboardingBimestre||'2025-07';
     // Normalizar todos os arrays
     db.pdis=toArr(db.pdis);
@@ -489,6 +491,10 @@ async function pullFromFirebase(){
     db.roster=toArr(db.roster);
     db.months=toArr(db.months);
     db.onboardingFeedbacks=toArr(db.onboardingFeedbacks);
+    // Se tínhamos mais feedbacks localmente do que o Firebase retornou, manter os locais
+    if(localFeedbacks&&localFeedbacksCount>db.onboardingFeedbacks.length){
+      db.onboardingFeedbacks=localFeedbacks;
+    }
     db.caixas=toArr(db.caixas);
     if(!db.caixas.length)db.caixas=DEFAULT_CAIXAS.slice();
     if(!db.current)db.current=db.months[db.months.length-1]||'Junho 2026';
@@ -1354,7 +1360,7 @@ function doImportOnboarding(){
       if(isXlsx){
         const wb=XLSX.read(r.result,{type:'array',cellDates:true});
         const ws=wb.Sheets[wb.SheetNames[0]];
-        rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false}).filter(rw=>rw.some(c=>String(c||'').trim()));
+        rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false}).filter(rw=>rw.some(c=>c!==null&&c!==undefined&&String(c).trim()!==''));
       } else {
         rows=parseCSV(r.result,detectDelim(r.result)).filter(rw=>rw.some(c=>c&&c.trim()));
       }
@@ -1379,9 +1385,12 @@ function doImportOnboarding(){
       const nomeI=low.findIndex(h=>h==='nome'||h==='analista'||h==='nome do analista');
       const caixaI=fi('caixa');
       const get=(rw,i)=>i>=0&&rw[i]!=null?String(rw[i]).trim():'';
+      const getRaw=(rw,i)=>i>=0?rw[i]:null; // retorna valor original (pode ser Date)
       // Parser de data robusto — aceita MM/DD/YYYY, YYYY-MM-DD, hora com ou sem zero
       function parseDate(s){
         if(!s)return new Date();
+        // Se já é objeto Date (xlsx com cellDates:true retorna Date object)
+        if(s instanceof Date)return isNaN(s.getTime())?new Date():s;
         s=String(s).trim();
         // Formato MM/DD/YYYY H:MM:SS ou MM/DD/YYYY HH:MM:SS
         const mdy=/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[\s,T]+(\d{1,2}):(\d{2}):(\d{2}))?/;
@@ -1395,8 +1404,9 @@ function doImportOnboarding(){
         // Formato ISO ou YYYY-MM-DD
         const d=new Date(s.replace(' ','T'));
         return isNaN(d)?new Date():d;
-      }      const newFb=rows.slice(1).map(rw=>{
-        const dateRaw=get(rw,dateI);
+      }
+      const newFb=rows.slice(1).map(rw=>{
+        const dateRaw=getRaw(rw,dateI);
         const date=parseDate(dateRaw).toISOString();
         return {date,
           geral:get(rw,geralI),duracao:get(rw,duracaoI),materiais:get(rw,matI),
@@ -1416,10 +1426,16 @@ function doImportOnboarding(){
       db.onboardingBimestre=bim;
       try{localStorage.setItem('ob_bimestre',bim);}catch(e){}
       try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
+      // Marcar edição agora para bloquear pull automático por 60s
+      _lastEdit=Date.now();
       route={page:'onboarding',pdiId:null,teamId:null};
       render();
-      sendToFirebase().catch(()=>{});
-      toast('✓ '+newFb.length+' avaliações — '+bimestreLabel(bim));
+      // Push imediato e síncrono — garantir que Firebase recebe ANTES do próximo pull
+      sendToFirebase().then(()=>{
+        toast('✓ '+newFb.length+' avaliações salvas — '+bimestreLabel(bim));
+      }).catch(()=>{
+        toast('✓ '+newFb.length+' avaliações importadas — '+bimestreLabel(bim));
+      });
     }catch(err){toast('Erro: '+err.message);console.error(err);}
   };
   if(isXlsx)r.readAsArrayBuffer(f);else r.readAsText(f,'utf-8');
