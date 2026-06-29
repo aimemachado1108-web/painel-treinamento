@@ -446,13 +446,15 @@ async function pushByParts(payload){
 }
 
 async function pullFromFirebase(){
-  // NUNCA bloqueia o pull — leitura independente do push
-  if(_pushing)return false; // só evita conflito durante push ativo
+  if(_pushing)return false;
   syncStatus='syncing';updateSyncBadge();
   try{
     const r=await fetch(FB_URL);
     if(!r.ok){syncStatus='error';updateSyncBadge();return false;}
     const data=await r.json();
+    console.log('Firebase retornou:', JSON.stringify(data).slice(0,300));
+    console.log('months:', data&&data.months);
+    console.log('actions count:', data&&data.actions&&(Array.isArray(data.actions)?data.actions.length:Object.keys(data.actions||{}).length));
     if(data&&typeof data==='object'&&data.months){
       const localPrefs=loadPrefs()||db.settings||defaultSettings();
       // Preservar semestre selecionado localmente
