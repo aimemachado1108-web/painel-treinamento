@@ -1381,13 +1381,12 @@ function importOnboarding(){
     // Sempre substitui o semestre detectado
     db.onboardingFeedbacks=db.onboardingFeedbacks.filter(f=>!inBimestre(f.date,bimestreDetectado));
     db.onboardingFeedbacks.push(...newFb);
-    // Atualiza o semestre exibido para o semestre importado
     db.onboardingBimestre=bimestreDetectado;
     try{localStorage.setItem('ob_bimestre',bimestreDetectado);}catch(e){}
-    persist(true);closeModal();
-    db.onboardingBimestre=bimestreDetectado;
-    try{localStorage.setItem('ob_bimestre',bimestreDetectado);}catch(e){}
-    render();
+    try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
+    closeModal();
+    go('onboarding');
+    sendToFirebase().catch(()=>{});
     toast(newFb.length+' avaliações importadas para '+bimestreLabel(bimestreDetectado));
   }catch(e){toast('Erro: '+e.message);console.error(e);}};
   if(isXlsx)r.readAsArrayBuffer(f);else r.readAsText(f,'utf-8');
