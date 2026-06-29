@@ -451,11 +451,13 @@ async function pullFromFirebase(){
     const data=await r.json();
     if(data&&typeof data==='object'&&data.months){
       const localPrefs=loadPrefs()||db.settings||defaultSettings();
-      // Preservar semestre selecionado localmente
+      const currentMonth=db.current; // preservar mês atual
       let _savedBimestre=null;
       try{_savedBimestre=localStorage.getItem('ob_bimestre');}catch(e){}
       db=data;
       db.settings=localPrefs;
+      // Preservar mês selecionado pelo usuário
+      if(currentMonth&&db.months&&db.months.includes(currentMonth))db.current=currentMonth;
       if(_savedBimestre)db.onboardingBimestre=_savedBimestre;
       db.settings.titles=Object.assign({},DEFAULT_TITLES,db.settings.titles||{});
       /* Firebase omite arrays vazios e converte arrays em objetos — corrigir tudo */
@@ -664,6 +666,9 @@ function render(){
   if(_dtEl)_dtEl.textContent=_dias[_now.getDay()]+', '+_now.getDate()+' de '+_meses[_now.getMonth()]+' de '+_now.getFullYear();
   renderNav();
   document.getElementById('monthSel').innerHTML=db.months.map(m=>`<option ${m===db.current?'selected':''}>${m}</option>`).join('');
+  // Garantir que o mês selecionado persiste
+  const _selEl=document.getElementById('monthSel');
+  if(_selEl&&_selEl.value!==db.current){_selEl.value=db.current;}
   document.getElementById('tb-title').textContent=T(route.page);
   const fn={visao:viewVisao,'impacto-pdi':viewImpactoPdi,'impacto-treino':viewImpactoTreino,pdis:viewPdis,treinamentos:viewTreinos,documentacao:viewDocs,macros:viewMacros,onboarding:viewOnboarding,organograma:viewOrganograma,planilha:viewPlanilha,importar:viewImportar}[route.page];
   document.getElementById('content').innerHTML=fn();
