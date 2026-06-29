@@ -387,7 +387,7 @@ function persist(skipRender){
   _lastEdit=Date.now();
   try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){mem=JSON.parse(JSON.stringify(db));}
   savePrefs();
-  if(!skipRender)render();
+  if(!skipRender&&document.getElementById('content'))render();
   if(syncTimer)clearTimeout(syncTimer);
   syncTimer=setTimeout(sendToFirebase,1500);
   updateSyncBadge();
@@ -449,74 +449,68 @@ async function pullFromFirebase(){
     const r=await fetch(FB_URL+'?t='+Date.now());
     if(!r.ok){syncStatus='error';updateSyncBadge();return false;}
     const data=await r.json();
-    if(data&&typeof data==='object'&&data.months){
-      // Proteção: só usa dados do Firebase se tiver ações/pdis
-      // Se local tem mais dados que Firebase, não sobrescreve
-      const fbTotal=(data.actions?Object.values(data.actions).length:0)
-                   +(data.pdis?Object.values(data.pdis).length:0)
-                   +(data.docs?Object.values(data.docs).length:0);
-      const localTotal=(db.actions||[]).length+(db.pdis||[]).length+(db.docs||[]).length;
-      if(localTotal>fbTotal&&Date.now()-_lastEdit<120000){
-        // Local tem mais dados e foi editado nos últimos 2 min — não sobrescreve
-        syncStatus='ok';lastSyncTime=new Date();updateSyncBadge();
-        return false;
-      }
-      const localPrefs=loadPrefs()||db.settings||defaultSettings();
-      const currentMonth=db.current;
-      let _savedBimestre=null;
-      try{_savedBimestre=localStorage.getItem('ob_bimestre');}catch(e){}
-      db=data;
-      db.settings=localPrefs;
-      if(currentMonth&&db.months&&db.months.includes(currentMonth))db.current=currentMonth;
-      if(_savedBimestre)db.onboardingBimestre=_savedBimestre;
-      db.settings.titles=Object.assign({},DEFAULT_TITLES,db.settings.titles||{});
-      /* Firebase omite arrays vazios e converte arrays em objetos — corrigir tudo */
-      const toArr=v=>!v?[]:Array.isArray(v)?v:Object.values(v);
-      db.pdis=toArr(db.pdis);
-      db.actions=toArr(db.actions);
-      db.docs=toArr(db.docs);
-      db.teamTrainings=toArr(db.teamTrainings);
-      db.macros=toArr(db.macros);
-      db.roster=toArr(db.roster);
-      db.months=toArr(db.months);
-      db.onboardingFeedbacks=toArr(db.onboardingFeedbacks);
-      if(!db.caixas||!db.caixas.length)db.caixas=DEFAULT_CAIXAS.slice();
-      else db.caixas=toArr(db.caixas);
-      if(db.caixas.indexOf('Suporte Max')<0)db.caixas.push('Suporte Max');
-      if(!db.current)db.current=db.months[db.months.length-1]||'Junho 2026';
-      /* Sanitizar campos de string em pdis/actions/docs */
-      const sanitizeDate=v=>v===null||v===undefined?'':String(v);
-      db.pdis.forEach(p=>{p.dataSolic=sanitizeDate(p.dataSolic);p.dateConc=sanitizeDate(p.dateConc);p.date=sanitizeDate(p.date);});
-      db.actions.forEach(a=>{a.dataSolic=sanitizeDate(a.dataSolic);a.dateConc=sanitizeDate(a.dateConc);a.date=sanitizeDate(a.date);});
-      db.docs.forEach(d=>{d.dataSolic=sanitizeDate(d.dataSolic);d.dateConc=sanitizeDate(d.dateConc);});
-      db.macros.forEach(m=>{m.dataSolic=sanitizeDate(m.dataSolic);m.dateConc=sanitizeDate(m.dateConc);});
-      /* Garantir arrays dentro de teamTrainings e reconstruir answers */
-      db.teamTrainings.forEach(t=>{
-        t.results=toArr(t.results);
-        t.caixas=toArr(t.caixas);
-        t.questions=toArr(t.questions);
-        t.date=sanitizeDate(t.date);
-        t.results.forEach(r=>{
-          r.analista=r.analista||'';r.caixa=r.caixa||'';
-          // Reconstruir answers a partir de answersArr
-          if(r.answersArr&&t.questions.length){
-            r.answers={};
-            t.questions.forEach((q,i)=>{r.answers[q]=r.answersArr[i];});
-          }
-          if(!r.answers)r.answers={};
-        });
-      });
-      try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
-      syncStatus='ok';lastSyncTime=new Date();updateSyncBadge();
-      applyTheme();
-      // Preserva o semestre selecionado — não deixa o Firebase sobrescrever
-      if(db.onboardingBimestre){}
-      render();
-      return true;
+    if(!data||typeof data!=='object'||!data.months){
+      syncStatus='ok';updateSyncBadge();return false;
     }
-    syncStatus='ok';updateSyncBadge();return false;
-  }catch(e){syncStatus='error';updateSyncBadge();console.warn('Firebase pull:',e);return false;}
+    // Proteção: não sobrescreve se local tem mais dados e foi editado recentemente
+    const toArr=v=>!v?[]:Array.isArray(v)?v:Object.values(v);
+    const fbTotal=toArr(data.actions).length+toArr(data.pdis).length+toArr(data.docs).length;
+    const localTotal=(db.actions||[]).length+(db.pdis||[]).length+(db.docs||[]).length;
+    if(localTotal>fbTotal&&(Date.now()-_lastEdit)<120000){
+      syncStatus='ok';lastSyncTime=new Date();updateSyncBadge();return false;
+    }
+    // Aplica dados do Firebase
+    const prefs=loadPrefs()||db.settings||defaultSettings();
+    const curMonth=db.current;
+    let bim=null;try{bim=localStorage.getItem('ob_bimestre');}catch(e){}
+    db=data;
+    db.settings=prefs;
+    db.settings.titles=Object.assign({},DEFAULT_TITLES,db.settings.titles||{});
+    if(curMonth&&db.months&&toArr(db.months).includes(curMonth))db.current=curMonth;
+    if(bim)db.onboardingBimestre=bim;
+    // Normalizar todos os arrays
+    db.pdis=toArr(db.pdis);
+    db.actions=toArr(db.actions);
+    db.docs=toArr(db.docs);
+    db.teamTrainings=toArr(db.teamTrainings);
+    db.macros=toArr(db.macros);
+    db.roster=toArr(db.roster);
+    db.months=toArr(db.months);
+    db.onboardingFeedbacks=toArr(db.onboardingFeedbacks);
+    db.caixas=toArr(db.caixas);
+    if(!db.caixas.length)db.caixas=DEFAULT_CAIXAS.slice();
+    if(!db.current)db.current=db.months[db.months.length-1]||'Junho 2026';
+    if(!db.roster||!db.roster.length)db.roster=defaultRoster();
+    if(!db.macros)db.macros=[];
+    // Sanitizar datas
+    const sd=v=>v==null?'':String(v);
+    db.pdis.forEach(p=>{p.dataSolic=sd(p.dataSolic);p.dateConc=sd(p.dateConc);p.date=sd(p.date);});
+    db.actions.forEach(a=>{a.dataSolic=sd(a.dataSolic);a.dateConc=sd(a.dateConc);a.date=sd(a.date);});
+    db.docs.forEach(d=>{d.dataSolic=sd(d.dataSolic);d.dateConc=sd(d.dateConc);});
+    db.macros.forEach(m=>{if(m){m.dataSolic=sd(m.dataSolic);m.dateConc=sd(m.dateConc);}});
+    db.teamTrainings.forEach(t=>{
+      t.results=toArr(t.results);t.caixas=toArr(t.caixas);t.questions=toArr(t.questions);
+      t.date=sd(t.date);
+      t.results.forEach(r=>{
+        r.analista=r.analista||'';r.caixa=r.caixa||'';
+        if(r.answersArr&&t.questions.length){r.answers={};t.questions.forEach((q,i)=>{r.answers[q]=r.answersArr[i];});}
+        if(!r.answers)r.answers={};
+      });
+    });
+    try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
+    syncStatus='ok';lastSyncTime=new Date();updateSyncBadge();
+    applyTheme();render();
+    return true;
+  }catch(e){
+    syncStatus='error';updateSyncBadge();
+    console.warn('pull error:',e);
+    // Se deu erro mas localStorage tem dados, renderiza com o local
+    const local=load();
+    if(local&&local.months){db=local;render();}
+    return false;
+  }
 }
+
 
 function updateSyncBadge(){
   const el=document.getElementById('sync-badge');if(!el)return;
@@ -578,7 +572,7 @@ function seed(){
     settings:defaultSettings(),
     caixas:DEFAULT_CAIXAS.slice(),
     roster:defaultRoster(),
-    months:['Junho 2026'], current:'Junho 2026',
+    months:['Maio 2026','Junho 2026'], current:'Junho 2026',
     pdis:[],actions:[],docs:[],teamTrainings:[],macros:[],
     onboardingFeedbacks:[],onboardingBimestre:'2025-07'
   };
@@ -617,7 +611,7 @@ else db.onboardingFeedbacks=toArr(db.onboardingFeedbacks);
 // Restaurar semestre salvo localmente (preferência do usuário)
 try{const _ob=localStorage.getItem('ob_bimestre');if(_ob)db.onboardingBimestre=_ob;}catch(e){}
 if(!db.onboardingBimestre)db.onboardingBimestre='2025-07'; // padrão: Jul–Dez 2025
-persist();
+try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
 
 /* ===== nav / routing ===== */
 const NAV=[
