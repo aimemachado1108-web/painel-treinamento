@@ -729,7 +729,7 @@ function viewVisao(){
   const totalTot=allResults.reduce((s,r)=>s+(typeof r.ac==='number'?r.ac+(typeof r.er==='number'?r.er:0):0),0);
   const avgAcert=totalTot?Math.round(totalAc/totalTot*100):0;
   const isDone=x=>x.status==='Concluído'||(x.status==='Material pronto'&&x._tipo==='doc');
-  const all=[...pdis.map(p=>({type:'PDI',status:p.status})),...acts.map(a=>({type:a.type,status:a.status})),...docs.map(d=>({type:'Documentação',status:d.status,_tipo:'doc'})),...teams.map(t=>({type:'Treinamento de time',status:t.status}))];
+  const all=[...pdis.map(p=>({type:'PDI',status:p.status})),...acts.map(a=>({type:a.type,status:a.status})),...docs.map(d=>({type:'Documentação',status:d.status,_tipo:'doc'}))];
   const total=all.length,concl=all.filter(x=>isDone(x)).length,pend=all.filter(x=>x.status==='Pendente').length,andamento=total-concl-pend;
   const done=pdis.filter(p=>p.hasResults);
   const melhora=done.length?round(done.reduce((s,p)=>s+pdiOverall(p),0)/done.length,1):0;
@@ -745,8 +745,7 @@ function viewVisao(){
     const allItens=[
       ...db.pdis.filter(x=>x.month===mn),
       ...db.actions.filter(x=>x.month===mn),
-      ...db.docs.filter(x=>x.month===mn),
-      ...db.teamTrainings.filter(x=>x.month===mn)
+      ...db.docs.filter(x=>x.month===mn)
     ];
     const total=allItens.length;
     const done=allItens.filter(x=>x.status==='Concluído'||(x.status==='Material pronto'&&db.docs.find(d=>d.id===x.id))).length;
@@ -1515,7 +1514,7 @@ function importRoster(){const f=document.getElementById('orgCsv').files[0];if(!f
 
 /* ---------- PLANILHA ---------- */
 function viewPlanilha(){
-  const rows=[...inMonth(db.pdis).map(p=>({tipo:'PDI',titulo:p.title,quem:p.analyst,data:p.date,prio:p.priority,status:p.status})),...inMonth(db.actions).map(a=>({tipo:a.type,titulo:a.title,quem:a.who,data:a.date,prio:a.priority,status:a.status})),...inMonth(db.docs).map(d=>({tipo:'Documentação',titulo:d.title,quem:'—',data:d.month,prio:d.priority,status:d.status})),...inMonth(db.teamTrainings).map(t=>({tipo:'Treinamento de time',titulo:t.title,quem:'Time',data:t.date,prio:'—',status:t.status}))];
+  const rows=[...inMonth(db.pdis).map(p=>({tipo:'PDI',titulo:p.title,quem:p.analyst,data:p.date,prio:p.priority,status:p.status})),...inMonth(db.actions).map(a=>({tipo:a.type,titulo:a.title,quem:a.who,data:a.date,prio:a.priority,status:a.status})),...inMonth(db.docs).map(d=>({tipo:'Documentação',titulo:d.title,quem:'—',data:d.month,prio:d.priority,status:d.status}))];
   const tr=rows.map(r=>`<tr><td>${badge(r.tipo)}</td><td><b>${esc(r.titulo)}</b></td><td>${esc(r.quem||'—')}</td><td>${esc(r.data)}</td><td>${esc(r.prio)}</td><td><span class="badge" style="${statusStyle(r.status)}">${esc(r.status)}</span></td></tr>`).join('');
   return `<div class="page-h"><h1>${esc(T('planilha'))}</h1><p>Todas as ações de ${db.current} em uma tabela. Use “↓ CSV” no topo para exportar.</p></div><div class="panel"><div class="wrap-x"><table class="tbl"><thead><tr><th>Tipo</th><th>Título</th><th>Analista / Time</th><th>Data</th><th>Prioridade</th><th>Status</th></tr></thead><tbody>${tr||'<tr><td colspan="6"><div class="empty">Sem registros neste mês.</div></td></tr>'}</tbody></table></div></div>`;
 }
@@ -1729,7 +1728,7 @@ function resetSettings(){db.settings=defaultSettings();savePrefs();applyTheme();
 document.getElementById('monthSel').addEventListener('change',e=>{db.current=e.target.value;persist();render();});
 function addMonth(){const m=prompt('Nome do novo mês (ex: Julho 2026):');if(m&&m.trim()&&!db.months.includes(m.trim())){db.months.push(m.trim());db.current=m.trim();persist();render();}}
 function dl(csv,name){const blob=new Blob(["\ufeff"+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);}
-function exportCSV(){const rows=[['Tipo','Titulo','Analista/Time','Data','Prioridade','Status','Mes']];inMonth(db.pdis).forEach(p=>rows.push(['PDI',p.title,p.analyst,p.date,p.priority,p.status,p.month]));inMonth(db.actions).forEach(a=>rows.push([a.type,a.title,a.who,a.date,a.priority,a.status,a.month]));inMonth(db.docs).forEach(d=>rows.push(['Documentação',d.title,'',d.month,d.priority,d.status,d.month]));inMonth(db.teamTrainings).forEach(t=>rows.push(['Treinamento de time',t.title,'Time',t.date,'',t.status,t.month]));dl(rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n'),`painel-${db.current.replace(' ','-')}.csv`);toast('CSV exportado');}
+function exportCSV(){const rows=[['Tipo','Titulo','Analista/Time','Data','Prioridade','Status','Mes']];inMonth(db.pdis).forEach(p=>rows.push(['PDI',p.title,p.analyst,p.date,p.priority,p.status,p.month]));inMonth(db.actions).forEach(a=>rows.push([a.type,a.title,a.who,a.date,a.priority,a.status,a.month]));inMonth(db.docs).forEach(d=>rows.push(['Documentação',d.title,'',d.month,d.priority,d.status,d.month]));dl(rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n'),`painel-${db.current.replace(' ','-')}.csv`);toast('CSV exportado');}
 
 
 /* ===== controle de edição por senha ===== */
