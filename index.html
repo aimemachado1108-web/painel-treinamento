@@ -1200,7 +1200,9 @@ const OB_QUESTIONS=[
 ];
 
 function viewOnboarding(){
-  if(!db.onboardingBimestre)db.onboardingBimestre=currentBimestreKey();
+  if(!db.onboardingBimestre)db.onboardingBimestre='2025-07';
+  // Recuperar semestre salvo localmente
+  try{const s=localStorage.getItem('ob_bimestre');if(s)db.onboardingBimestre=s;}catch(e){}
   const feedbacks=onboardingInBimestre();
   const keys=bimestreKeys();
   const bSel=keys.map(k=>`<option value="${k}" ${k===db.onboardingBimestre?'selected':''}>${bimestreLabel(k)}</option>`).join('');
@@ -1382,7 +1384,11 @@ function importOnboarding(){
     // Atualiza o semestre exibido para o semestre importado
     db.onboardingBimestre=bimestreDetectado;
     try{localStorage.setItem('ob_bimestre',bimestreDetectado);}catch(e){}
-    persist(true);closeModal();render();toast(newFb.length+' avaliações importadas para '+bimestreLabel(bimestreDetectado));
+    persist(true);closeModal();
+    db.onboardingBimestre=bimestreDetectado;
+    try{localStorage.setItem('ob_bimestre',bimestreDetectado);}catch(e){}
+    render();
+    toast(newFb.length+' avaliações importadas para '+bimestreLabel(bimestreDetectado));
   }catch(e){toast('Erro: '+e.message);console.error(e);}};
   if(isXlsx)r.readAsArrayBuffer(f);else r.readAsText(f,'utf-8');
 }
