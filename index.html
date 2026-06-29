@@ -371,90 +371,84 @@ body.editmode .edit-only-block{display:block!important}
 /* ===== Firebase Realtime Database sync ===== */
 const KEY='painel_treino_suporte_v2';
 const KEY_PREFS='painel_prefs_local'; // aparência — só local, não sincroniza
-const FB_URL='https://painel-aime-default-rtdb.firebaseio.com/painel.json';
+const FB_BASE='https://painel-aime-default-rtdb.firebaseio.com/painel';
+const FB_URL=FB_BASE+'.json';
 let mem=null;
 let syncTimer=null;
 let syncStatus='ok';
 let lastSyncTime=null;
-let pendingSync=false;
-let _pushing=false; // evita push simultâneo
+let _syncing=false;
 
 function loadPrefs(){try{const r=localStorage.getItem(KEY_PREFS);if(r)return JSON.parse(r);}catch(e){}return null;}
 function savePrefs(){try{localStorage.setItem(KEY_PREFS,JSON.stringify(db.settings));}catch(e){}}
 function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}return mem?JSON.parse(JSON.stringify(mem)):null;}
 
 function persist(){
+  // 1. Salva local imediatamente
   try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){mem=JSON.parse(JSON.stringify(db));}
   savePrefs();
-  pendingSync=true;
+  // 2. Envia para Firebase com debounce de 1s
   if(syncTimer)clearTimeout(syncTimer);
-  // Usa forceSyncAll direto — é o método que funciona com o Firebase
-  syncTimer=setTimeout(()=>{forceSyncAll().catch(()=>{});},2000);
+  syncTimer=setTimeout(sendToFirebase,1000);
   updateSyncBadge();
 }
 
-async function pushToFirebase(){
-  if(!pendingSync||_pushing)return;
-  _pushing=true;pendingSync=false;
+async function sendToFirebase(){
+  if(_syncing)return;
+  _syncing=true;
   syncStatus='syncing';updateSyncBadge();
-  try{
-    const payload={...db,settings:undefined};
-    delete payload.settings;
-    const ok=await pushByParts(payload);
-    if(ok){syncStatus='ok';lastSyncTime=new Date();}
-    else{syncStatus='error';pendingSync=true;setTimeout(pushToFirebase,8000);}
-  }catch(e){
-    syncStatus='error';pendingSync=true;
-    setTimeout(pushToFirebase,8000);
-  }
-  _pushing=false;
-  updateSyncBadge();
-}
-
-async function pushByParts(payload){
-  const BASE=FB_URL.replace('.json','');
   const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks','onboardingBimestre'];
-  let ok=true;
-  // Campos simples
-  for(const field of fields){
-    if(payload[field]===undefined)continue;
+  let allOk=true;
+  // Envia campo por campo
+  for(const f of fields){
+    const v=db[f];
+    if(v===undefined||v===null)continue;
     try{
-      const r=await fetch(`${BASE}/${field}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload[field])});
-      if(!r.ok){ok=false;console.warn('pushByParts fail:',field,r.status);}
-    }catch(e){ok=false;console.warn('pushByParts error:',field,e);}
+      const r=await fetch(`${FB_BASE}/${f}.json`,{
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(v)
+      });
+      if(!r.ok)allOk=false;
+    }catch(e){allOk=false;}
   }
-  // teamTrainings: limpa as chaves dos answers (Firebase não aceita chaves com caracteres especiais)
-  if(payload.teamTrainings){
-    const cleaned=(payload.teamTrainings||[]).map(t=>({
-      id:t.id||'',title:t.title||'',date:t.date||'',month:t.month||'',
-      status:t.status||'',errMode:t.errMode||'',
-      caixas:Array.isArray(t.caixas)?t.caixas:[],
-      questions:Array.isArray(t.questions)?t.questions:[],
-      results:(Array.isArray(t.results)?t.results:[]).map(r=>({
+  // teamTrainings separado — converte answers para array
+  try{
+    const tt=(db.teamTrainings||[]).map(t=>({
+      id:t.id||'',title:t.title||'',date:t.date||'',
+      month:t.month||'',status:t.status||'',errMode:t.errMode||'',
+      caixas:t.caixas||[],questions:t.questions||[],
+      results:(t.results||[]).map(r=>({
         analista:r.analista||'',email:r.email||'',caixa:r.caixa||'',
         stars:r.stars||0,ac:r.ac||0,er:r.er||0,feedback:r.feedback||'',
-        answersArr:(Array.isArray(t.questions)?t.questions:[]).map(q=>r.answers?!!r.answers[q]:null)
+        answersArr:(t.questions||[]).map(q=>r.answers?!!r.answers[q]:null)
       }))
     }));
-    try{
-      const r=await fetch(`${BASE}/teamTrainings.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(cleaned)});
-      if(!r.ok){ok=false;console.warn('pushByParts fail: teamTrainings',r.status,await r.text());}
-    }catch(e){ok=false;console.warn('pushByParts error: teamTrainings',e);}
+    const r=await fetch(`${FB_BASE}/teamTrainings.json`,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(tt)
+    });
+    if(!r.ok)allOk=false;
+  }catch(e){allOk=false;}
+  if(allOk){
+    syncStatus='ok';lastSyncTime=new Date();
+  } else {
+    syncStatus='error';
+    // Tenta de novo em 5s
+    setTimeout(sendToFirebase,5000);
   }
-  if(ok){syncStatus='ok';lastSyncTime=new Date();}
-  else{syncStatus='error';pendingSync=true;setTimeout(pushToFirebase,15000);}
+  _syncing=false;
+  updateSyncBadge();
 }
 
 async function pullFromFirebase(){
-  if(_pushing)return false;
+  if(_syncing)return false;
   syncStatus='syncing';updateSyncBadge();
   try{
-    const r=await fetch(FB_URL);
+    const r=await fetch(FB_URL+'?'+Date.now()); // cache-bust
     if(!r.ok){syncStatus='error';updateSyncBadge();return false;}
     const data=await r.json();
-    console.log('Firebase retornou:', JSON.stringify(data).slice(0,300));
-    console.log('months:', data&&data.months);
-    console.log('actions count:', data&&data.actions&&(Array.isArray(data.actions)?data.actions.length:Object.keys(data.actions||{}).length));
     if(data&&typeof data==='object'&&data.months){
       const localPrefs=loadPrefs()||db.settings||defaultSettings();
       // Preservar semestre selecionado localmente
@@ -521,7 +515,7 @@ function updateSyncBadge(){
 }
 
 // Auto-pull a cada 10s — sem bloqueio
-setInterval(()=>{if(!_pushing)pullFromFirebase();},10000);
+setInterval(()=>{if(!_syncing)pullFromFirebase();},10000);
 /* ===== config ===== */
 const TYPES={
   'Onboarding':{badge:'--blue',bar:'#3b82f6'},
@@ -659,8 +653,6 @@ function upsertRoster(name,email,caixa){
 function applyTheme(){const s=db.settings;document.body.dataset.theme=s.theme;document.body.dataset.fs=s.fontSize;document.body.style.setProperty('--font-body',FONTS[s.bodyFont]||FONTS.Moderna);document.body.style.setProperty('--font-title',FONTS[s.titleFont]||FONTS.Serifada);}
 function initSync(){
   updateSyncBadge();
-  // Pull imediato ao abrir — ignora localStorage e vai direto ao Firebase
-  pendingSync=false;
   pullFromFirebase().catch(()=>{});
 }
 function render(){
