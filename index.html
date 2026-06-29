@@ -679,7 +679,8 @@ function render(){
   if(_selEl&&_selEl.value!==db.current){_selEl.value=db.current;}
   document.getElementById('tb-title').textContent=T(route.page);
   const fn={visao:viewVisao,'impacto-pdi':viewImpactoPdi,'impacto-treino':viewImpactoTreino,pdis:viewPdis,treinamentos:viewTreinos,documentacao:viewDocs,macros:viewMacros,onboarding:viewOnboarding,organograma:viewOrganograma,planilha:viewPlanilha,importar:viewImportar}[route.page];
-  document.getElementById('content').innerHTML=fn();
+  try{document.getElementById('content').innerHTML=fn?fn():'';}
+  catch(e){console.error('render error:',route.page,e);document.getElementById('content').innerHTML='<div class="empty">Erro ao carregar: '+esc(e.message)+'</div>';}
 }
 function renderNav(){document.getElementById('nav').innerHTML=NAV.map(g=>`<div class="navgroup"><div class="label">${g.grp}</div>${g.items.map(it=>`<button class="navitem ${route.page===it.id?'active':''}" onclick="go('${it.id}')"><span class="ic">${it.ic}</span><span>${esc(T(it.id))}</span>${COUNTS[it.id]?`<span class="ct">${COUNTS[it.id]()}</span>`:''}</button>`).join('')}</div>`).join('');}
 
