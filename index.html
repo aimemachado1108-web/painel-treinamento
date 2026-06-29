@@ -686,7 +686,7 @@ function viewVisao(){
 
     <div class="mcard">
       <div class="lbl">Total de ações concluídas<span class="lbl-ic">✓</span></div>
-      <div class="val" style="color:var(--green)">${concl}</div>
+      <div class="val">${concl}</div>
       <span class="tag" style="background:var(--green-soft);color:var(--green-text)">↑ ${total?Math.round(concl/total*100):0}%</span>
     </div>
 
@@ -704,8 +704,8 @@ function viewVisao(){
 
     <div class="mcard">
       <div class="lbl">Melhora média PDIs<span class="lbl-ic">↑</span></div>
-      <div class="val" style="color:var(--amber)">${melhora?'+'+melhora+'%':'—'}</div>
-      <span class="tag" style="background:var(--amber-soft);color:var(--amber-text)">consolidado métricas</span>
+      <div class="val">${melhora?'+'+melhora+'%':'—'}</div>
+      <span class="tag" style="background:var(--green-soft);color:var(--green-text)">consolidado métricas</span>
     </div>
 
     <div class="mcard" style="cursor:pointer" onclick="go('impacto-treino')">
