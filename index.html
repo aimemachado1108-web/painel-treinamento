@@ -409,23 +409,7 @@ async function pushToFirebase(){
   try{
     const payload={...db,settings:undefined};
     delete payload.settings;
-    const json=JSON.stringify(payload);
-    // Tenta PATCH primeiro (mais eficiente que PUT)
-    const r=await fetch(FB_URL,{
-      method:'PUT',
-      headers:{'Content-Type':'application/json'},
-      body:json
-    });
-    if(r.ok){
-      syncStatus='ok';lastSyncTime=new Date();
-    } else if(r.status===413||r.status===400){
-      // Payload muito grande — divide em partes e envia por campo
-      await pushByParts(payload);
-    } else {
-      syncStatus='error';pendingSync=true;
-      setTimeout(pushToFirebase,10000);
-      console.warn('Firebase PUT error:',r.status);
-    }
+    await pushByParts(payload);
   }catch(e){
     syncStatus='error';pendingSync=true;
     setTimeout(pushToFirebase,10000);
