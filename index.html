@@ -407,17 +407,29 @@ async function pushToFirebase(){
   if(!pendingSync)return;
   pendingSync=false;syncStatus='syncing';updateSyncBadge();
   try{
-    /* Envia dados SEM as configurações de aparência */
     const payload={...db,settings:undefined};
     delete payload.settings;
     const r=await fetch(FB_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    if(r.ok){syncStatus='ok';lastSyncTime=new Date();}
-    else{syncStatus='error';console.warn('Firebase PUT error:',r.status);}
-  }catch(e){syncStatus='error';console.warn('Firebase push error:',e);}
+    if(r.ok){
+      syncStatus='ok';lastSyncTime=new Date();
+    } else {
+      // Falhou — reagenda para tentar de novo em 10s
+      syncStatus='error';pendingSync=true;
+      setTimeout(pushToFirebase,10000);
+      console.warn('Firebase PUT error:',r.status);
+    }
+  }catch(e){
+    // Sem conexão — reagenda para tentar de novo em 10s
+    syncStatus='error';pendingSync=true;
+    setTimeout(pushToFirebase,10000);
+    console.warn('Firebase push error:',e);
+  }
   updateSyncBadge();
 }
 
 async function pullFromFirebase(){
+  // Não puxa do Firebase se há dados locais mais recentes aguardando sync
+  if(pendingSync){syncStatus='syncing';updateSyncBadge();return false;}
   syncStatus='syncing';updateSyncBadge();
   try{
     const r=await fetch(FB_URL);
@@ -470,8 +482,8 @@ function updateSyncBadge(){
   el.innerHTML=`<span style="color:${colors[syncStatus]}">${icons[syncStatus]} ${lbl[syncStatus]}</span>`;
 }
 
-// Auto-pull a cada 30s
-setInterval(()=>{if(!pendingSync)pullFromFirebase();},30000);
+// Auto-pull a cada 30s — só puxa se não há dados locais pendentes
+setInterval(()=>{if(!pendingSync&&!syncTimer)pullFromFirebase();},30000);
 /* ===== config ===== */
 const TYPES={
   'Onboarding':{badge:'--blue',bar:'#3b82f6'},
@@ -917,7 +929,13 @@ function viewTeamDetail(id){
 }
 function parseCSV(text,delim){const rows=[];let row=[],f='',i=0,q=false;const D=delim||',';while(i<text.length){const c=text[i];if(q){if(c==='"'){if(text[i+1]==='"'){f+='"';i+=2;continue;}q=false;i++;continue;}f+=c;i++;continue;}if(c==='"'){q=true;i++;continue;}if(c===D){row.push(f);f='';i++;continue;}if(c==='\r'){i++;continue;}if(c==='\n'){row.push(f);rows.push(row);row=[];f='';i++;continue;}f+=c;i++;}if(f!==''||row.length){row.push(f);rows.push(row);}return rows;}
 function detectDelim(text){let i=0,q=false,comma=0,semi=0,tab=0;while(i<text.length){const c=text[i];if(c==='"'){q=!q;i++;continue;}if(!q){if(c===',')comma++;else if(c===';')semi++;else if(c==='\t')tab++;else if(c==='\n')break;}i++;}if(tab>comma&&tab>semi)return '\t';return semi>comma?';':',';}
-function nameFromEmail(e){const l=(e||'').split('@')[0];return l.split(/[._-]+/).filter(Boolean).map(w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase()).join(' ')||e;}
+function nameFromEmail(e){
+  const l=(e||'').split('@')[0];
+  // Converte partes separadas por . _ - em Nome Sobrenome capitalizado
+  const parts=l.split(/[._-]+/).filter(Boolean).map(w=>w.charAt(0).toUpperCase()+w.slice(1).toLowerCase());
+  // Pega só as duas primeiras partes (nome + sobrenome) para não ficar longo
+  return parts.slice(0,2).join(' ')||e;
+}
 function truncate(s,n){s=String(s);return s.length>n?s.slice(0,n-1)+'…':s;}
 function norm(s){return (s||'').toString().replace(/\s+/g,' ').trim().toLowerCase();}
 function deaccent(s){return (s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
@@ -1004,7 +1022,11 @@ function importTeamResults(id){
     rows.slice(1).forEach(rw=>{
       const cell=i=>String(rw[i]===null||rw[i]===undefined?'':rw[i]).trim();
       const email=emailI>=0?cell(emailI):'';
-      const name =nameI>=0?cell(nameI):(email?nameFromEmail(email):'');
+      let name=nameI>=0?cell(nameI):'';
+      // Se não tem nome mas tem email, converte email em nome legível
+      if(!name&&email)name=nameFromEmail(email);
+      // Se o nome parece um email (contém @), converte
+      if(name&&name.includes('@'))name=nameFromEmail(name);
       if(!name) return;
 
       let caixa=caixaI>=0?cell(caixaI):'';
