@@ -7,7 +7,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236d5de0'/><text y='.9em' font-size='70' x='12'>★</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,600&family=Nunito:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 /* ===== themes (light: claro / lilas / roxo · dark) ===== */
@@ -26,8 +26,8 @@
   --card-done:#f1faf3; --card-done-bd:#d2eddb;
   --track:#f1eff8; --bar-alt:#cfc7f3; --input-bg:#fafbff; --hover:#f1eefb; --count-bg:#ece9f8;
   --gold:#f5a623;
-  --font-body:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-  --font-title:'Playfair Display',Georgia,serif;
+  --font-body:'Plus Jakarta Sans','Inter',-apple-system,sans-serif;
+  --font-title:'DM Serif Display',Georgia,serif;
   --fs:14px;
   --radius:12px; --radius-sm:9px;
   --shadow:0 1px 2px rgba(40,30,80,.05);
@@ -46,8 +46,8 @@ body[data-theme="roxo"]{
   --track:#ece2f8; --bar-alt:#c9b6ee; --hover:#ece2f8; --count-bg:#e3d4f7; --input-bg:#faf7fe;
 }
 body[data-theme="dark"]{
-  --bg:#16141f; --surface:#211d2e; --sidebar:#1b1827;
-  --border:#322d44; --border-2:#3f3957;
+  --bg:#0d0b14; --surface:#13101f; --sidebar:#100e1a;
+  --border:#2a2340; --border-2:#352b4a;
   --text:#ece9f5; --text-2:#a9a4bd; --text-3:#787390;
   --purple:#8b7df0; --purple-2:#a99cf7; --purple-dark:#c4bcff; --purple-soft:#2e2845;
   --blue:#60a5fa; --blue-soft:#1e2c47; --blue-text:#93bcf6;
@@ -98,10 +98,10 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 .sidebar{width:212px;flex-shrink:0;background:var(--sidebar);border-right:1px solid var(--border);padding:18px 14px;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
 .brand{display:block;padding:4px}
 .brand .badge-wrap{display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--purple-2),var(--purple-dark));border-radius:12px;padding:10px 12px;box-shadow:0 4px 12px rgba(109,93,224,.25)}
-.brand .star{font-size:18px;flex-shrink:0}
+.brand .star{font-size:13px;margin-right:4px;opacity:.9}
 .brand .brand-text{flex:1;min-width:0}
-.brand .name{font-family:var(--font-body);font-weight:700;font-size:12px;color:#fff;line-height:1.25;white-space:normal;word-break:break-word}
-.brand .sub{font-size:9.5px;color:rgba(255,255,255,.72);margin-top:2px;white-space:normal;word-break:break-word}
+.brand .name{font-family:var(--font-title);font-style:italic;font-weight:400;font-size:13.5px;color:#fff;line-height:1.25;white-space:normal;word-break:break-word}
+.brand .sub{font-size:9px;color:rgba(255,255,255,.55);margin-top:3px;white-space:normal;word-break:break-word;font-weight:400;letter-spacing:.02em}
 .navgroup{margin-top:18px}
 .navgroup .label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);font-weight:600;padding:0 8px 6px}
 .navitem{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:none;color:var(--text-2);padding:8px 10px;border-radius:9px;font-size:.96em;font-weight:500;margin-bottom:2px;font-family:inherit}
@@ -131,7 +131,7 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 .selpill{border:1px solid var(--border-2);background:var(--surface);border-radius:9px;padding:6px 10px;font-size:.86em;font-weight:500;color:var(--text)}
 
 .page-h{margin-bottom:20px}
-.page-h h1{font-family:var(--font-title);font-size:2.1em;font-weight:600;letter-spacing:-.5px}
+.page-h h1{font-family:var(--font-title);font-style:italic;font-weight:400;font-size:2.1em;letter-spacing:-.5px}
 .page-h p{color:var(--text-2);font-size:.96em;margin-top:4px}
 
 .mcards{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:22px}
@@ -219,6 +219,10 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 .acard .desc{font-size:.88em;color:var(--text-2);margin-top:8px;line-height:1.5;border-top:1px solid var(--border);padding-top:8px}
 .acard .rt{display:flex;gap:6px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end}
 .acard .x{border:1px solid var(--border-2);background:var(--surface);border-radius:8px;width:28px;height:26px;display:flex;align-items:center;justify-content:center;color:var(--text-3);font-size:.85em}
+body:not(.editmode) .acard .x{display:none!important}
+body:not(.editmode) .orgx{display:none!important}
+body:not(.editmode) [onclick*="delTeam"]{display:none!important}
+body:not(.editmode) [onclick*="delPdiGroup"]{display:none!important}
 .acard .x:hover{color:var(--red);border-color:var(--red)}
 
 .badge{font-size:.78em;font-weight:600;border-radius:7px;padding:3px 9px;white-space:nowrap}
@@ -302,7 +306,27 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:11px 20px;border-radius:10px;font-size:.9em;opacity:0;transition:.25s;z-index:200;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .hint{font-size:.85em;color:var(--text-3);margin-top:4px}
+/* ===== modo leitura — bloqueio de edição ===== */
+.edit-only{display:none!important}
+body.editmode .edit-only{display:inline-flex!important}
+body.editmode .edit-only-flex{display:flex!important}
+body.editmode .edit-only-grid{display:grid!important}
+body.editmode .edit-only-block{display:block!important}
+.lock-btn{background:none;border:none;cursor:pointer;font-size:16px;padding:2px 4px;border-radius:6px;color:var(--text-3);transition:.15s}
+.lock-btn:hover{color:var(--purple)}
 
+
+
+@media print{
+  .sidebar,.topbar,.overlay,.toast,.edit-only,.lock-btn,.cog,.filters .ft,.acard .x,.orgx,.btn{display:none!important}
+  .main{width:100%}
+  .app{display:block}
+  body{background:#fff;color:#000;font-size:12px}
+  .mcard,.panel,.acard,.folder{break-inside:avoid;box-shadow:none;border:1px solid #ccc}
+  .mcards{grid-template-columns:repeat(3,1fr)!important}
+  .acards-grid{grid-template-columns:1fr!important}
+  h1{font-size:1.6em}
+}
 @media(max-width:760px){
   .app{flex-direction:column}
   .sidebar{width:100%;height:auto;position:static;flex-direction:row;flex-wrap:wrap;gap:6px;align-items:center}
@@ -317,25 +341,24 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
   <aside class="sidebar">
     <div class="brand">
       <div class="badge-wrap">
-        <span class="star">★</span>
         <div class="brand-text">
-          <div class="name">Treinamento Suporte</div>
+          <div class="name"><span class="star">★</span> Treinamento Suporte</div>
           <div class="sub">Desenvolvimento &amp; Impacto B2B</div>
         </div>
       </div>
     </div>
     <nav id="nav"></nav>
-    <div class="sidefoot" onclick="openSettings()"><div class="av">A</div><div><div style="font-size:.86em;font-weight:600">Aimê</div><div style="font-size:.74em;color:var(--text-3)">Treinamento Suporte</div></div><span class="cog">⚙</span></div>
+    <div class="sidefoot"><div class="av" onclick="openSettings()" style="cursor:pointer">A</div><div onclick="openSettings()" style="cursor:pointer;flex:1"><div style="font-size:.86em;font-weight:600">Aimê</div><div style="font-size:.74em;color:var(--text-3)">Treinamento Suporte</div></div><button class="lock-btn" id="lockBtn" onclick="toggleEditMode()" title="Modo edição"></button><span class="cog" onclick="openSettings()" style="cursor:pointer">⚙</span></div>
   </aside>
   <div class="main">
     <header class="topbar">
-      <div><div class="tt" id="tb-title">Visão Geral</div><div class="dt">terça-feira, 9 de junho de 2026</div></div>
+      <div><div class="tt" id="tb-title">Visão Geral</div><div class="dt" id="tb-date"></div></div>
       <div class="actions">
         <span id="sync-badge" style="font-size:.78em;padding:4px 8px"></span>
         <button class="btn sm" id="btn-pull" title="Buscar dados atualizados" onclick="pullFromFirebase().then(ok=>toast(ok?'✓ Atualizado!':'Sem dados novos'))">↻ Atualizar</button>
         <select class="selpill" id="monthSel"></select>
-        <button class="btn icon" title="Novo mês" onclick="addMonth()">+</button>
-        <button class="btn" onclick="exportCSV()">↓ CSV</button>
+        <button class="btn icon edit-only" title="Novo mês" onclick="addMonth()">+</button>
+        <button class="btn" onclick="exportCSV()">↓ CSV</button><button class="btn" onclick="window.print()" title="Exportar como PDF">🖨 PDF</button>
       </div>
     </header>
     <main class="content" id="content" style="width:100%;box-sizing:border-box"></main>
@@ -471,8 +494,8 @@ function defaultRoster(){return [
 
 const FONTS={
   'Sistema':"-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif",
-  'Moderna':"'Inter',-apple-system,sans-serif",
-  'Serifada':"'Playfair Display',Georgia,'Times New Roman',serif",
+  'Moderna':"'Plus Jakarta Sans','Inter',-apple-system,sans-serif",
+  'Serifada':"'DM Serif Display',Georgia,serif",
   'Arredondada':"'Nunito',-apple-system,sans-serif"
 };
 const SIZES={sm:'Pequeno',md:'Médio',lg:'Grande',xl:'Extra'};
@@ -608,6 +631,12 @@ function initSync(){
   setTimeout(()=>pullFromFirebase().catch(()=>{}), 100);
 }
 function render(){
+  // Data automática
+  const _now=new Date();
+  const _dias=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'];
+  const _meses=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const _dtEl=document.getElementById('tb-date');
+  if(_dtEl)_dtEl.textContent=_dias[_now.getDay()]+', '+_now.getDate()+' de '+_meses[_now.getMonth()]+' de '+_now.getFullYear();
   renderNav();
   document.getElementById('monthSel').innerHTML=db.months.map(m=>`<option ${m===db.current?'selected':''}>${m}</option>`).join('');
   document.getElementById('tb-title').textContent=T(route.page);
@@ -657,7 +686,7 @@ function viewVisao(){
 
     <div class="mcard">
       <div class="lbl">Total de ações concluídas<span class="lbl-ic">✓</span></div>
-      <div class="val">${concl}</div>
+      <div class="val" style="color:var(--green)">${concl}</div>
       <span class="tag" style="background:var(--green-soft);color:var(--green-text)">↑ ${total?Math.round(concl/total*100):0}%</span>
     </div>
 
@@ -675,13 +704,13 @@ function viewVisao(){
 
     <div class="mcard">
       <div class="lbl">Melhora média PDIs<span class="lbl-ic">↑</span></div>
-      <div class="val">+${melhora}%</div>
-      <span class="tag" style="background:var(--green-soft);color:var(--green-text)">consolidado métricas</span>
+      <div class="val" style="color:var(--amber)">${melhora?'+'+melhora+'%':'—'}</div>
+      <span class="tag" style="background:var(--amber-soft);color:var(--amber-text)">consolidado métricas</span>
     </div>
 
     <div class="mcard" style="cursor:pointer" onclick="go('impacto-treino')">
       <div class="lbl">Média: Avaliação dos treinamentos<span class="lbl-ic">★</span></div>
-      <div class="val">${avgStarsAll?avgStarsAll+'/5 ★':'—'}</div>
+      <div class="val" style="color:var(--gold)">${avgStarsAll?avgStarsAll+'/5 ★':'—'}</div>
       ${totalAval
         ? `<span class="tag" style="background:var(--green-soft);color:var(--green-text)">✓ ${avgAcert}% acertos</span>`
         : '<span class="tag" style="background:var(--slate-soft);color:var(--slate-text)">sem dados ainda</span>'}
@@ -716,7 +745,26 @@ function viewPdis(){
       +(res?'<span class="chip">✓ com resultados</span>':'<span class="chip" style="color:var(--amber-text);border-color:var(--amber-soft)">resultados pendentes</span>')
       +'</div></div>';
   }).join('');
-  return `<div class="page-h"><h1>${esc(T('pdis'))}</h1><p>Cada pastinha reúne todos os PDIs de um analista.</p></div>${pdis.length?`<div class="folders">${cards}</div>`:'<div class="empty">Nenhum PDI neste mês. Clique em "+ Novo PDI".</div>'}`;
+  // Alertas de PDIs sem resultado há mais de 15 dias
+  const hoje=new Date();
+  const vencidos=inMonth(db.pdis).filter(p=>{
+    if(p.hasResults)return false;
+    if(!p.dataSolic)return false;
+    const dt=parseDateBR(p.dataSolic);
+    if(!dt)return false;
+    return Math.round((hoje-dt)/(864e5))>15;
+  });
+  const alertBanner=vencidos.length?`<div style="background:var(--amber-soft);border:1px solid var(--amber);border-radius:var(--radius);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+    <span style="font-size:1.3em">⚠️</span>
+    <div>
+      <div style="font-weight:600;color:var(--amber-text)">${vencidos.length} PDI${vencidos.length>1?'s':''} aguardando resultados há mais de 15 dias</div>
+      <div style="font-size:.85em;color:var(--amber-text);margin-top:3px">${vencidos.map(p=>esc(p.analyst)).join(', ')} — clique na pasta para preencher os resultados</div>
+    </div>
+  </div>`:'';
+  return `<div class="page-h"><h1>${esc(T('pdis'))}</h1><p>Cada pastinha reúne todos os PDIs de um analista.</p></div>
+  <div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn primary edit-only" onclick="openPdiModal()">+ Novo PDI</button></div>
+  ${alertBanner}
+  ${pdis.length?`<div class="folders">${cards}</div>`:'<div class="empty">Nenhum PDI neste mês.<br><br><button class="btn primary" onclick="openPdiModal()">+ Novo PDI</button></div>'}`;
 }
 function openPdi(id){route.pdiId=id;render();window.scrollTo(0,0);}
 function delPdiGroup(ids){const list=ids.split(',');const p=db.pdis.find(x=>x.id===list[0]);if(!p)return;if(!confirm('Excluir o(s) PDI(s) de "'+p.analyst+'"? Esta ação não pode ser desfeita.'))return;db.pdis=db.pdis.filter(x=>!list.includes(x.id));persist();render();toast('PDI excluído');}
@@ -748,9 +796,12 @@ function savePdiResults(id){const p=db.pdis.find(x=>x.id===id);p.m.slaA=num('f_s
 function setPdiStatus(id,s){db.pdis.find(x=>x.id===id).status=s;persist();render();}
 
 /* ---------- IMPACTO - PDI ---------- */
+let pdiAnalystFilter='Todos';
 function viewImpactoPdi(){
-  const pdis=inMonth(db.pdis).filter(p=>p.hasResults);
-  if(!pdis.length)return `<div class="page-h"><h1>${esc(T('impacto-pdi'))}</h1><p>Consolidado automático de todos os PDIs com resultados preenchidos.</p></div><div class="empty">Nenhum PDI com resultados neste mês ainda.</div>`;
+  const allPdis=inMonth(db.pdis).filter(p=>p.hasResults);
+  if(!allPdis.length)return `<div class="page-h"><h1>${esc(T('impacto-pdi'))}</h1><p>Consolidado automático de todos os PDIs com resultados preenchidos.</p></div><div class="empty">Nenhum PDI com resultados neste mês ainda.</div>`;
+  const analysts=['Todos',...new Set(allPdis.map(p=>p.analyst))];
+  const pdis=pdiAnalystFilter==='Todos'?allPdis:allPdis.filter(p=>p.analyst===pdiAnalystFilter);
   const avg=k=>round(pdis.reduce((s,p)=>s+pdiMetrics(p)[k],0)/pdis.length,1);
   const A={sla:avg('sla'),cr:avg('cr'),cf:avg('cf'),tma:avg('tma'),cs:avg('cs')};
   const card=(l,v)=>`<div style="background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:14px 16px"><div style="font-size:10px;letter-spacing:.05em;text-transform:uppercase;opacity:.85">${l}</div><div style="font-family:'Inter',sans-serif;font-size:1.9em;font-weight:700;margin-top:6px;letter-spacing:-.5px;color:#fff">+${v}%</div><div style="font-size:.78em;opacity:.8;margin-top:2px">↑ melhora</div></div>`;
@@ -761,8 +812,10 @@ function viewImpactoPdi(){
   const impa=byA.map(b=>`<div class="impa"><div class="av">${esc(ini(b.a))}</div><div class="nm">${esc(b.a)}</div><div class="track"><div class="fill" style="width:${b.o/maxO*100}%"></div></div><div class="vl">+${round(b.o,1)}%</div></div>`).join('');
   const ad=(b,a,u,im)=>`${fmt(b)}${u}→<b>${fmt(a)}${u}</b> <span class="${im>=0?'pos':'neg'}">(${im>=0?'+':''}${round(im,1)}%)</span>`;
   const rt=pdis.map(p=>{const x=pdiMetrics(p),m=p.m;return `<tr><td><b>${esc(p.analyst)}</b></td><td style="color:var(--text-2)">${esc(p.title)}</td><td>${ad(m.slaB,m.slaA,'min',x.sla)}</td><td>${ad(m.crB,m.crA,'',x.cr)}</td><td>${ad(m.cfB,m.cfA,'',x.cf)}</td><td>${ad(m.tmaB,m.tmaA,'h',x.tma)}</td><td>${ad(m.csB,m.csA,'%',x.cs)}</td><td class="pos">+${round(pdiOverall(p),1)}%</td></tr>`;}).join('');
+  const filterBtns=analysts.map(a=>`<button class="ft ${pdiAnalystFilter===a?'on':''}" onclick="pdiAnalystFilter='${a.replace(/'/g,"\'")}';render()">${esc(a)}</button>`).join('');
   return `<div class="page-h"><h1>${esc(T('impacto-pdi'))}</h1><p>Consolidado automático de todos os PDIs com resultados preenchidos.</p></div>
-  <div style="background:linear-gradient(120deg,#6d5de0,#5848c4);color:#fff;border-radius:var(--radius);padding:20px 22px;margin-bottom:18px"><div style="font-family:'Inter',sans-serif;font-size:1.25em;font-weight:700;margin-bottom:14px;color:#fff">Impacto consolidado dos PDIs — ${db.current} ✦</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">${card('SLA 1ª resp / média (min)',A.sla)}${card('Chats resp / média dia',A.cr)}${card('Chats fech / média dia',A.cf)}${card('TMA / média dia (h)',A.tma)}${card('CSAT / semanal',A.cs)}</div></div>
+  <div class="filters" style="margin-bottom:18px"><span style="font-size:.85em;color:var(--text-3);align-self:center">Filtrar por analista:</span>${filterBtns}</div>
+  <div style="background:linear-gradient(120deg,#6d5de0,#5848c4);color:#fff;border-radius:var(--radius);padding:20px 22px;margin-bottom:18px"><div style="font-family:'Inter',sans-serif;font-size:1.25em;font-weight:700;margin-bottom:14px;color:#fff">Impacto consolidado dos PDIs — ${db.current}${pdiAnalystFilter!=='Todos'?' · '+esc(pdiAnalystFilter):''} ✦</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">${card('SLA 1ª resp / média (min)',A.sla)}${card('Chats resp / média dia',A.cr)}${card('Chats fech / média dia',A.cf)}${card('TMA / média dia (h)',A.tma)}${card('CSAT / semanal',A.cs)}</div></div>
   <div class="grid2"><div class="panel"><div class="panel-h"><div class="pi">↑</div><h2>Evolução por métrica</h2></div>${evol}</div><div class="panel"><div class="panel-h"><div class="pi">◉</div><h2>Melhora por analista</h2></div>${impa}</div></div>
   <div class="panel"><div class="panel-h"><div class="pi">▦</div><h2>Detalhe por PDI</h2></div><div class="wrap-x"><table class="tbl"><thead><tr><th>Analista</th><th>PDI</th><th>SLA 1ª resp</th><th>Chats resp</th><th>Chats fech</th><th>TMA (h)</th><th>CSAT</th><th>Melhora geral</th></tr></thead><tbody>${rt}</tbody></table></div></div>`;
 }
@@ -788,7 +841,7 @@ function viewImpactoTreino(){
     return `<div class="folder neutral" style="position:relative"><button onclick="delTeam('${t.id}')" style="position:absolute;top:10px;right:10px;border:none;background:none;color:var(--text-3);font-size:15px;cursor:pointer;padding:2px 5px;border-radius:6px;line-height:1" title="Excluir treino">✕</button><div style="cursor:pointer" onclick="openTeam('${t.id}')"><div class="ico">★</div><h3>${esc(t.title)}</h3><div class="meta">${esc(t.date)} · ${(t.caixas||[]).length} caixas · ${totA} avaliações</div>
       <div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">${totA?`<span class="chip" style="color:var(--purple-dark);border-color:var(--purple-soft)">acerto ${tot?Math.round(accRate/tot*100):0}%</span>${avgS?`<span class="chip" style="color:var(--amber-text);border-color:var(--amber-soft)">${avgS}/5 ★</span>`:''}${worst?`<span class="chip" style="color:var(--red-text);border-color:var(--red-soft)">⚠ ${esc(worst.name)}</span>`:''}`:'<span class="chip" style="color:var(--amber-text);border-color:var(--amber-soft)">aguardando importação</span>'}</div></div></div>`;}).join('');
   return `<div class="page-h"><h1>${esc(T('impacto-treino'))}</h1><p>Treinamentos de lançamento de produto e padronização de processo. Avaliações pós-treino por analista e por caixa de atendimento.</p></div>
-    <div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn primary" onclick="openTeamModal()">+ Novo treinamento de time</button></div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn primary edit-only" onclick="openTeamModal()">+ Novo treinamento de time</button></div>
     ${teams.length?`<div class="folders">${cards}</div>`:'<div class="empty">Nenhum treinamento de time neste mês.</div>'}`;
 }
 function delTeam(id){const t=db.teamTrainings.find(x=>x.id===id);if(!t)return;if(!confirm('Excluir o treino "'+t.title+'" e todas as avaliações importadas?'))return;db.teamTrainings=db.teamTrainings.filter(x=>x.id!==id);persist();render();toast('Treino excluído');}
@@ -1154,7 +1207,7 @@ function viewOnboarding(){
     <label style="font-size:.85em;font-weight:600;color:var(--text-2)">Período:</label>
     <select style="border:1px solid var(--border-2);background:var(--surface);border-radius:9px;padding:8px 14px;font-size:.95em;color:var(--text);font-weight:500" onchange="db.onboardingBimestre=this.value;render()">${bSel}</select>
     <span style="font-size:.82em;color:var(--text-3)">${total} avaliação${total!==1?'ões':''} neste período</span>
-    <button class="btn primary sm" style="margin-left:auto" onclick="openOnboardingImport()">↥ Importar planilha</button>
+    <button class="btn primary sm edit-only" style="margin-left:auto" onclick="openOnboardingImport()">↥ Importar planilha</button>
   </div>
 
   <!-- Cards de resumo -->
@@ -1266,7 +1319,7 @@ function viewTreinos(){
   const filtered=trainFilter==='Todos'?acts:acts.filter(a=>a.type===trainFilter);
   return '<div class="page-h"><h1>'+esc(T('treinamentos'))+'</h1><p>Onboardings, imersões e treinamentos do mês. Ordenados por data de solicitação.</p></div>'
     +'<div class="filters">'+fopts.map(f=>'<button class="ft '+(trainFilter===f?'on':'')+'" onclick="trainFilter=\''+f+'\';render()">'+f+'</button>').join('')
-    +'<button class="btn primary" style="margin-left:auto" onclick="openActionModal()">+ Nova Ação</button></div>'
+    +'<button class="btn primary edit-only" style="margin-left:auto" onclick="openActionModal()">+ Nova Ação</button></div>'
     +(filtered.length?'<div class="acards-grid">'+filtered.map(a=>cardAcao(a)).join('')+'</div>'
     :'<div class="empty">Nenhuma ação neste filtro.</div>');
 }
@@ -1294,7 +1347,7 @@ function cardDoc(d){
 function viewDocs(){
   const docs=sortByDateSolic(inMonth(db.docs));
   return '<div class="page-h"><h1>'+esc(T('documentacao'))+'</h1><p>Playbooks e materiais do mês. Ordenados por data de solicitação.</p></div>'
-    +'<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn primary" onclick="openDocModal()">+ Nova Doc</button></div>'
+    +'<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn primary edit-only" onclick="openDocModal()">+ Nova Doc</button></div>'
     +(docs.length?'<div class="acards-grid">'+docs.map(d=>cardDoc(d)).join('')+'</div>'
     :'<div class="empty">Nenhuma documentação neste mês.</div>');
 }
@@ -1333,9 +1386,9 @@ function viewOrganograma(){
     </div>
     ${semCaixaHtml}
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-      <button class="btn primary" onclick="openMemberModal('')">+ Adicionar analista</button>
-      <button class="btn" onclick="addCaixa()">+ Nova caixa</button>
-      <button class="btn" onclick="document.getElementById('orgCsv').click()">↥ Importar equipe (CSV / XLSX)</button>
+      <button class="btn primary edit-only" onclick="openMemberModal('')">+ Adicionar analista</button>
+      <button class="btn edit-only" onclick="addCaixa()">+ Nova caixa</button>
+      <button class="btn edit-only" onclick="document.getElementById('orgCsv').click()">↥ Importar equipe (CSV / XLSX)</button>
       <input type="file" accept=".csv,.xlsx,.xls" id="orgCsv" style="display:none" onchange="importRoster()">
     </div>
     <div class="orgboard">${cols}</div>`;
@@ -1436,7 +1489,7 @@ function viewMacros(){
       +'</div>';
   }).join('');
   return '<div class="page-h"><h1>'+esc(T('macros'))+'</h1><p>Macros criadas por mês. Não somadas no total de ações — contabilizadas separadamente.</p></div>'
-    +'<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn primary" onclick="openMacroModal()">+ Nova Macro</button></div>'
+    +'<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn primary edit-only" onclick="openMacroModal()">+ Nova Macro</button></div>'
     +(macros.length?'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">'+cards+'</div>'
     :'<div class="empty">Nenhuma macro registrada neste mês.</div>');
 }
@@ -1576,9 +1629,34 @@ function addMonth(){const m=prompt('Nome do novo mês (ex: Julho 2026):');if(m&&
 function dl(csv,name){const blob=new Blob(["\ufeff"+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);}
 function exportCSV(){const rows=[['Tipo','Titulo','Analista/Time','Data','Prioridade','Status','Mes']];inMonth(db.pdis).forEach(p=>rows.push(['PDI',p.title,p.analyst,p.date,p.priority,p.status,p.month]));inMonth(db.actions).forEach(a=>rows.push([a.type,a.title,a.who,a.date,a.priority,a.status,a.month]));inMonth(db.docs).forEach(d=>rows.push(['Documentação',d.title,'',d.month,d.priority,d.status,d.month]));inMonth(db.teamTrainings).forEach(t=>rows.push(['Treinamento de time',t.title,'Time',t.date,'',t.status,t.month]));dl(rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n'),`painel-${db.current.replace(' ','-')}.csv`);toast('CSV exportado');}
 
+
+/* ===== controle de edição por senha ===== */
+const EDIT_HASH='5666a050';// hash simples da senha 110819
+function simpleHash(s){let h=0;for(let i=0;i<s.length;i++){h=(h<<5)-h+s.charCodeAt(i);h|=0;}return Math.abs(h).toString(16);}
+let _editMode=false;
+function isEditMode(){return _editMode;}
+function setEditMode(on){
+  _editMode=on;
+  document.body.classList.toggle('editmode',on);
+  const btn=document.getElementById('lockBtn');
+  if(btn){btn.textContent=on?'🔓':'🔒';btn.title=on?'Clique para bloquear edição':'Clique para editar';}
+  if(on)toast('✓ Modo edição ativo');
+  else toast('🔒 Modo leitura ativado');
+  render();
+}
+function toggleEditMode(){
+  if(_editMode){setEditMode(false);return;}
+  const pwd=prompt('🔒 Senha de edição:');
+  if(!pwd)return;
+  if(simpleHash(pwd)===EDIT_HASH){setEditMode(true);}
+  else{toast('Senha incorreta');}
+}
+
 applyTheme();
 render();
 initSync();
+// Inicializar cadeado
+setTimeout(()=>{const btn=document.getElementById('lockBtn');if(btn)btn.textContent='🔒';},50);
 </script>
 </body>
 </html>
