@@ -435,20 +435,32 @@ async function pushToFirebase(){
 }
 
 async function pushByParts(payload){
-  // Envia cada campo separadamente via PATCH individual
   const BASE=FB_URL.replace('.json','');
-  const fields=['pdis','actions','docs','teamTrainings','macros','roster','months','caixas','current','onboardingFeedbacks','onboardingBimestre'];
+  const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks','onboardingBimestre'];
   let ok=true;
+  // Campos simples
   for(const field of fields){
     if(payload[field]===undefined)continue;
     try{
-      const r=await fetch(`${BASE}/${field}.json`,{
-        method:'PUT',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(payload[field])
-      });
+      const r=await fetch(`${BASE}/${field}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload[field])});
       if(!r.ok){ok=false;console.warn('pushByParts fail:',field,r.status);}
     }catch(e){ok=false;console.warn('pushByParts error:',field,e);}
+  }
+  // teamTrainings: limpa as chaves dos answers (Firebase não aceita chaves com caracteres especiais)
+  if(payload.teamTrainings){
+    const cleaned=(payload.teamTrainings||[]).map(t=>({
+      ...t,
+      results:(t.results||[]).map(r=>({
+        analista:r.analista,email:r.email||'',caixa:r.caixa||'',
+        stars:r.stars||0,ac:r.ac||0,er:r.er||0,feedback:r.feedback||'',
+        // Serializa answers como array em vez de objeto com chaves longas
+        answersArr:(t.questions||[]).map(q=>r.answers?r.answers[q]:null)
+      }))
+    }));
+    try{
+      const r=await fetch(`${BASE}/teamTrainings.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(cleaned)});
+      if(!r.ok){ok=false;console.warn('pushByParts fail: teamTrainings',r.status,await r.text());}
+    }catch(e){ok=false;console.warn('pushByParts error: teamTrainings',e);}
   }
   if(ok){syncStatus='ok';lastSyncTime=new Date();}
   else{syncStatus='error';pendingSync=true;setTimeout(pushToFirebase,15000);}
@@ -483,11 +495,18 @@ async function pullFromFirebase(){
       if(!db.caixas||!db.caixas.length)db.caixas=DEFAULT_CAIXAS.slice();
       else db.caixas=toArr(db.caixas);
       if(db.caixas.indexOf('Suporte Max')<0)db.caixas.push('Suporte Max');
-      /* Garantir arrays dentro de teamTrainings */
+      /* Garantir arrays dentro de teamTrainings e reconstruir answers */
       db.teamTrainings.forEach(t=>{
         t.results=toArr(t.results);
         t.caixas=toArr(t.caixas);
         t.questions=toArr(t.questions);
+        // Reconstruir answers a partir de answersArr se necessário
+        t.results.forEach(r=>{
+          if(!r.answers&&r.answersArr&&t.questions.length){
+            r.answers={};
+            t.questions.forEach((q,i)=>{r.answers[q]=r.answersArr[i];});
+          }
+        });
       });
       try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
       syncStatus='ok';lastSyncTime=new Date();updateSyncBadge();
@@ -617,6 +636,11 @@ db.teamTrainings.forEach(t=>{
   t.results=toArr(t.results);
   t.caixas=toArr(t.caixas);
   t.questions=toArr(t.questions);
+  t.results.forEach(r=>{
+    if(!r.answers&&r.answersArr&&t.questions.length){
+      r.answers={};t.questions.forEach((q,i)=>{r.answers[q]=r.answersArr[i];});
+    }
+  });
 });
 if(!db.onboardingFeedbacks)db.onboardingFeedbacks=[];
 else db.onboardingFeedbacks=toArr(db.onboardingFeedbacks);
@@ -1115,12 +1139,20 @@ function importTeamResults(id){
     t.results=results;
     t.questions=allLabels;
     t.errMode=intercalado?'gabarito':(qIdx.length?'estimado':'gabarito');
-    /* atualiza caixas do treino se havia coluna caixa */
+    /* atualiza caixas do treino — usa EXATAMENTE os nomes da planilha, sem duplicar */
     if(caixaI>=0){
       const novas=results.map(x=>x.caixa).filter(c=>c&&c!=='Não atribuído');
-      t.caixas=[...new Set([...(t.caixas||[]),...novas])];
+      // Deduplicar por nome normalizado (case-insensitive, sem espaços extras)
+      const seen=new Map();
+      novas.forEach(c=>{const k=c.trim().toLowerCase();if(!seen.has(k))seen.set(k,c.trim());});
+      t.caixas=[...seen.values()];
+      // Também atualizar db.caixas com novos nomes únicos
+      seen.forEach((nome,key)=>{
+        const existe=db.caixas.find(c=>c.trim().toLowerCase()===key);
+        if(!existe)db.caixas.push(nome);
+      });
     }
-    /* registra analistas no organograma */
+    /* registra analistas no organograma — preserva possibilidade de mover/excluir */
     results.forEach(res=>{if(res.caixa&&res.caixa!=='Não atribuído')upsertRoster(res.analista,res.email||'',res.caixa);});
     persist();render();toast(results.length+' respostas importadas com sucesso');
   }catch(err){toast('Erro ao ler o arquivo: '+err.message);console.error(err);}};
