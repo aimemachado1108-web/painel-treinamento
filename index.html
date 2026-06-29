@@ -306,6 +306,16 @@ body:not(.editmode) [onclick*="delPdiGroup"]{display:none!important}
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--text);color:var(--bg);padding:11px 20px;border-radius:10px;font-size:.9em;opacity:0;transition:.25s;z-index:200;pointer-events:none}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .hint{font-size:.85em;color:var(--text-3);margin-top:4px}
+
+/* ===== modo leitura — bloqueio de edição ===== */
+.edit-only{display:none!important}
+body.editmode .edit-only{display:inline-flex!important}
+body.editmode .edit-only-block{display:block!important}
+body:not(.editmode) .acard .x{display:none!important}
+body:not(.editmode) .orgx{display:none!important}
+body:not(.editmode) [onclick*="delPdiGroup"]{display:none!important}
+.lock-btn{background:none;border:none;cursor:pointer;font-size:16px;padding:2px 6px;border-radius:6px;color:var(--text-3);transition:.15s}
+.lock-btn:hover{color:var(--purple)}
 /* ===== modo leitura — bloqueio de edição ===== */
 .edit-only{display:none!important}
 body.editmode .edit-only{display:inline-flex!important}
@@ -1200,10 +1210,7 @@ const OB_QUESTIONS=[
 
 /* --- view principal --- */
 function viewOnboarding(){
-  // Garante bimestre salvo localmente
-  try{const s=localStorage.getItem('ob_bimestre');if(s)db.onboardingBimestre=s;}catch(e){}
   if(!db.onboardingBimestre)db.onboardingBimestre='2025-07';
-
   const feedbacks=onboardingInBimestre();
   const total=feedbacks.length;
   const keys=bimestreKeys();
@@ -1301,9 +1308,25 @@ function openOnboardingImport(){
     <div class="modal-foot">
       <button class="btn" style="color:var(--red-text);border-color:var(--red);margin-right:auto" onclick="clearAllOnboarding()">🗑 Limpar todos</button>
       <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn" onclick="loadDadosTeste()" title="Carregar dados de exemplo para testar">🧪 Dados de teste</button>
       <button class="btn primary" onclick="doImportOnboarding()">Importar e calcular</button>
     </div>
   </div>`);
+}
+
+function loadDadosTeste(){
+  // Dados reais da planilha de Feedback Onboarding B2B (Out/2025)
+  const newFb=[{"date": "2025-10-21T11:53:35Z", "geral": "5.0", "duracao": "Sim, o tempo de duração foi perfeito.", "materiais": "5.0", "aprofundar": "Cross", "clareza": "5.0", "receptiva": "Sim, totalmente", "avontade": "Sim, totalmente", "comentario": "nenhuma", "preparado": "Sim, totalmente", "gostou": "Da didática", "melhorar": "Mais tempo de prática.", "recado": "Obrigada pelo treinamento você é incrivel.", "nome": "", "caixa": ""}, {"date": "2025-10-21T13:19:42Z", "geral": "5.0", "duracao": "Sim, o tempo de duração foi perfeito.", "materiais": "5.0", "aprofundar": "Acredito que não, todos os temas foram abordados de maneira satisfatória.", "clareza": "5.0", "receptiva": "Sim, totalmente", "avontade": "Sim, totalmente", "comentario": "Treinamento foi excelente, Aimê passou segurança e tranquilidade durante todo o processo.", "preparado": "Sim, totalmente", "gostou": "Possibilidade de tirar dúvidas, pedir pra repetir conteúdos que fiquei com dúvida, etc.", "melhorar": "Nada ao meu ver", "recado": "Melhor pessoa que escolheram pra treinar os novatos! Acertaram em cheio. Nota 1000", "nome": "", "caixa": ""}, {"date": "2025-10-23T17:05:56Z", "geral": "4.0", "duracao": "Sim, o tempo de duração foi perfeito.", "materiais": "5.0", "aprofundar": "Não", "clareza": "4.0", "receptiva": "Sim, totalmente", "avontade": "Sim, totalmente", "comentario": "Como o treinamento foi em grupo, poderia ter feito um formato, para que cada um atendesse um, mas sendo observado pelos demais e um auxiliando o outro.", "preparado": "Sim, totalmente", "gostou": "A disponibilização dos materiais com os links úteis.", "melhorar": "Ter um documento (POP, instrução de trabalho) com as orientações e o passo a passo do que conferir ou observar em cada situação e onde encontra as informações a serem analisadas. Algo que pudesse ser utilizado por todos mesmo após e fosse algo padronizado.", "recado": "Obrigado pela dedicação e disponibilidade por ser sempre tão solicita para nos responder e auxiliar.", "nome": "", "caixa": ""}, {"date": "2025-10-24T09:38:40Z", "geral": "5.0", "duracao": "Sim, o tempo de duração foi perfeito.", "materiais": "5.0", "aprofundar": "Ter de forma mais palpável o que está onde no HUBS, mas sendo que mudanças de processos durante o treinamento que complicaram mais", "clareza": "5.0", "receptiva": "Sim, totalmente", "avontade": "Sim, totalmente", "comentario": "Aime é muito boa para treinamentos, consegue ser sociável e leve facilitando o contato com quem está chegando, inspirando confiança e tranquilidade, sem perder o profissionalismo e a importância dos tópicos. Tem MUITO domínio dos processos e preza por excelência.", "preparado": "Sim, totalmente", "gostou": "O treinamento foi incrível, chega a ser difícil pontuar elogios porque foi realmente muito bom. Bem completo, com uma duração boa e clareza.", "melhorar": "Na reta final, quando o fluxo intensifica e fazemos tudo coletivamente, muitas vezes não conseguimos absorver bem os exemplos dos colegas. A Aime é super ágil e domina muito o conteúdo, então ela alterna entre tópicos com bastante facilidade.\n\nQuando chega na parte prática, em que todos atuam ao mesmo tempo na chamada, acaba virando uma chuva de perguntas e casos diferentes rolando juntos. A Aime tem um processamento cerebral de outro mundo. Eu senti que não consegui aproveitar tanto todos os exemplos, justamente por causa dessa dinâmica de todo mundo online no Hubs ao mesmo tempo.\n\nTalvez se fosse um atuando online por um tempo X, de cada vez, os demais conseguiriam acompanhar todos os atendimentos e dúvidas que surgem. Porque as perguntas se intercalam, os casos se misturam — enquanto você tenta ler uma coisa, o outro já está perguntando outra, e aí você quer ouvir, perguntar, e ler tudo ao mesmo tempo.", "recado": "Que ela continue com essa recepção maravilhosa, que faz a gente se sentir confortável. É muito bom chegar em uma empresa e ser treinada por uma pessoa responsável, profissional e carismática. Ela é uma primeira impressão maravilhosa para a empresa, faz a gente ficar ainda mais animado com a oportunidade e ansioso pelos próximos passos. Pessoas como a Aime precisam ser impulsionadas cada vez mais porque fazem a diferença aos mais novos, e é o tipo de boa influência que qualquer empresa precisa ter ao coletivo.", "nome": "", "caixa": ""}, {"date": "2025-10-24T09:40:53Z", "geral": "5.0", "duracao": "Não, gostaria que o treinamento tivesse durado mais alguns dias", "materiais": "3.0", "aprofundar": "Acho que seria interessante aprofundar um pouco mais os temas relacionados às exceções e aos casos específicos, para entendermos melhor como agir em situações fora do padrão. Porém, isso também depende das demandas e situações que surgem no chat.", "clareza": "5.0", "receptiva": "Sim, totalmente", "avontade": "Sim, totalmente", "comentario": "A principal questão foi a alteração das informações durante o período de treinamento. Essas mudanças ocorreram sem o devido alinhamento — inclusive, a própria Aimê (ressaltando que ela prontamente verificou a informação e nos repassou) não foi informada antecipadamente sobre algumas delas. Essa falta de comunicação acabou gerando insegurança e confusão entre os analistas, que, em determinados momentos, não sabiam qual procedimento seguir.\n\nSeria importante que qualquer atualização fosse previamente alinhada com a liderança e comunicada de forma clara a toda a equipe, garantindo mais organização, coerência e segurança nos processos.", "preparado": "Sim, mas ainda tenho dúvidas pontuais", "gostou": "Gostei da interação com os casos e de poder consultar a Aimê para encontrarmos uma solução, isso gerou mais segurança na hora do roteamento online.", "melhorar": "Seria muito positivo ter vídeos explicativos dos processos e um local centralizado para consulta das informações. \nIsso facilitaria o aprendizado, tornaria o treinamento mais dinâmico e ajudaria os analistas a se sentirem mais seguros no dia a dia, reduzindo dúvidas e retrabalhos.\n\nCom materiais organizados e acessíveis, o entendimento dos fluxos seria muito mais rápido e eficiente, contribuindo para uma integração ainda melhor da equipe.", "recado": "A Aimê é uma excelente profissional, sempre disposta a ajudar e com um conhecimento incrível na área em que está ministrando o treinamento.", "nome": "", "caixa": ""}, {"date": "2025-11-17T14:45:18Z", "geral": "4.0", "duracao": "Não, gostaria que o treinamento tivesse durado mais alguns dias", "materiais": "4.0", "aprofundar": "Nada especificamente.", "clareza": "5.0", "receptiva": "Sim, totalmente", "avontade": "Sim, totalmente", "comentario": "Nenhuma sugestão.", "preparado": "Parcialmente", "gostou": "Questionamentos frequentes para entender se estávamos acompanhando o raciocínio de resolução dos casos.", "melhorar": "Talvez selecionar casos diferentes. Durante o treinamento acompanhamos bastante a solução para os mesmos casos, com os mesmos temas. Agora, ao terminar o treinamento, eu consigo resolver com agilidade alguns casos, entretanto, continuam surgindo coisas novas que eu não sei exatamente como prosseguir e frequentemente solicito ajuda aos colegas, o que eu não acho um problema, mas a impressão que eu tive é que no treinamento eu não vi nem metade dos casos que aparecem no dia a dia, o que hoje está sendo meu maior choque de realidade.", "recado": "", "nome": "", "caixa": ""}, {"date": "2025-11-17T14:49:41Z", "geral": "5.0", "duracao": "Sim, o tempo de duração foi perfeito.", "materiais": "5.0", "aprofundar": "A Aimê garantiu em sanar todas as dúvidas, e sempre questionava se havia algum conteúdo que não tinha entendido muito bem, então todos os conteúdos foram bem aprofundados <3", "clareza": "5.0", "receptiva": "Sim, totalmente", "avontade": "Sim, totalmente", "comentario": "Foi perfeito, teoria e pratica bem dinâmica!", "preparado": "Sim, totalmente", "gostou": "Do acolhimento e da clareza que os conteúdos foram passados, aime sempre muito prestativa", "melhorar": "Para mim o treinamento foi otimo", "recado": "Diva, arrasou muito <3", "nome": "", "caixa": ""}, {"date": "2025-12-02T17:35:07Z", "geral": "5.0", "duracao": "Sim, o tempo de duração foi perfeito.", "materiais": "5.0", "aprofundar": "Acredito que não, são tantas possibilidades de casos que acho que fica difícil abordar tudo no treinamento. O dia a dia que nos prepara de fato.", "clareza": "5.0", "receptiva": "Sim, totalmente", "avontade": "Sim, totalmente", "comentario": "Nenhum ponto de melhoria quanto a didática da Aime, foi completo!", "preparado": "Sim, mas ainda tenho dúvidas pontuais", "gostou": "Gostei muito de atender com o acompanhamento da Aime, e os slides da apresentação são lindos e prendem nossa atenção.", "melhorar": "Talvez um tempo maior de acompanhamento, acredito que para quem vem de outra empresa e não teve contato com a App anteriormente, deva ser mais difícil assimilar e gravar tantas informações.", "recado": "Obrigada pela paciência e dedicação com meu treinamento, nosso time tem muita sorte de ter você! <3", "nome": "", "caixa": ""}, {"date": "2025-12-03T09:35:27Z", "geral": "5.0", "duracao": "Sim, o tempo de duração foi perfeito.", "materiais": "5.0", "aprofundar": "Não!", "clareza": "5.0", "receptiva": "Sim, totalmente", "avontade": "Sim, totalmente", "comentario": "Foi conduzido de forma adequada e atendeu ao esperado. Obrigada pelo treinamento.", "preparado": "Sim, totalmente", "gostou": "Aime, sendo muito simpática e atenciosa.", "melhorar": "A meu ver, tudo perfeito.", "recado": "És uma ótima instrutora.", "nome": "", "caixa": ""}, {"date": "2026-01-22T08:53:32Z", "geral": "5.0", "duracao": "Sim, o tempo de duração foi perfeito.", "materiais": "5.0", "aprofundar": "Durante o treinamento a Aimê comentou que, infelizmente, não temos muitos casos de internacionais, e eu senti falta de ver um pouco mais sobre isso, mas não é algo que faltou esforços da Aimê, pois mesmo sem exemplos práticos de atendimento, ela explicou tudo o que estava ao alcance dela! Mas, senti falta dos exemplos que, no momento, não temos!", "clareza": "5.0", "receptiva": "Sim, totalmente", "avontade": "Sim, totalmente", "comentario": "Apenas elogios! A didática da Aimê foi incrível do inicio ao fim e pós treinamento também, sempre aberta para diálogos, para ajudar e mostrar o caminho, além de ser uma pessoa leve e descontraída, que torna o processo de treinamento, que pode ser muito estressante e rígido, muito fluído!", "preparado": "Sim, totalmente", "gostou": "A didática de acompanhar 1 dia de atendimentos da Aimê e depois ela acompanhar por vários dias o nosso dia a dia de atendimentos, sendo, de fato, uma treinadora! Comentei com ela e gostaria de deixar registrado aqui também o quanto o treinamento me surpreendeu positivamente, achei que seria apenas a parte teórica e depois já iria iniciar os atendimentos sem acompanhamento de perto, apenas solicitando ajuda, todo o acompanhamento foi uma surpresa maravilhosa!", "melhorar": "No momento, não vejo o que pode ser melhorado. As entregas da Aimê são acima do esperado e ela sempre está 1 passo a frente!", "recado": "Aimê, você é uma diva master! Obrigada pelo treinamento, paciência, apoio e risadas! Fico imensamente feliz de saber que temos uma pessoa como você no time e na Appmax, que sorte a nossa! Conte sempre comigo, espero poder lhe retribuir tudo que você está fazendo tanto por mim, quanto pro nosso time!", "nome": "", "caixa": ""}, {"date": "2026-02-04T12:01:19Z", "geral": "5.0", "duracao": "Sim, o tempo de duração foi perfeito.", "materiais": "5.0", "aprofundar": ".", "clareza": "5.0", "receptiva": "Sim, totalmente", "avontade": "Sim, totalmente", "comentario": "Foi maravilhoso, Aimê arrasa muito! Fora que ela é super engraçada hehehe", "preparado": "Sim, totalmente", "gostou": "Tudo.", "melhorar": "Não vejo nada que possa melhorar. Está tudo ótimo!", "recado": "Arrasouuuuu Diva!\nGratidão por tudo!", "nome": "", "caixa": ""}, {"date": "2026-05-08T09:04:31Z", "geral": "5.0", "duracao": "Não, gostaria que o treinamento tivesse durado mais alguns dias", "materiais": "5.0", "aprofundar": "Os relatórios e funcionalidades na tela do parceiro.", "clareza": "5.0", "receptiva": "Sim, totalmente", "avontade": "Sim, totalmente", "comentario": "O treinamento foi ótimo! Só gostaria de ter outros momentos por vídeo chamada para tirar dúvidas, pois no início surgem muitas e por mensagem não é a mesma coisa.", "preparado": "Sim, totalmente", "gostou": "A abordagem, materiais e acolhimento foram ótimos!", "melhorar": "Acredito que alguns momentos pós 2ª semana em que fossem feitos encontros para sanar dúvidas por vídeo chamada.", "recado": "Diva, seu treinamento foi ótimo e as explicações são super claras! Muito obrigada!! <3", "nome": "", "caixa": ""}, {"date": "2026-05-08T09:13:47Z", "geral": "5.0", "duracao": "Não, gostaria que o treinamento tivesse durado mais alguns dias", "materiais": "5.0", "aprofundar": "Acredito que a questão do cadastro de empresas e utilização de sistemas como unico e clicksign poderiamos praticar mais", "clareza": "5.0", "receptiva": "Sim, totalmente", "avontade": "Sim, totalmente", "comentario": "Acredito que ele foi perfeito por parte da Aime, mas poderiamos ter um pouco mais tempo de prática nos atendimentos", "preparado": "Sim, mas ainda tenho dúvidas pontuais", "gostou": "Gostei muito do material preparado e do modo da Aime de nos passar as informações, preparada, tecnica e sabe explicar", "melhorar": "Acredito que apenas o tempo de prática com o acompanhamento dela.", "recado": "Aime, queria te parabenizar pelo trabalho que tem feito, teu jeito de passar as informações de um forma prática, leve e dando a devida atenção faz toda diferença. De todos os lugares que já passei fosse a pessoa que me trouxe o melhor onboarding, com paciencia e excelencia. Tu é 1000!", "nome": "", "caixa": ""}, {"date": "2026-06-29T11:57:00Z", "geral": "5.0", "duracao": "Não, gostaria que o treinamento tivesse durado mais alguns dias", "materiais": "5.0", "aprofundar": "Temas como, recebimento no max, desconto de taxas, auditoria de valores.", "clareza": "5.0", "receptiva": "Sim, totalmente", "avontade": "Sim, totalmente", "comentario": "De forma geral, foi realmente muito bom tivemos varias trocas, aime conduziu com muita maestria o treinamento do inicio ao fim.", "preparado": "Sim, mas ainda tenho dúvidas pontuais", "gostou": "De entender mais como é o dia a dia dos nossos parceiros na appmax.", "melhorar": "Acredito que mais dias de acompanhando com outras analistas, e depois levar um feedback de como foi e oque viu de diferente, para entenderem e pegarem como é de fato o nosso dia a dia.", "recado": "Aime, voce conduziu este treinamento com muita maestria, adorei todas as trocas que tivemos e a ajuda e paciencia que continua tendo comigo, embora eu seja novo na appmax, a appmax não é nova para mim ! muito obrigado por me recepcionar tão bem e conseguir sempre tirar minhas dúvidas com muita clareza.", "nome": "", "caixa": ""}];
+  if(!db.onboardingFeedbacks)db.onboardingFeedbacks=[];
+  db.onboardingFeedbacks=db.onboardingFeedbacks.filter(f=>!inBimestre(f.date,bim));
+  db.onboardingFeedbacks=db.onboardingFeedbacks.concat(newFb);
+  db.onboardingBimestre=bim;
+  try{localStorage.setItem('ob_bimestre',bim);}catch(e){}
+  try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
+  closeModal();
+  route={page:'onboarding',pdiId:null,teamId:null};
+  render();
+  toast('✓ '+newFb.length+' respostas de teste carregadas — Jul–Dez 2025');
 }
 
 function clearAllOnboarding(){
@@ -1318,94 +1341,79 @@ function doImportOnboarding(){
   if(!fileEl||!fileEl.files||!fileEl.files[0]){toast('Selecione um arquivo');return;}
   const f=fileEl.files[0];
   const isXlsx=/\.xlsx?$/i.test(f.name);
-  const reader=new FileReader();
-  reader.onerror=()=>toast('Erro ao ler o arquivo');
-  reader.onload=function(e){
+  const r=new FileReader();
+  r.onload=function(){
+    // Fecha modal DEPOIS de ler o arquivo
+    closeModal();
     try{
       let rows;
       if(isXlsx){
-        if(typeof XLSX==='undefined'){toast('Biblioteca XLSX não carregada');return;}
-        const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+        const wb=XLSX.read(r.result,{type:'array',cellDates:true});
         const ws=wb.Sheets[wb.SheetNames[0]];
-        rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+        rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false}).filter(rw=>rw.some(c=>String(c||'').trim()));
       } else {
-        rows=parseCSV(e.target.result,detectDelim(e.target.result));
+        rows=parseCSV(r.result,detectDelim(r.result)).filter(rw=>rw.some(c=>c&&c.trim()));
       }
-      rows=rows.filter(rw=>rw.some(c=>String(c||'').trim()));
-      if(rows.length<2){toast('Arquivo sem dados');return;}
-
+      if(rows.length<2){toast('Arquivo vazio');return;}
       const raw=rows[0].map(h=>String(h||'').trim());
-      const low=raw.map(h=>h.toLowerCase().replace(/[\n\r]+/g,' ').replace(/\s+/g,' '));
+      const low=raw.map(h=>h.toLowerCase().replace(/\s+/g,' ').replace(/\n/g,' '));
       const fi=s=>low.findIndex(h=>h.includes(s));
       const fand=(a,b)=>low.findIndex(h=>h.includes(a)&&h.includes(b));
-
-      const idx={
-        date:  fi('carimbo'),
-        geral: fand('avaliaria','geral'),
-        duracao: fand('dura','aprendizado'),
-        materiais: low.findIndex(h=>h.includes('materiai')||h.includes('ajudaram no aprendizado')),
-        aprofundar: fi('aprofund'),
-        clareza: low.findIndex(h=>h.includes('clareza')||h.includes('did')),
-        receptiva: low.findIndex(h=>h.includes('receptiva')||h.includes('aberta')),
-        avontade: low.findIndex(h=>h.includes('vontade')||h.includes('interagir')),
-        comentario: fand('coment','forma'),
-        preparado: fand('preparad','suporte'),
-        gostou: fi('mais gostou'),
-        melhorar: fand('melhorad','turma'),
-        recado: low.findIndex(h=>h.includes('recado')||h.includes('mensagem')),
-        nome: low.findIndex(h=>h==='nome'||h==='analista'||h==='nome do analista'),
-        caixa: fi('caixa'),
-      };
-
+      const dateI=fi('carimbo');
+      const geralI=fand('avaliaria','geral');
+      const duracaoI=fand('dura','aprendizado');
+      const matI=low.findIndex(h=>h.includes('materiai')||h.includes('ajudaram no aprendizado'));
+      const aprofI=fi('aprofund');
+      const clarI=low.findIndex(h=>h.includes('clareza')||h.includes('did'));
+      const recepI=low.findIndex(h=>h.includes('receptiva')||h.includes('aberta'));
+      const avontI=low.findIndex(h=>h.includes('vontade')||h.includes('interagir'));
+      const comI=low.findIndex(h=>h.includes('coment')&&(h.includes('forma')||h.includes('sugestão')||h.includes('sugestao')));
+      const prepI=fand('preparad','suporte');
+      const gostouI=fi('mais gostou');
+      const melhI=fand('melhorad','turma');
+      const recadoI=low.findIndex(h=>h.includes('recado')||h.includes('mensagem'));
+      const nomeI=low.findIndex(h=>h==='nome'||h==='analista'||h==='nome do analista');
+      const caixaI=fi('caixa');
       const get=(rw,i)=>i>=0&&rw[i]!=null?String(rw[i]).trim():'';
-
-      const newFb=rows.slice(1).map(rw=>{
-        const dateRaw=get(rw,idx.date);
-        let date=new Date().toISOString();
-        if(dateRaw){
-          const d=new Date(dateRaw.replace(' ','T'));
-          if(!isNaN(d.getTime()))date=d.toISOString();
+      // Parser de data robusto — aceita ISO, MM/DD/YYYY e outros formatos
+      function parseDate(s){
+        if(!s)return new Date();
+        // Formato MM/DD/YYYY HH:MM:SS (vindo do xlsx com cellDates:false)
+        const mdy=/^(\d{1,2})\/(\d{1,2})\/(\d{4})(.*)$/;
+        const m=s.match(mdy);
+        if(m){
+          const d=new Date(`${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}${m[4]?'T'+m[4].trim():''}`);
+          if(!isNaN(d))return d;
         }
-        return {
-          date,
-          geral:get(rw,idx.geral), duracao:get(rw,idx.duracao),
-          materiais:get(rw,idx.materiais), aprofundar:get(rw,idx.aprofundar),
-          clareza:get(rw,idx.clareza), receptiva:get(rw,idx.receptiva),
-          avontade:get(rw,idx.avontade), comentario:get(rw,idx.comentario),
-          preparado:get(rw,idx.preparado), gostou:get(rw,idx.gostou),
-          melhorar:get(rw,idx.melhorar), recado:get(rw,idx.recado),
-          nome:get(rw,idx.nome), caixa:get(rw,idx.caixa),
-        };
-      }).filter(f=>f.geral||f.clareza||f.materiais||f.duracao||f.gostou||f.recado);
-
+        // Formato ISO ou YYYY-MM-DD
+        const d=new Date(s.replace(' ','T'));
+        return isNaN(d)?new Date():d;
+      }      const newFb=rows.slice(1).map(rw=>{
+        const dateRaw=get(rw,dateI);
+        const date=parseDate(dateRaw).toISOString();
+        return {date,
+          geral:get(rw,geralI),duracao:get(rw,duracaoI),materiais:get(rw,matI),
+          aprofundar:get(rw,aprofI),clareza:get(rw,clarI),receptiva:get(rw,recepI),
+          avontade:get(rw,avontI),comentario:get(rw,comI),preparado:get(rw,prepI),
+          gostou:get(rw,gostouI),melhorar:get(rw,melhI),recado:get(rw,recadoI),
+          nome:get(rw,nomeI),caixa:get(rw,caixaI)};
+      }).filter(fb=>fb.geral||fb.clareza||fb.materiais||fb.duracao||fb.gostou||fb.recado||fb.preparado);
       if(!newFb.length){toast('Nenhuma resposta válida encontrada');return;}
-
-      // Detecta semestre pela primeira data válida
-      const firstD=new Date(newFb[0].date);
-      const bim=firstD.getFullYear()+'-'+(firstD.getMonth()<6?'01':'07');
-
-      // Remove respostas do mesmo período e insere as novas
+      const d0=new Date(newFb[0].date);
+      const bim=d0.getFullYear()+'-'+(d0.getMonth()<6?'01':'07');
       if(!db.onboardingFeedbacks)db.onboardingFeedbacks=[];
-      db.onboardingFeedbacks=db.onboardingFeedbacks.filter(f=>!inBimestre(f.date,bim));
+      db.onboardingFeedbacks=db.onboardingFeedbacks.filter(fb=>!inBimestre(fb.date,bim));
       db.onboardingFeedbacks=db.onboardingFeedbacks.concat(newFb);
-
-      // Atualiza semestre selecionado
       db.onboardingBimestre=bim;
       try{localStorage.setItem('ob_bimestre',bim);}catch(e){}
       try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
-
-      closeModal();
       route={page:'onboarding',pdiId:null,teamId:null};
       render();
       sendToFirebase().catch(()=>{});
-      toast('✓ '+newFb.length+' avaliações importadas — '+bimestreLabel(bim));
-    }catch(err){
-      console.error('Erro importOnboarding:',err);
-      toast('Erro ao importar: '+err.message);
-    }
+      toast('✓ '+newFb.length+' avaliações — '+bimestreLabel(bim));
+    }catch(err){toast('Erro: '+err.message);console.error(err);}
   };
-  if(isXlsx)reader.readAsArrayBuffer(f);
-  else reader.readAsText(f,'UTF-8');
+  if(isXlsx)r.readAsArrayBuffer(f);else r.readAsText(f,'utf-8');
 }
 
 /* ---------- TREINAMENTOS ---------- */
@@ -1829,6 +1837,9 @@ function toggleEditMode(){
 applyTheme();
 render();
 initSync();
+// MODO TESTE: inicia em modo edição para facilitar testes no HTML
+setEditMode(true);
+setTimeout(()=>{const btn=document.getElementById('lockBtn');if(btn)btn.textContent='🔓';},100);
 // Inicializar cadeado
 setTimeout(()=>{const btn=document.getElementById('lockBtn');if(btn)btn.textContent='🔒';},50);
 </script>
