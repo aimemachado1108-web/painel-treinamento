@@ -1144,125 +1144,128 @@ function downloadTeamTemplate(id){
 }
 
 /* ========================================================
-   ONBOARDING B2B — feedback semestral
+   ONBOARDING B2B — reconstruído do zero
    ======================================================== */
+
+/* --- helpers de período --- */
 function currentBimestreKey(){
-  const now=new Date();const y=now.getFullYear();const m=now.getMonth();
-  const start=m<6?0:6;
-  return y+'-'+(start===0?'01':'07');
+  const n=new Date(),y=n.getFullYear(),m=n.getMonth();
+  return y+'-'+(m<6?'01':'07');
 }
-function bimestreLabel(key){
-  if(!key)return '';
-  const [y,ms]=key.split('-');const s=parseInt(ms);
-  const MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  const ini=MESES[s-1];const fim=MESES[s+4];
-  return `${ini} – ${fim} ${y}`;
+function bimestreLabel(k){
+  if(!k)return '';
+  const [y,ms]=k.split('-'),s=parseInt(ms);
+  const M=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  return M[s-1]+' – '+M[s+4]+' '+y;
 }
 function bimestreKeys(){
-  const keys=[];
-  const now=new Date();
-  for(let y=2025;y<=now.getFullYear()+1;y++){
-    keys.push(y+'-01');keys.push(y+'-07');
-  }
-  const limit=now.getFullYear()+(now.getMonth()>=6?1:0)+'-'+(now.getMonth()>=6?'01':'07');
-  // Começa em Jul/2025 (primeiro semestre com dados) e vai até 1 semestre à frente
+  const keys=[],n=new Date();
+  for(let y=2025;y<=n.getFullYear()+1;y++){keys.push(y+'-01');keys.push(y+'-07');}
+  const limit=n.getFullYear()+'-'+(n.getMonth()<6?'01':'07');
   return keys.filter(k=>k>='2025-07'&&k<=limit);
 }
 function inBimestre(dateStr,key){
   if(!dateStr||!key)return false;
   try{
     const d=new Date(dateStr);
-    const [y,ms]=key.split('-');const s=parseInt(ms);
+    if(isNaN(d))return false;
+    const [y,ms]=key.split('-'),s=parseInt(ms);
     return d.getFullYear()===parseInt(y)&&d.getMonth()>=(s-1)&&d.getMonth()<=(s+3);
   }catch(e){return false;}
 }
 function onboardingInBimestre(){
-  return (db.onboardingFeedbacks||[]).filter(f=>inBimestre(f.date,db.onboardingBimestre));
+  const b=db.onboardingBimestre||'2025-07';
+  return (db.onboardingFeedbacks||[]).filter(f=>inBimestre(f.date,b));
 }
 
-/* Definição das perguntas e seus tipos */
+/* --- definição das perguntas --- */
 const OB_QUESTIONS=[
-  {key:'geral',      label:'Avaliação geral do treinamento',                    type:'star5',   emoji:'⭐'},
-  {key:'duracao',    label:'A duração foi adequada para o aprendizado?',        type:'choice',  emoji:'⏱',
+  {key:'geral',      label:'Avaliação geral do treinamento',                      type:'star5',  emoji:'⭐'},
+  {key:'duracao',    label:'A duração foi adequada para o aprendizado?',           type:'choice', emoji:'⏱',
    options:['Sim, o tempo de duração foi perfeito.','Não, gostaria que o treinamento tivesse durado mais alguns dias','Não, gostaria que o treinamento fosse mais curto']},
-  {key:'materiais',  label:'Os materiais apresentados ajudaram no aprendizado?',type:'star5',   emoji:'📚'},
-  {key:'aprofundar', label:'Tema que gostaria que fosse mais aprofundado',       type:'text',    emoji:'🔍'},
-  {key:'clareza',    label:'Clareza e didática da Aimê',                        type:'star5',   emoji:'🎙'},
-  {key:'receptiva',  label:'A Aimê foi receptiva às dúvidas?',                  type:'choice',  emoji:'💬',
+  {key:'materiais',  label:'Os materiais apresentados ajudaram no aprendizado?',   type:'star5',  emoji:'📚'},
+  {key:'aprofundar', label:'Tema que gostaria que fosse mais aprofundado',          type:'text',   emoji:'🔍'},
+  {key:'clareza',    label:'Clareza e didática da Aimê',                           type:'star5',  emoji:'🎙'},
+  {key:'receptiva',  label:'A Aimê foi receptiva às dúvidas?',                     type:'choice', emoji:'💬',
    options:['Sim, totalmente','Sim, mas poderia ser mais','Não, tive dificuldades para tirar dúvidas']},
-  {key:'avontade',   label:'Se sentiu à vontade para participar e interagir?',  type:'choice',  emoji:'🙌',
+  {key:'avontade',   label:'Se sentiu à vontade para participar e interagir?',     type:'choice', emoji:'🙌',
    options:['Sim, totalmente','Sim, mas poderia ser mais','Não muito']},
-  {key:'comentario', label:'Comentário sobre como o treinamento foi conduzido',  type:'text',    emoji:'📝'},
-  {key:'preparado',  label:'O treinamento te ajudou a se sentir mais preparado?',type:'choice', emoji:'🚀',
+  {key:'comentario', label:'Comentário sobre como o treinamento foi conduzido',     type:'text',   emoji:'📝'},
+  {key:'preparado',  label:'O treinamento te ajudou a se sentir mais preparado?',  type:'choice', emoji:'🚀',
    options:['Sim, totalmente','Sim, mas ainda tenho dúvidas pontuais','Parcialmente','Não muito']},
-  {key:'gostou',     label:'O que você mais gostou no treinamento?',             type:'text',    emoji:'❤️'},
-  {key:'melhorar',   label:'O que poderia ser melhorado nas próximas turmas?',   type:'text',    emoji:'💡'},
-  {key:'recado',     label:'Recado ou mensagem para a Aimê',                     type:'text',    emoji:'💌'},
+  {key:'gostou',     label:'O que você mais gostou no treinamento?',               type:'text',   emoji:'❤️'},
+  {key:'melhorar',   label:'O que poderia ser melhorado nas próximas turmas?',     type:'text',   emoji:'💡'},
+  {key:'recado',     label:'Recado ou mensagem para a Aimê',                       type:'text',   emoji:'💌'},
 ];
 
+/* --- view principal --- */
 function viewOnboarding(){
-  if(!db.onboardingBimestre)db.onboardingBimestre='2025-07';
-  // Recuperar semestre salvo localmente
+  // Garante bimestre salvo localmente
   try{const s=localStorage.getItem('ob_bimestre');if(s)db.onboardingBimestre=s;}catch(e){}
+  if(!db.onboardingBimestre)db.onboardingBimestre='2025-07';
+
   const feedbacks=onboardingInBimestre();
+  const total=feedbacks.length;
   const keys=bimestreKeys();
   const bSel=keys.map(k=>`<option value="${k}" ${k===db.onboardingBimestre?'selected':''}>${bimestreLabel(k)}</option>`).join('');
   const hasName=db.onboardingBimestre>='2026-07';
 
-  /* ── Cards de métricas de topo ── */
-  const total=feedbacks.length;
-  const geralVals=feedbacks.map(f=>parseFloat(f.geral)).filter(v=>!isNaN(v));
-  const avgGeral=geralVals.length?round(geralVals.reduce((s,v)=>s+v,0)/geralVals.length,1):0;
-  const clarVals=feedbacks.map(f=>parseFloat(f.clareza)).filter(v=>!isNaN(v));
-  const avgClar=clarVals.length?round(clarVals.reduce((s,v)=>s+v,0)/clarVals.length,1):0;
-  const matVals=feedbacks.map(f=>parseFloat(f.materiais)).filter(v=>!isNaN(v));
-  const avgMat=matVals.length?round(matVals.reduce((s,v)=>s+v,0)/matVals.length,1):0;
-  const totPrepared=feedbacks.filter(f=>f.preparado==='Sim, totalmente').length;
-  const pctPrepared=total?Math.round(totPrepared/total*100):0;
+  /* cards de resumo */
+  function avg(field){
+    const vals=feedbacks.map(f=>parseFloat(f[field])).filter(v=>!isNaN(v));
+    return vals.length?round(vals.reduce((s,v)=>s+v,0)/vals.length,1):null;
+  }
+  const avgGeral=avg('geral'),avgClar=avg('clareza'),avgMat=avg('materiais');
+  const totPrep=feedbacks.filter(f=>f.preparado==='Sim, totalmente').length;
+  const pctPrep=total?Math.round(totPrep/total*100):0;
 
-  /* ── Função para renderizar cada card de pergunta ── */
+  /* card por questão */
   function renderCard(q){
-    const vals=feedbacks.map(f=>f[q.key]).filter(Boolean);
-    if(!vals.length) return `<div class="panel" style="opacity:.55"><div class="panel-h"><div class="pi">${q.emoji}</div><h2>${esc(q.label)}</h2></div><div class="empty" style="padding:20px 0">Sem respostas ainda</div></div>`;
+    const vals=feedbacks.map(f=>f[q.key]).filter(v=>v&&String(v).trim());
+    if(!vals.length)return `<div class="panel" style="opacity:.5"><div class="panel-h"><div class="pi">${q.emoji}</div><h2>${esc(q.label)}</h2></div><div class="empty" style="padding:16px 0">Sem respostas</div></div>`;
 
     if(q.type==='star5'){
       const nums=vals.map(v=>parseFloat(v)).filter(v=>!isNaN(v));
-      const avg=nums.length?round(nums.reduce((s,v)=>s+v,0)/nums.length,1):0;
+      if(!nums.length)return '';
+      const a=round(nums.reduce((s,v)=>s+v,0)/nums.length,1);
       const dist=[5,4,3,2,1].map(n=>({n,c:nums.filter(v=>Math.round(v)===n).length}));
-      const maxC=Math.max(...dist.map(d=>d.c),1);
+      const mx=Math.max(...dist.map(d=>d.c),1);
       return `<div class="panel"><div class="panel-h"><div class="pi">${q.emoji}</div><h2>${esc(q.label)}</h2></div>
         <div style="display:flex;align-items:center;gap:24px;margin-bottom:16px">
-          <div style="text-align:center">
-            <div style="font-family:'Inter',sans-serif;font-size:3em;font-weight:700;color:var(--gold);line-height:1">${avg}</div>
-            <div style="color:var(--gold);font-size:1.3em;margin-top:4px">${starStr(avg)}</div>
-            <div style="font-size:.8em;color:var(--text-3);margin-top:2px">de 5 · ${nums.length} respostas</div>
+          <div style="text-align:center;min-width:90px">
+            <div style="font-family:'Inter',sans-serif;font-size:3em;font-weight:700;color:var(--gold);line-height:1">${a}</div>
+            <div style="color:var(--gold);font-size:1.2em;margin-top:4px">${starStr(a)}</div>
+            <div style="font-size:.8em;color:var(--text-3);margin-top:2px">de 5 · ${nums.length} resp.</div>
           </div>
-          <div style="flex:1">${dist.map(d=>`<div class="barrow" style="margin-bottom:7px"><div class="nm" style="width:24px;color:var(--gold);font-weight:600">${d.n}★</div><div class="track"><div class="fill" style="width:${d.c/maxC*100}%;background:var(--gold)"></div></div><div class="vl" style="width:28px">${d.c}</div></div>`).join('')}</div>
+          <div style="flex:1">${dist.map(d=>`<div class="barrow" style="margin-bottom:6px"><div class="nm" style="width:28px;color:var(--gold);font-weight:600;text-align:left">${d.n}★</div><div class="track"><div class="fill" style="width:${d.c/mx*100}%;background:var(--gold)"></div></div><div class="vl" style="width:24px">${d.c}</div></div>`).join('')}</div>
         </div></div>`;
     }
 
     if(q.type==='choice'){
       const opts=q.options||[...new Set(vals)];
       const counts=opts.map(o=>({o,c:vals.filter(v=>v===o).length}));
-      const maxC=Math.max(...counts.map(d=>d.c),1);
+      const mx=Math.max(...counts.map(d=>d.c),1);
       const colors=['var(--green)','var(--amber)','var(--red)','var(--blue)','var(--purple)'];
       return `<div class="panel"><div class="panel-h"><div class="pi">${q.emoji}</div><h2>${esc(q.label)}</h2><span style="margin-left:auto;font-size:.8em;color:var(--text-3)">${vals.length} respostas</span></div>
-        ${counts.map((d,i)=>`<div class="barrow" style="margin-bottom:10px"><div class="nm" style="width:auto;flex:1;text-align:left;padding-right:12px;font-size:.85em;white-space:normal;line-height:1.3">${esc(d.o)}</div><div class="track" style="width:120px;flex:none"><div class="fill" style="width:${d.c/maxC*100}%;background:${colors[i%colors.length]}"></div></div><div class="vl" style="width:60px;text-align:right"><b>${d.c}</b> <span style="color:var(--text-3)">(${total?Math.round(d.c/total*100):0}%)</span></div></div>`).join('')}
-      </div>`;
+        ${counts.map((d,i)=>`<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+          <div style="flex:1;font-size:.85em;line-height:1.4;color:var(--text-2)">${esc(d.o)}</div>
+          <div class="track" style="width:100px;flex:none"><div class="fill" style="width:${d.c/mx*100}%;background:${colors[i%colors.length]}"></div></div>
+          <div style="width:60px;text-align:right;font-size:.85em"><b>${d.c}</b> <span style="color:var(--text-3)">${total?Math.round(d.c/total*100):0}%</span></div>
+        </div>`).join('')}</div>`;
     }
 
     if(q.type==='text'){
-      const nonEmpty=vals.filter(v=>v&&v.length>2&&!/^(n(ão|ao|enhum)|nada|ok|não sei|sem|\/|-|\.+)$/i.test(v.trim()));
-      if(!nonEmpty.length) return `<div class="panel"><div class="panel-h"><div class="pi">${q.emoji}</div><h2>${esc(q.label)}</h2></div><div class="empty" style="padding:16px 0">Nenhuma resposta com conteúdo relevante</div></div>`;
-      return `<div class="panel"><div class="panel-h"><div class="pi">${q.emoji}</div><h2>${esc(q.label)}</h2><span style="margin-left:auto;font-size:.8em;color:var(--text-3)">${nonEmpty.length} respostas</span></div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px">
-          ${nonEmpty.map(v=>`<div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-size:.88em;color:var(--text-2);line-height:1.55;font-style:italic">"${esc(v)}"</div>`).join('')}
+      const ne=vals.filter(v=>v.length>2&&!/^(n(ão|ao|enhum)|nada|ok|não sei|sem|\/|-|\.+)$/i.test(v.trim()));
+      if(!ne.length)return `<div class="panel"><div class="panel-h"><div class="pi">${q.emoji}</div><h2>${esc(q.label)}</h2></div><div class="empty" style="padding:12px 0">Nenhuma resposta com conteúdo</div></div>`;
+      return `<div class="panel"><div class="panel-h"><div class="pi">${q.emoji}</div><h2>${esc(q.label)}</h2><span style="margin-left:auto;font-size:.8em;color:var(--text-3)">${ne.length} respostas</span></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px">
+          ${ne.map(v=>`<div style="background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-size:.88em;color:var(--text-2);line-height:1.55;font-style:italic">"${esc(v)}"</div>`).join('')}
         </div></div>`;
     }
     return '';
   }
 
-  /* ── Tabela de analistas (só a partir de Jul/2026) ── */
+  /* tabela de analistas (Jul/2026+) */
   const tabelaAnalistas=hasName&&feedbacks.some(f=>f.nome)?`
     <div class="panel"><div class="panel-h"><div class="pi">👤</div><h2>Respostas por analista</h2></div>
     <div class="wrap-x"><table class="tbl"><thead><tr><th>Analista</th><th>Caixa</th><th>Geral</th><th>Materiais</th><th>Clareza</th><th>Preparado?</th></tr></thead><tbody>
@@ -1271,7 +1274,6 @@ function viewOnboarding(){
 
   return `<div class="page-h"><h1>${esc(T('onboarding'))} 🎓</h1><p>Avaliações de satisfação dos analistas após o Onboarding B2B — visão semestral.</p></div>
 
-  <!-- Seletor de semestre -->
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
     <label style="font-size:.85em;font-weight:600;color:var(--text-2)">Período:</label>
     <select style="border:1px solid var(--border-2);background:var(--surface);border-radius:9px;padding:8px 14px;font-size:.95em;color:var(--text);font-weight:500" onchange="db.onboardingBimestre=this.value;try{localStorage.setItem('ob_bimestre',this.value);}catch(e){}render()">${bSel}</select>
@@ -1279,114 +1281,131 @@ function viewOnboarding(){
     <button class="btn primary sm edit-only" style="margin-left:auto" onclick="openOnboardingImport()">↥ Importar planilha</button>
   </div>
 
-  <!-- Cards de resumo -->
   ${total?`<div class="mcards" style="grid-template-columns:repeat(4,1fr);margin-bottom:24px">
     <div class="mcard"><div class="lbl">Avaliações coletadas</div><div class="val">${total}</div><div class="foot">${bimestreLabel(db.onboardingBimestre)}</div></div>
-    <div class="mcard"><div class="lbl">Nota geral média</div><div class="val" style="color:var(--gold)">${avgGeral}/5 ★</div></div>
-    <div class="mcard"><div class="lbl">Clareza e didática</div><div class="val" style="color:var(--gold)">${avgClar}/5 ★</div></div>
-    <div class="mcard"><div class="lbl">Sentiu-se preparado</div><div class="val" style="color:var(--green-text)">${pctPrepared}%</div><span class="tag" style="background:var(--green-soft);color:var(--green-text)">${totPrepared} de ${total}</span></div>
+    <div class="mcard"><div class="lbl">Nota geral média</div><div class="val" style="color:var(--gold)">${avgGeral!=null?avgGeral+'/5 ★':'—'}</div></div>
+    <div class="mcard"><div class="lbl">Clareza e didática</div><div class="val" style="color:var(--gold)">${avgClar!=null?avgClar+'/5 ★':'—'}</div></div>
+    <div class="mcard"><div class="lbl">Sentiu-se preparado</div><div class="val" style="color:var(--green)">${pctPrep}%</div><span class="tag" style="background:var(--green-soft);color:var(--green-text)">${totPrep} de ${total}</span></div>
   </div>`:''}
 
-  <!-- Cards por questão -->
-  ${total?OB_QUESTIONS.map(q=>renderCard(q)).join(''):'<div class="empty">Nenhuma avaliação importada para este período.<br><br><button class="btn primary" onclick="openOnboardingImport()">↥ Importar planilha de feedback</button></div>'}
+  ${total?OB_QUESTIONS.map(q=>renderCard(q)).join(''):`<div class="empty">Nenhuma avaliação importada para este período.<br><br><button class="btn primary edit-only" onclick="openOnboardingImport()">↥ Importar planilha de feedback</button></div>`}
 
   ${tabelaAnalistas}`;
 }
 
+/* --- modal de importação --- */
 function openOnboardingImport(){
-  show(`<div class="modal" style="width:580px"><h2>🎓 Importar Feedback Onboarding B2B <button class="close" onclick="closeModal()">✕</button></h2>
-    <p style="color:var(--text-2);font-size:.9em;margin-bottom:12px">Aceita a planilha exportada do Google Forms em <b>.xlsx</b> ou <b>.csv</b>. O período é detectado automaticamente pela data de cada resposta.</p>
-    <p class="hint" style="margin-bottom:12px">As respostas são <b>anônimas</b>. A partir de Julho/2026, colunas "Nome" e "Caixa" serão capturadas automaticamente.</p>
-    <div class="fld" style="margin-bottom:14px"><label>Arquivo (.xlsx ou .csv)</label><input type="file" accept=".xlsx,.xls,.csv" id="ob_file"></div>
+  show(`<div class="modal" style="width:560px"><h2>🎓 Importar Feedback Onboarding <button class="close" onclick="closeModal()">✕</button></h2>
+    <p style="color:var(--text-2);font-size:.9em;margin-bottom:10px">Selecione a planilha exportada do Google Forms (<b>.xlsx</b>). O período é detectado automaticamente pela data de cada resposta. Reimportar substitui o período automaticamente — sem duplicação.</p>
+    <div class="fld" style="margin-bottom:16px"><label>Arquivo (.xlsx ou .csv)</label><input type="file" accept=".xlsx,.xls,.csv" id="ob_file" style="margin-top:6px"></div>
     <div class="modal-foot">
-      <button class="btn" style="color:var(--red-text);border-color:var(--red)" onclick="clearAllOnboarding()">🗑 Limpar todos os períodos</button>
+      <button class="btn" style="color:var(--red-text);border-color:var(--red);margin-right:auto" onclick="clearAllOnboarding()">🗑 Limpar todos</button>
       <button class="btn" onclick="closeModal()">Cancelar</button>
-      <button class="btn primary" onclick="importOnboarding()">Importar e calcular</button>
+      <button class="btn primary" onclick="doImportOnboarding()">Importar e calcular</button>
     </div>
   </div>`);
 }
 
 function clearAllOnboarding(){
-  if(!confirm('Limpar TODAS as avaliações de onboarding de todos os períodos?'))return;
+  if(!confirm('Limpar TODAS as avaliações de onboarding?'))return;
   db.onboardingFeedbacks=[];
   try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
-  closeModal();render();toast('Todos os períodos limpos');
+  closeModal();render();toast('Todos os dados de onboarding removidos');
 }
 
-function importOnboarding(){
-  const f=document.getElementById('ob_file').files[0];if(!f){toast('Selecione um arquivo');return;}
+function doImportOnboarding(){
+  const fileEl=document.getElementById('ob_file');
+  if(!fileEl||!fileEl.files||!fileEl.files[0]){toast('Selecione um arquivo');return;}
+  const f=fileEl.files[0];
   const isXlsx=/\.xlsx?$/i.test(f.name);
-  const r=new FileReader();
-  r.onload=()=>{try{
-    let rows;
-    if(isXlsx){
-      const wb=XLSX.read(r.result,{type:'array',cellDates:true});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false}).filter(rw=>rw.some(c=>String(c).trim()));
-    } else {
-      const text=r.result;
-      rows=parseCSV(text,detectDelim(text)).filter(rw=>rw.some(c=>c&&c.trim()));
-    }
-    if(rows.length<2){toast('Arquivo vazio');return;}
-    const raw=rows[0].map(h=>String(h||'').trim());
-    const low=raw.map(h=>h.toLowerCase().replace(/\s+/g,' ').replace(/\n/g,' '));
-    const fi=i=>low.findIndex(h=>h.includes(i));
-    const dateI=fi('carimbo');
-    const geralI=low.findIndex(h=>h.includes('avaliaria')&&h.includes('geral'));
-    const duracaoI=low.findIndex(h=>h.includes('dura')&&(h.includes('adequada')||h.includes('aprendizado')));
-    const matI=low.findIndex(h=>h.includes('materiai')||h.includes('ajudaram no aprendizado'));
-    const aprofI=low.findIndex(h=>h.includes('aprofund'));
-    const clarI=low.findIndex(h=>h.includes('clareza')||h.includes('did'));
-    const recepI=low.findIndex(h=>h.includes('receptiva')||h.includes('aberta'));
-    const avontI=low.findIndex(h=>h.includes('vontade')||h.includes('interagir'));
-    const comI=low.findIndex(h=>h.includes('coment')&&(h.includes('forma')||h.includes('sugestão')||h.includes('sugestao')));
-    const prepI=low.findIndex(h=>h.includes('preparad')&&h.includes('suporte'));
-    const gostouI=low.findIndex(h=>h.includes('mais gostou'));
-    const melhI=low.findIndex(h=>h.includes('melhorad')&&h.includes('turma'));
-    const recadoI=low.findIndex(h=>h.includes('recado')||h.includes('mensagem'));
-    const nomeI=low.findIndex(h=>h==='nome'||h==='analista'||h==='nome do analista');
-    const caixaI=fi('caixa');
-    const get=(rw,i)=>i>=0?String(rw[i]===null||rw[i]===undefined?'':rw[i]).trim():'';
-    const newFb=[];
-    rows.slice(1).forEach(rw=>{
-      const dateRaw=get(rw,dateI);
-      let date=new Date().toISOString();
-      if(dateRaw){
-        try{
-          const d=new Date(dateRaw.replace(' ','T'));
-          if(!isNaN(d))date=d.toISOString();
-        }catch(e){}
+  const reader=new FileReader();
+  reader.onerror=()=>toast('Erro ao ler o arquivo');
+  reader.onload=function(e){
+    try{
+      let rows;
+      if(isXlsx){
+        if(typeof XLSX==='undefined'){toast('Biblioteca XLSX não carregada');return;}
+        const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+      } else {
+        rows=parseCSV(e.target.result,detectDelim(e.target.result));
       }
-      newFb.push({
-        date,
-        geral:get(rw,geralI),duracao:get(rw,duracaoI),materiais:get(rw,matI),
-        aprofundar:get(rw,aprofI),clareza:get(rw,clarI),receptiva:get(rw,recepI),
-        avontade:get(rw,avontI),comentario:get(rw,comI),preparado:get(rw,prepI),
-        gostou:get(rw,gostouI),melhorar:get(rw,melhI),recado:get(rw,recadoI),
-        nome:get(rw,nomeI),caixa:get(rw,caixaI)
-      });
-    });
-    if(!newFb.length){toast('Nenhuma resposta encontrada');return;}
-    // Detecta o semestre da maioria das respostas
-    const firstDate=newFb[0].date;
-    const d=new Date(firstDate);
-    const bimestreDetectado=d.getFullYear()+'-'+(d.getMonth()<6?'01':'07');
-    // Substitui apenas as respostas do período detectado
-    if(!db.onboardingFeedbacks)db.onboardingFeedbacks=[];
-    db.onboardingFeedbacks=db.onboardingFeedbacks.filter(f=>!inBimestre(f.date,bimestreDetectado));
-    db.onboardingFeedbacks.push(...newFb);
-    // Atualiza semestre selecionado
-    db.onboardingBimestre=bimestreDetectado;
-    try{localStorage.setItem('ob_bimestre',bimestreDetectado);}catch(e){}
-    // Salva e navega
-    try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
-    closeModal();
-    route.page='onboarding';
-    render();
-    sendToFirebase().catch(()=>{});
-    toast(newFb.length+' avaliações importadas — '+bimestreLabel(bimestreDetectado));
-  }catch(e){toast('Erro: '+e.message);console.error(e);}};
-  if(isXlsx)r.readAsArrayBuffer(f);else r.readAsText(f,'utf-8');
+      rows=rows.filter(rw=>rw.some(c=>String(c||'').trim()));
+      if(rows.length<2){toast('Arquivo sem dados');return;}
+
+      const raw=rows[0].map(h=>String(h||'').trim());
+      const low=raw.map(h=>h.toLowerCase().replace(/[\n\r]+/g,' ').replace(/\s+/g,' '));
+      const fi=s=>low.findIndex(h=>h.includes(s));
+      const fand=(a,b)=>low.findIndex(h=>h.includes(a)&&h.includes(b));
+
+      const idx={
+        date:  fi('carimbo'),
+        geral: fand('avaliaria','geral'),
+        duracao: fand('dura','aprendizado'),
+        materiais: low.findIndex(h=>h.includes('materiai')||h.includes('ajudaram no aprendizado')),
+        aprofundar: fi('aprofund'),
+        clareza: low.findIndex(h=>h.includes('clareza')||h.includes('did')),
+        receptiva: low.findIndex(h=>h.includes('receptiva')||h.includes('aberta')),
+        avontade: low.findIndex(h=>h.includes('vontade')||h.includes('interagir')),
+        comentario: fand('coment','forma'),
+        preparado: fand('preparad','suporte'),
+        gostou: fi('mais gostou'),
+        melhorar: fand('melhorad','turma'),
+        recado: low.findIndex(h=>h.includes('recado')||h.includes('mensagem')),
+        nome: low.findIndex(h=>h==='nome'||h==='analista'||h==='nome do analista'),
+        caixa: fi('caixa'),
+      };
+
+      const get=(rw,i)=>i>=0&&rw[i]!=null?String(rw[i]).trim():'';
+
+      const newFb=rows.slice(1).map(rw=>{
+        const dateRaw=get(rw,idx.date);
+        let date=new Date().toISOString();
+        if(dateRaw){
+          const d=new Date(dateRaw.replace(' ','T'));
+          if(!isNaN(d.getTime()))date=d.toISOString();
+        }
+        return {
+          date,
+          geral:get(rw,idx.geral), duracao:get(rw,idx.duracao),
+          materiais:get(rw,idx.materiais), aprofundar:get(rw,idx.aprofundar),
+          clareza:get(rw,idx.clareza), receptiva:get(rw,idx.receptiva),
+          avontade:get(rw,idx.avontade), comentario:get(rw,idx.comentario),
+          preparado:get(rw,idx.preparado), gostou:get(rw,idx.gostou),
+          melhorar:get(rw,idx.melhorar), recado:get(rw,idx.recado),
+          nome:get(rw,idx.nome), caixa:get(rw,idx.caixa),
+        };
+      }).filter(f=>f.geral||f.clareza||f.materiais||f.duracao||f.gostou||f.recado);
+
+      if(!newFb.length){toast('Nenhuma resposta válida encontrada');return;}
+
+      // Detecta semestre pela primeira data válida
+      const firstD=new Date(newFb[0].date);
+      const bim=firstD.getFullYear()+'-'+(firstD.getMonth()<6?'01':'07');
+
+      // Remove respostas do mesmo período e insere as novas
+      if(!db.onboardingFeedbacks)db.onboardingFeedbacks=[];
+      db.onboardingFeedbacks=db.onboardingFeedbacks.filter(f=>!inBimestre(f.date,bim));
+      db.onboardingFeedbacks=db.onboardingFeedbacks.concat(newFb);
+
+      // Atualiza semestre selecionado
+      db.onboardingBimestre=bim;
+      try{localStorage.setItem('ob_bimestre',bim);}catch(e){}
+      try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
+
+      closeModal();
+      route={page:'onboarding',pdiId:null,teamId:null};
+      render();
+      sendToFirebase().catch(()=>{});
+      toast('✓ '+newFb.length+' avaliações importadas — '+bimestreLabel(bim));
+    }catch(err){
+      console.error('Erro importOnboarding:',err);
+      toast('Erro ao importar: '+err.message);
+    }
+  };
+  if(isXlsx)reader.readAsArrayBuffer(f);
+  else reader.readAsText(f,'UTF-8');
 }
 
 /* ---------- TREINAMENTOS ---------- */
