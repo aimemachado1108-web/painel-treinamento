@@ -425,8 +425,12 @@ async function pullFromFirebase(){
     const data=await r.json();
     if(data&&typeof data==='object'&&data.months){
       const localPrefs=loadPrefs()||db.settings||defaultSettings();
+      // Preservar semestre selecionado localmente
+      let _savedBimestre=null;
+      try{_savedBimestre=localStorage.getItem('ob_bimestre');}catch(e){}
       db=data;
       db.settings=localPrefs;
+      if(_savedBimestre)db.onboardingBimestre=_savedBimestre;
       db.settings.titles=Object.assign({},DEFAULT_TITLES,db.settings.titles||{});
       /* Firebase omite arrays vazios e converte arrays em objetos — corrigir tudo */
       const toArr=v=>!v?[]:Array.isArray(v)?v:Object.values(v);
@@ -448,7 +452,10 @@ async function pullFromFirebase(){
       });
       try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
       syncStatus='ok';lastSyncTime=new Date();updateSyncBadge();
-      applyTheme();render();
+      applyTheme();
+      // Preserva o semestre selecionado — não deixa o Firebase sobrescrever
+      if(db.onboardingBimestre){}
+      render();
       return true;
     }
     syncStatus='ok';updateSyncBadge();return false;
@@ -574,7 +581,9 @@ db.teamTrainings.forEach(t=>{
 });
 if(!db.onboardingFeedbacks)db.onboardingFeedbacks=[];
 else db.onboardingFeedbacks=toArr(db.onboardingFeedbacks);
-if(!db.onboardingBimestre)db.onboardingBimestre=currentBimestreKey();
+// Restaurar semestre salvo localmente (preferência do usuário)
+try{const _ob=localStorage.getItem('ob_bimestre');if(_ob)db.onboardingBimestre=_ob;}catch(e){}
+if(!db.onboardingBimestre)db.onboardingBimestre='2025-07'; // padrão: Jul–Dez 2025
 persist();
 
 /* ===== nav / routing ===== */
@@ -1094,15 +1103,14 @@ function bimestreLabel(key){
   return `${ini} – ${fim} ${y}`;
 }
 function bimestreKeys(){
-  // Gera chaves de Jan/2025 até 1 semestre à frente
   const keys=[];
   const now=new Date();
   for(let y=2025;y<=now.getFullYear()+1;y++){
     keys.push(y+'-01');keys.push(y+'-07');
   }
-  // Filtra até 1 semestre à frente
   const limit=now.getFullYear()+(now.getMonth()>=6?1:0)+'-'+(now.getMonth()>=6?'01':'07');
-  return keys.filter(k=>k<=limit);
+  // Começa em Jul/2025 (primeiro semestre com dados) e vai até 1 semestre à frente
+  return keys.filter(k=>k>='2025-07'&&k<=limit);
 }
 function inBimestre(dateStr,key){
   if(!dateStr||!key)return false;
@@ -1208,7 +1216,7 @@ function viewOnboarding(){
   <!-- Seletor de semestre -->
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap">
     <label style="font-size:.85em;font-weight:600;color:var(--text-2)">Período:</label>
-    <select style="border:1px solid var(--border-2);background:var(--surface);border-radius:9px;padding:8px 14px;font-size:.95em;color:var(--text);font-weight:500" onchange="db.onboardingBimestre=this.value;render()">${bSel}</select>
+    <select style="border:1px solid var(--border-2);background:var(--surface);border-radius:9px;padding:8px 14px;font-size:.95em;color:var(--text);font-weight:500" onchange="db.onboardingBimestre=this.value;try{localStorage.setItem('ob_bimestre',this.value);}catch(e){}render()">${bSel}</select>
     <span style="font-size:.82em;color:var(--text-3)">${total} avaliação${total!==1?'ões':''} neste período</span>
     <button class="btn primary sm edit-only" style="margin-left:auto" onclick="openOnboardingImport()">↥ Importar planilha</button>
   </div>
