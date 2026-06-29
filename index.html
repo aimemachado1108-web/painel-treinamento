@@ -446,17 +446,27 @@ async function pullFromFirebase(){
   if(_syncing)return false;
   syncStatus='syncing';updateSyncBadge();
   try{
-    const r=await fetch(FB_URL+'?'+Date.now()); // cache-bust
+    const r=await fetch(FB_URL+'?t='+Date.now());
     if(!r.ok){syncStatus='error';updateSyncBadge();return false;}
     const data=await r.json();
     if(data&&typeof data==='object'&&data.months){
+      // Proteção: só usa dados do Firebase se tiver ações/pdis
+      // Se local tem mais dados que Firebase, não sobrescreve
+      const fbTotal=(data.actions?Object.values(data.actions).length:0)
+                   +(data.pdis?Object.values(data.pdis).length:0)
+                   +(data.docs?Object.values(data.docs).length:0);
+      const localTotal=(db.actions||[]).length+(db.pdis||[]).length+(db.docs||[]).length;
+      if(localTotal>fbTotal&&Date.now()-_lastEdit<120000){
+        // Local tem mais dados e foi editado nos últimos 2 min — não sobrescreve
+        syncStatus='ok';lastSyncTime=new Date();updateSyncBadge();
+        return false;
+      }
       const localPrefs=loadPrefs()||db.settings||defaultSettings();
-      const currentMonth=db.current; // preservar mês atual
+      const currentMonth=db.current;
       let _savedBimestre=null;
       try{_savedBimestre=localStorage.getItem('ob_bimestre');}catch(e){}
       db=data;
       db.settings=localPrefs;
-      // Preservar mês selecionado pelo usuário
       if(currentMonth&&db.months&&db.months.includes(currentMonth))db.current=currentMonth;
       if(_savedBimestre)db.onboardingBimestre=_savedBimestre;
       db.settings.titles=Object.assign({},DEFAULT_TITLES,db.settings.titles||{});
@@ -519,9 +529,9 @@ function updateSyncBadge(){
 // Auto-pull a cada 10s — sem bloqueio
 let _lastEdit=0;
 setInterval(()=>{
-  // Não puxa do Firebase se editou nos últimos 30s — evita sobrescrever dados locais
-  if(!_syncing&&(Date.now()-_lastEdit)>30000)pullFromFirebase();
-},10000);
+  // Só puxa do Firebase se não editou nos últimos 60s
+  if(!_syncing&&(Date.now()-_lastEdit)>60000)pullFromFirebase();
+},15000);
 /* ===== config ===== */
 const TYPES={
   'Onboarding':{badge:'--blue',bar:'#3b82f6'},
