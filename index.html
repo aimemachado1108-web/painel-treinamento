@@ -131,7 +131,7 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 .selpill{border:1px solid var(--border-2);background:var(--surface);border-radius:9px;padding:6px 10px;font-size:.86em;font-weight:500;color:var(--text)}
 
 .page-h{margin-bottom:20px}
-.page-h h1{font-family:var(--font-title);font-style:italic;font-weight:400;font-size:2.1em;letter-spacing:-.5px}
+.page-h h1{font-family:var(--font-title);font-weight:600;font-size:2.1em;letter-spacing:-.5px}
 .page-h p{color:var(--text-2);font-size:.96em;margin-top:4px}
 
 .mcards{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:22px}
@@ -741,7 +741,10 @@ function viewPdis(){
       +'<div style="cursor:pointer" onclick="openPdi(\''+l[0].id+'\')">'
       +'<div class="ico">📁</div><h3>'+esc(a)+'</h3>'
       +'<div class="meta">'+l.length+' PDI · '+done+' concluído'+(done!==1?'s':'')+'</div>'
-      +(l[0].dataSolic?'<div class="meta">Solic.: '+esc(l[0].dataSolic)+'</div>':'')
+      +(l[0].dataSolic?'<div class="meta" style="display:flex;gap:12px">'
+      +'<span>📋 Solic.: '+esc(l[0].dataSolic)+'</span>'
+      +(l[0].dateConc?'<span>✓ Conc.: '+esc(l[0].dateConc)+'</span>':'')
+      +'</div>':'')
       +(res?'<span class="chip">✓ com resultados</span>':'<span class="chip" style="color:var(--amber-text);border-color:var(--amber-soft)">resultados pendentes</span>')
       +'</div></div>';
   }).join('');
@@ -1549,12 +1552,13 @@ function openActionModal(){modalPrio='Alta';show('<div class="modal"><h2>Nova A�
 function saveAction(){const title=document.getElementById('m_title').value.trim();if(!title){toast('Informe o tema/título');return;}db.actions.push({id:'a'+Date.now(),type:document.getElementById('m_type').value,title,who:document.getElementById('m_who').value.trim(),dataSolic:document.getElementById('m_solic').value.trim(),dateConc:document.getElementById('m_conc').value.trim(),priority:modalPrio,status:document.getElementById('m_status').value,month:db.current,desc:document.getElementById('m_obs').value.trim()});persist();closeModal();go('treinamentos');toast('Ação salva');}
 function openDocModal(){modalPrio='Alta';show('<div class="modal"><h2>Nova Documentação <button class="close" onclick="closeModal()">✕</button></h2>'+_docFormBody(null)+'<div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveDoc()">Salvar Doc</button></div></div>');}
 function saveDoc(){const title=document.getElementById('d_title').value.trim();if(!title){toast('Informe o título');return;}db.docs.push({id:'d'+Date.now(),title,dataSolic:document.getElementById('d_solic').value.trim(),dateConc:document.getElementById('d_conc').value.trim(),priority:modalPrio,status:document.getElementById('d_status').value,month:db.current,desc:document.getElementById('d_desc').value.trim()});persist();closeModal();go('documentacao');toast('Documentação salva');}
-function openPdiModal(){show(`<div class="modal"><h2>Novo PDI <button class="close" onclick="closeModal()">✕</button></h2>
+function openPdiModal(){modalPrio='Média';show(`<div class="modal"><h2>Novo PDI <button class="close" onclick="closeModal()">✕</button></h2>
     <div class="full fld"><label>Analista</label><input id="pd_an" placeholder="Nome do analista"></div>
     <div class="row"><div class="fld"><label>Data da solicitação</label><input id="pd_solic" placeholder="dd/mm/aaaa"></div><div class="fld"><label>Data de conclusão</label><input id="pd_conc" placeholder="dd/mm/aaaa"></div></div>
     <div class="full fld"><label>Tema / Título</label><input id="pd_title" placeholder="Ex: Organização e produtividade nos chats"></div>
     <div class="full fld"><label>Observação</label><textarea id="pd_obs" rows="2" placeholder="Objetivo do acompanhamento…"></textarea></div>
-    <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--text-3);font-weight:600;margin:6px 0 8px">Métricas — antes (preencha agora ou depois na tela do PDI)</div>
+    ${prioBlock()}
+    <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--text-3);font-weight:600;margin:14px 0 8px">Métricas — antes (preencha agora ou depois na tela do PDI)</div>
     <div class="row"><div class="fld"><label>SLA 1ª resp (min)</label><input id="pd_sla"></div><div class="fld"><label>Chats resp / dia</label><input id="pd_cr"></div></div>
     <div class="row"><div class="fld"><label>Chats fech / dia</label><input id="pd_cf"></div><div class="fld"><label>TMA (horas)</label><input id="pd_tma"></div></div>
     <div class="full fld"><label>CSAT semanal (%)</label><input id="pd_cs"></div>
@@ -1563,7 +1567,7 @@ function gv(id){const v=document.getElementById(id).value.replace(',','.').trim(
 function savePdi(editId){const an=document.getElementById('pd_an').value.trim(),title=document.getElementById('pd_title').value.trim();if(!an||!title){toast('Informe analista e título');return;}
   const m={slaB:gv('pd_sla'),slaA:0,crB:gv('pd_cr'),crA:0,cfB:gv('pd_cf'),cfA:0,tmaB:gv('pd_tma'),tmaA:0,csB:gv('pd_cs'),csA:0};
   if(editId){const p=db.pdis.find(x=>x.id===editId);if(p){p.analyst=an;p.title=title;p.dataSolic=document.getElementById('pd_solic').value.trim();p.dateConc=document.getElementById('pd_conc').value.trim();p.obs=document.getElementById('pd_obs').value.trim();p.m.slaB=m.slaB||p.m.slaB;p.m.crB=m.crB||p.m.crB;p.m.cfB=m.cfB||p.m.cfB;p.m.tmaB=m.tmaB||p.m.tmaB;p.m.csB=m.csB||p.m.csB;}}
-  else db.pdis.push({id:'p'+Date.now(),analyst:an,title,dataSolic:document.getElementById('pd_solic').value.trim(),dateConc:document.getElementById('pd_conc').value.trim(),priority:'Média',status:'Concluído',month:db.current,obs:document.getElementById('pd_obs').value.trim(),m,hasResults:false});
+  else db.pdis.push({id:'p'+Date.now(),analyst:an,title,dataSolic:document.getElementById('pd_solic').value.trim(),dateConc:document.getElementById('pd_conc').value.trim(),priority:modalPrio,status:'Pendente',month:db.current,obs:document.getElementById('pd_obs').value.trim(),m,hasResults:false});
   persist();closeModal();go('pdis');toast(editId?'PDI atualizado':'PDI criado');}
 function editPdiModal(id){const p=db.pdis.find(x=>x.id===id);if(!p)return;show(`<div class="modal"><h2>Editar PDI <button class="close" onclick="closeModal()">✕</button></h2>
     <div class="full fld"><label>Analista</label><input id="pd_an" value="${esc(p.analyst)}"></div>
