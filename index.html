@@ -374,47 +374,39 @@ const KEY_PREFS='painel_prefs_local'; // aparência — só local, não sincroni
 const FB_URL='https://painel-aime-default-rtdb.firebaseio.com/painel.json';
 let mem=null;
 let syncTimer=null;
-let syncStatus='syncing';
+let syncStatus='ok';
 let lastSyncTime=null;
 let pendingSync=false;
+let _pushing=false; // evita push simultâneo
 
-/* Preferências visuais ficam APENAS no navegador local de cada pessoa */
-function loadPrefs(){
-  try{const r=localStorage.getItem(KEY_PREFS);if(r)return JSON.parse(r);}catch(e){}
-  return null;
-}
-function savePrefs(){
-  try{localStorage.setItem(KEY_PREFS,JSON.stringify(db.settings));}catch(e){}
-}
-
-function load(){
-  try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}
-  return mem?JSON.parse(JSON.stringify(mem)):null;
-}
+function loadPrefs(){try{const r=localStorage.getItem(KEY_PREFS);if(r)return JSON.parse(r);}catch(e){}return null;}
+function savePrefs(){try{localStorage.setItem(KEY_PREFS,JSON.stringify(db.settings));}catch(e){}}
+function load(){try{const r=localStorage.getItem(KEY);if(r)return JSON.parse(r);}catch(e){}return mem?JSON.parse(JSON.stringify(mem)):null;}
 
 function persist(){
-  /* Separa settings antes de sincronizar — aparência não vai pro Firebase */
-  const settingsBackup=db.settings;
   try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){mem=JSON.parse(JSON.stringify(db));}
   savePrefs();
   pendingSync=true;
   if(syncTimer)clearTimeout(syncTimer);
-  syncTimer=setTimeout(pushToFirebase,1500);
+  syncTimer=setTimeout(pushToFirebase,2000);
   updateSyncBadge();
 }
 
 async function pushToFirebase(){
-  if(!pendingSync)return;
-  pendingSync=false;syncStatus='syncing';updateSyncBadge();
+  if(!pendingSync||_pushing)return;
+  _pushing=true;pendingSync=false;
+  syncStatus='syncing';updateSyncBadge();
   try{
     const payload={...db,settings:undefined};
     delete payload.settings;
-    await pushByParts(payload);
+    const ok=await pushByParts(payload);
+    if(ok){syncStatus='ok';lastSyncTime=new Date();}
+    else{syncStatus='error';pendingSync=true;setTimeout(pushToFirebase,8000);}
   }catch(e){
     syncStatus='error';pendingSync=true;
-    setTimeout(pushToFirebase,10000);
-    console.warn('Firebase push error:',e);
+    setTimeout(pushToFirebase,8000);
   }
+  _pushing=false;
   updateSyncBadge();
 }
 
@@ -453,8 +445,8 @@ async function pushByParts(payload){
 }
 
 async function pullFromFirebase(){
-  // Não puxa do Firebase se há dados locais mais recentes aguardando sync
-  if(pendingSync){syncStatus='syncing';updateSyncBadge();return false;}
+  // Se há push pendente, não sobrescreve dados locais
+  if(pendingSync||_pushing)return false;
   syncStatus='syncing';updateSyncBadge();
   try{
     const r=await fetch(FB_URL);
@@ -525,8 +517,10 @@ function updateSyncBadge(){
   el.innerHTML=`<span style="color:${colors[syncStatus]}">${icons[syncStatus]} ${lbl[syncStatus]}</span>`;
 }
 
-// Auto-pull a cada 30s — só puxa se não há dados locais pendentes
-setInterval(()=>{if(!pendingSync&&!syncTimer)pullFromFirebase();},30000);
+// Auto-pull a cada 15s para todos verem dados atualizados
+setInterval(()=>{
+  if(!pendingSync&&!_pushing)pullFromFirebase();
+},15000);
 /* ===== config ===== */
 const TYPES={
   'Onboarding':{badge:'--blue',bar:'#3b82f6'},
