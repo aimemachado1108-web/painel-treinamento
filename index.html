@@ -572,19 +572,6 @@ function seed(){
   };
 }
 
-// Limpar localStorage se tiver dados de seed (dados de exemplo antigos)
-try{
-  const _raw=localStorage.getItem(KEY);
-  if(_raw){
-    const _d=JSON.parse(_raw);
-    // Se tem dados de seed (Anna Gomes é personagem de exemplo), limpa
-    if(_d.pdis&&_d.pdis.some&&_d.pdis.some(p=>p.id==='p1'&&p.analyst==='Anna Gomes')){
-      localStorage.removeItem(KEY);
-      console.log('Cache de seed removido — buscando dados reais do Firebase');
-    }
-  }
-}catch(e){}
-
 let db=load(); if(!db)db=seed();
 /* Aplica preferências visuais locais imediatamente (antes do Firebase responder) */
 const _localPrefs=loadPrefs();
