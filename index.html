@@ -433,12 +433,14 @@ async function pushByParts(payload){
   // teamTrainings: limpa as chaves dos answers (Firebase não aceita chaves com caracteres especiais)
   if(payload.teamTrainings){
     const cleaned=(payload.teamTrainings||[]).map(t=>({
-      ...t,
-      results:(t.results||[]).map(r=>({
-        analista:r.analista,email:r.email||'',caixa:r.caixa||'',
+      id:t.id||'',title:t.title||'',date:t.date||'',month:t.month||'',
+      status:t.status||'',errMode:t.errMode||'',
+      caixas:Array.isArray(t.caixas)?t.caixas:[],
+      questions:Array.isArray(t.questions)?t.questions:[],
+      results:(Array.isArray(t.results)?t.results:[]).map(r=>({
+        analista:r.analista||'',email:r.email||'',caixa:r.caixa||'',
         stars:r.stars||0,ac:r.ac||0,er:r.er||0,feedback:r.feedback||'',
-        // Serializa answers como array em vez de objeto com chaves longas
-        answersArr:(t.questions||[]).map(q=>r.answers?r.answers[q]:null)
+        answersArr:(Array.isArray(t.questions)?t.questions:[]).map(q=>r.answers?!!r.answers[q]:null)
       }))
     }));
     try{
@@ -476,20 +478,31 @@ async function pullFromFirebase(){
       db.macros=toArr(db.macros);
       db.roster=toArr(db.roster);
       db.months=toArr(db.months);
+      db.onboardingFeedbacks=toArr(db.onboardingFeedbacks);
       if(!db.caixas||!db.caixas.length)db.caixas=DEFAULT_CAIXAS.slice();
       else db.caixas=toArr(db.caixas);
       if(db.caixas.indexOf('Suporte Max')<0)db.caixas.push('Suporte Max');
+      if(!db.current)db.current=db.months[db.months.length-1]||'Junho 2026';
+      /* Sanitizar campos de string em pdis/actions/docs */
+      const sanitizeDate=v=>v===null||v===undefined?'':String(v);
+      db.pdis.forEach(p=>{p.dataSolic=sanitizeDate(p.dataSolic);p.dateConc=sanitizeDate(p.dateConc);p.date=sanitizeDate(p.date);});
+      db.actions.forEach(a=>{a.dataSolic=sanitizeDate(a.dataSolic);a.dateConc=sanitizeDate(a.dateConc);a.date=sanitizeDate(a.date);});
+      db.docs.forEach(d=>{d.dataSolic=sanitizeDate(d.dataSolic);d.dateConc=sanitizeDate(d.dateConc);});
+      db.macros.forEach(m=>{m.dataSolic=sanitizeDate(m.dataSolic);m.dateConc=sanitizeDate(m.dateConc);});
       /* Garantir arrays dentro de teamTrainings e reconstruir answers */
       db.teamTrainings.forEach(t=>{
         t.results=toArr(t.results);
         t.caixas=toArr(t.caixas);
         t.questions=toArr(t.questions);
-        // Reconstruir answers a partir de answersArr se necessário
+        t.date=sanitizeDate(t.date);
         t.results.forEach(r=>{
-          if(!r.answers&&r.answersArr&&t.questions.length){
+          r.analista=r.analista||'';r.caixa=r.caixa||'';
+          // Reconstruir answers a partir de answersArr
+          if(r.answersArr&&t.questions.length){
             r.answers={};
             t.questions.forEach((q,i)=>{r.answers[q]=r.answersArr[i];});
           }
+          if(!r.answers)r.answers={};
         });
       });
       try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
@@ -1379,7 +1392,23 @@ function importOnboarding(){
 
 /* ---------- TREINAMENTOS ---------- */
 let trainFilter='Todos';
-function parseDateBR(s){if(!s)return null;const p=s.split('/').reverse().join('-');const d=new Date(p);return isNaN(d)?null:d;}
+function parseDateBR(s){
+  if(!s)return null;
+  s=String(s).trim();
+  const parts=s.split('/');
+  if(parts.length===2){
+    // dd/mm — assume ano atual
+    const y=new Date().getFullYear();
+    const d=new Date(y,parseInt(parts[1])-1,parseInt(parts[0]));
+    return isNaN(d)?null:d;
+  }
+  if(parts.length===3){
+    // dd/mm/aaaa
+    const d=new Date(parseInt(parts[2]),parseInt(parts[1])-1,parseInt(parts[0]));
+    return isNaN(d)?null:d;
+  }
+  return null;
+}
 function sortByDateSolic(arr){return [...arr].sort((a,b)=>{const da=parseDateBR(a.dataSolic)||new Date(0),db2=parseDateBR(b.dataSolic)||new Date(0);return db2-da;});}
 function cardAcao(a){
   const dias=parseDateBR(a.dataSolic)&&parseDateBR(a.dateConc)?Math.round((parseDateBR(a.dateConc)-parseDateBR(a.dataSolic))/(864e5)):null;
@@ -1709,14 +1738,14 @@ async function forceSyncAll(){
   // teamTrainings com answers serializados
   try{
     const cleaned=(db.teamTrainings||[]).map(t=>({
-      id:t.id,title:t.title,date:t.date||'',month:t.month,status:t.status,
-      errMode:t.errMode||'',
-      caixas:t.caixas||[],
-      questions:t.questions||[],
-      results:(t.results||[]).map(r=>({
+      id:t.id||'',title:t.title||'',date:t.date||'',month:t.month||'',
+      status:t.status||'',errMode:t.errMode||'',
+      caixas:Array.isArray(t.caixas)?t.caixas:[],
+      questions:Array.isArray(t.questions)?t.questions:[],
+      results:(Array.isArray(t.results)?t.results:[]).map(r=>({
         analista:r.analista||'',email:r.email||'',caixa:r.caixa||'',
         stars:r.stars||0,ac:r.ac||0,er:r.er||0,feedback:r.feedback||'',
-        answersArr:(t.questions||[]).map(q=>r.answers?!!r.answers[q]:null)
+        answersArr:(Array.isArray(t.questions)?t.questions:[]).map(q=>r.answers?!!r.answers[q]:null)
       }))
     }));
     const r=await fetch(`${BASE}/teamTrainings.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(cleaned)});
