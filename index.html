@@ -407,7 +407,7 @@ async function sendToFirebase(){
   if(_syncing)return;
   _syncing=true;
   syncStatus='syncing';updateSyncBadge();
-  const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks','onboardingBimestre'];
+  const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks'];
   let allOk=true;
   // Envia campo por campo
   for(const f of fields){
@@ -473,11 +473,13 @@ async function pullFromFirebase(){
     const prefs=loadPrefs()||db.settings||defaultSettings();
     const curMonth=db.current;
     let bim=null;try{bim=localStorage.getItem('ob_bimestre');}catch(e){}
+    const curBim=db.onboardingBimestre; // preservar seleção atual
     db=data;
     db.settings=prefs;
     db.settings.titles=Object.assign({},DEFAULT_TITLES,db.settings.titles||{});
     if(curMonth&&db.months&&toArr(db.months).includes(curMonth))db.current=curMonth;
-    if(bim)db.onboardingBimestre=bim;
+    // Bimestre: localStorage > seleção atual > Firebase > padrão
+    db.onboardingBimestre=bim||curBim||db.onboardingBimestre||'2025-07';
     // Normalizar todos os arrays
     db.pdis=toArr(db.pdis);
     db.actions=toArr(db.actions);
@@ -1308,7 +1310,6 @@ function openOnboardingImport(){
     <div class="modal-foot">
       <button class="btn" style="color:var(--red-text);border-color:var(--red);margin-right:auto" onclick="clearAllOnboarding()">🗑 Limpar todos</button>
       <button class="btn" onclick="closeModal()">Cancelar</button>
-      <button class="btn" onclick="loadDadosTeste()" title="Carregar dados de exemplo para testar">🧪 Dados de teste</button>
       <button class="btn primary" onclick="doImportOnboarding()">Importar e calcular</button>
     </div>
   </div>`);
@@ -1332,8 +1333,11 @@ function loadDadosTeste(){
 function clearAllOnboarding(){
   if(!confirm('Limpar TODAS as avaliações de onboarding?'))return;
   db.onboardingFeedbacks=[];
-  try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
-  closeModal();render();toast('Todos os dados de onboarding removidos');
+  db.onboardingBimestre='2025-07';
+  try{localStorage.setItem(KEY,JSON.stringify(db));localStorage.removeItem('ob_bimestre');}catch(e){}
+  closeModal();
+  sendToFirebase().catch(()=>{});
+  render();toast('Todos os dados de onboarding removidos');
 }
 
 function doImportOnboarding(){
@@ -1375,14 +1379,17 @@ function doImportOnboarding(){
       const nomeI=low.findIndex(h=>h==='nome'||h==='analista'||h==='nome do analista');
       const caixaI=fi('caixa');
       const get=(rw,i)=>i>=0&&rw[i]!=null?String(rw[i]).trim():'';
-      // Parser de data robusto — aceita ISO, MM/DD/YYYY e outros formatos
+      // Parser de data robusto — aceita MM/DD/YYYY, YYYY-MM-DD, hora com ou sem zero
       function parseDate(s){
         if(!s)return new Date();
-        // Formato MM/DD/YYYY HH:MM:SS (vindo do xlsx com cellDates:false)
-        const mdy=/^(\d{1,2})\/(\d{1,2})\/(\d{4})(.*)$/;
+        s=String(s).trim();
+        // Formato MM/DD/YYYY H:MM:SS ou MM/DD/YYYY HH:MM:SS
+        const mdy=/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[\s,T]+(\d{1,2}):(\d{2}):(\d{2}))?/;
         const m=s.match(mdy);
         if(m){
-          const d=new Date(`${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}${m[4]?'T'+m[4].trim():''}`);
+          const yyyy=m[3],mm=m[1].padStart(2,'0'),dd=m[2].padStart(2,'0');
+          const time=m[4]?`T${m[4].padStart(2,'0')}:${m[5]}:${m[6]}`:'T00:00:00';
+          const d=new Date(`${yyyy}-${mm}-${dd}${time}`);
           if(!isNaN(d))return d;
         }
         // Formato ISO ou YYYY-MM-DD
@@ -1402,7 +1409,9 @@ function doImportOnboarding(){
       const d0=new Date(newFb[0].date);
       const bim=d0.getFullYear()+'-'+(d0.getMonth()<6?'01':'07');
       if(!db.onboardingFeedbacks)db.onboardingFeedbacks=[];
-      db.onboardingFeedbacks=db.onboardingFeedbacks.filter(fb=>!inBimestre(fb.date,bim));
+      // Remove TODOS os feedbacks de todos os semestres presentes na planilha importada
+      const bimsImportados=new Set(newFb.map(fb=>{const d=new Date(fb.date);return d.getFullYear()+'-'+(d.getMonth()<6?'01':'07');}));
+      db.onboardingFeedbacks=db.onboardingFeedbacks.filter(fb=>!bimsImportados.has(new Date(fb.date).getFullYear()+'-'+(new Date(fb.date).getMonth()<6?'01':'07')));
       db.onboardingFeedbacks=db.onboardingFeedbacks.concat(newFb);
       db.onboardingBimestre=bim;
       try{localStorage.setItem('ob_bimestre',bim);}catch(e){}
@@ -1753,7 +1762,7 @@ async function forceSyncAll(silent){
   if(!silent&&el)el.innerHTML='<span style="color:var(--amber-text)">⟳ Enviando dados...</span>';
   syncStatus='syncing';updateSyncBadge();
   const BASE=FB_URL.replace('.json','');
-  const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks','onboardingBimestre'];
+  const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks'];
   let ok=true;
   for(const field of fields){
     const val=db[field];if(val===undefined)continue;
@@ -1837,9 +1846,7 @@ function toggleEditMode(){
 applyTheme();
 render();
 initSync();
-// MODO TESTE: inicia em modo edição para facilitar testes no HTML
-setEditMode(true);
-setTimeout(()=>{const btn=document.getElementById('lockBtn');if(btn)btn.textContent='🔓';},100);
+setTimeout(()=>{const btn=document.getElementById('lockBtn');if(btn)btn.textContent='🔒';},100);
 // Inicializar cadeado
 setTimeout(()=>{const btn=document.getElementById('lockBtn');if(btn)btn.textContent='🔒';},50);
 </script>
