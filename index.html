@@ -409,22 +409,49 @@ async function pushToFirebase(){
   try{
     const payload={...db,settings:undefined};
     delete payload.settings;
-    const r=await fetch(FB_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const json=JSON.stringify(payload);
+    // Tenta PATCH primeiro (mais eficiente que PUT)
+    const r=await fetch(FB_URL,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:json
+    });
     if(r.ok){
       syncStatus='ok';lastSyncTime=new Date();
+    } else if(r.status===413||r.status===400){
+      // Payload muito grande — divide em partes e envia por campo
+      await pushByParts(payload);
     } else {
-      // Falhou — reagenda para tentar de novo em 10s
       syncStatus='error';pendingSync=true;
       setTimeout(pushToFirebase,10000);
       console.warn('Firebase PUT error:',r.status);
     }
   }catch(e){
-    // Sem conexão — reagenda para tentar de novo em 10s
     syncStatus='error';pendingSync=true;
     setTimeout(pushToFirebase,10000);
     console.warn('Firebase push error:',e);
   }
   updateSyncBadge();
+}
+
+async function pushByParts(payload){
+  // Envia cada campo separadamente via PATCH individual
+  const BASE=FB_URL.replace('.json','');
+  const fields=['pdis','actions','docs','teamTrainings','macros','roster','months','caixas','current','onboardingFeedbacks','onboardingBimestre'];
+  let ok=true;
+  for(const field of fields){
+    if(payload[field]===undefined)continue;
+    try{
+      const r=await fetch(`${BASE}/${field}.json`,{
+        method:'PUT',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(payload[field])
+      });
+      if(!r.ok){ok=false;console.warn('pushByParts fail:',field,r.status);}
+    }catch(e){ok=false;console.warn('pushByParts error:',field,e);}
+  }
+  if(ok){syncStatus='ok';lastSyncTime=new Date();}
+  else{syncStatus='error';pendingSync=true;setTimeout(pushToFirebase,15000);}
 }
 
 async function pullFromFirebase(){
