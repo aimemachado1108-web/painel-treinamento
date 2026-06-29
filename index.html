@@ -1294,27 +1294,26 @@ function viewOnboarding(){
 
 function openOnboardingImport(){
   show(`<div class="modal" style="width:580px"><h2>🎓 Importar Feedback Onboarding B2B <button class="close" onclick="closeModal()">✕</button></h2>
-    <p style="color:var(--text-2);font-size:.9em;margin-bottom:12px">Aceita a planilha de respostas do <b>Google Forms</b> exportada em <b>.xlsx</b>. As respostas serão adicionadas ao período selecionado: <b>${bimestreLabel(db.onboardingBimestre)}</b>.</p>
-    <p class="hint" style="margin-bottom:12px">As respostas são <b>anônimas</b> por padrão. A partir de Julho/2026, se a planilha contiver colunas "Nome" e "Caixa", elas serão capturadas.</p>
-    <div class="fld" style="margin-bottom:8px"><label>Arquivo (.xlsx ou .csv)</label><input type="file" accept=".xlsx,.xls,.csv" id="ob_file"></div>
-    <div class="fld" style="margin-bottom:14px"><label>O que fazer com respostas existentes deste período?</label>
-      <select id="ob_replace"><option value="replace">Limpar e substituir este período</option><option value="add">Adicionar às existentes</option></select></div>
+    <p style="color:var(--text-2);font-size:.9em;margin-bottom:12px">Aceita a planilha exportada do Google Forms em <b>.xlsx</b> ou <b>.csv</b>. O período é detectado automaticamente pela data de cada resposta.</p>
+    <p class="hint" style="margin-bottom:12px">As respostas são <b>anônimas</b>. A partir de Julho/2026, colunas "Nome" e "Caixa" serão capturadas automaticamente.</p>
+    <div class="fld" style="margin-bottom:14px"><label>Arquivo (.xlsx ou .csv)</label><input type="file" accept=".xlsx,.xls,.csv" id="ob_file"></div>
     <div class="modal-foot">
-      <button class="btn" style="color:var(--red-text);border-color:var(--red)" onclick="clearOnboardingBimestre()">🗑 Limpar período</button>
+      <button class="btn" style="color:var(--red-text);border-color:var(--red)" onclick="clearAllOnboarding()">🗑 Limpar todos os períodos</button>
       <button class="btn" onclick="closeModal()">Cancelar</button>
-      <button class="btn primary" onclick="importOnboarding()">Importar</button>
+      <button class="btn primary" onclick="importOnboarding()">Importar e calcular</button>
     </div>
   </div>`);
 }
 
-function clearOnboardingBimestre(){
-  if(!confirm('Limpar todas as respostas de "'+bimestreLabel(db.onboardingBimestre)+'"?'))return;
-  db.onboardingFeedbacks=(db.onboardingFeedbacks||[]).filter(f=>!inBimestre(f.date,db.onboardingBimestre));
-  persist(true);closeModal();render();toast('Período limpo');
+function clearAllOnboarding(){
+  if(!confirm('Limpar TODAS as avaliações de onboarding de todos os períodos?'))return;
+  db.onboardingFeedbacks=[];
+  try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
+  closeModal();render();toast('Todos os períodos limpos');
 }
+
 function importOnboarding(){
   const f=document.getElementById('ob_file').files[0];if(!f){toast('Selecione um arquivo');return;}
-  const replace=document.getElementById('ob_replace').value==='replace';
   const isXlsx=/\.xlsx?$/i.test(f.name);
   const r=new FileReader();
   r.onload=()=>{try{
@@ -1346,19 +1345,17 @@ function importOnboarding(){
     const recadoI=low.findIndex(h=>h.includes('recado')||h.includes('mensagem'));
     const nomeI=low.findIndex(h=>h==='nome'||h==='analista'||h==='nome do analista');
     const caixaI=fi('caixa');
-    console.log('Colunas detectadas:',{dateI,geralI,duracaoI,matI,aprofI,clarI,recepI,avontI,comI,prepI,gostouI,melhI,recadoI,nomeI,caixaI});
     const get=(rw,i)=>i>=0?String(rw[i]===null||rw[i]===undefined?'':rw[i]).trim():'';
     const newFb=[];
     rows.slice(1).forEach(rw=>{
       const dateRaw=get(rw,dateI);
-      let date=null;
-      try{
-        if(dateRaw){
-          // Formato '2025-10-21 11:53:35' ou '2025-10-21T11:53:35'
+      let date=new Date().toISOString();
+      if(dateRaw){
+        try{
           const d=new Date(dateRaw.replace(' ','T'));
-          date=isNaN(d)?new Date().toISOString():d.toISOString();
-        } else {date=new Date().toISOString();}
-      }catch(e){date=new Date().toISOString();}
+          if(!isNaN(d))date=d.toISOString();
+        }catch(e){}
+      }
       newFb.push({
         date,
         geral:get(rw,geralI),duracao:get(rw,duracaoI),materiais:get(rw,matI),
@@ -1368,26 +1365,25 @@ function importOnboarding(){
         nome:get(rw,nomeI),caixa:get(rw,caixaI)
       });
     });
+    if(!newFb.length){toast('Nenhuma resposta encontrada');return;}
+    // Detecta o semestre da maioria das respostas
+    const firstDate=newFb[0].date;
+    const d=new Date(firstDate);
+    const bimestreDetectado=d.getFullYear()+'-'+(d.getMonth()<6?'01':'07');
+    // Substitui apenas as respostas do período detectado
     if(!db.onboardingFeedbacks)db.onboardingFeedbacks=[];
-    // Detecta o semestre das novas respostas pela data da primeira linha
-    const firstDate=newFb[0]?.date;
-    let bimestreDetectado=db.onboardingBimestre;
-    if(firstDate){
-      const d=new Date(firstDate);
-      const y=d.getFullYear();
-      const m=d.getMonth();
-      bimestreDetectado=y+'-'+(m<6?'01':'07');
-    }
-    // Sempre substitui o semestre detectado
     db.onboardingFeedbacks=db.onboardingFeedbacks.filter(f=>!inBimestre(f.date,bimestreDetectado));
     db.onboardingFeedbacks.push(...newFb);
+    // Atualiza semestre selecionado
     db.onboardingBimestre=bimestreDetectado;
     try{localStorage.setItem('ob_bimestre',bimestreDetectado);}catch(e){}
+    // Salva e navega
     try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
     closeModal();
-    go('onboarding');
+    route.page='onboarding';
+    render();
     sendToFirebase().catch(()=>{});
-    toast(newFb.length+' avaliações importadas para '+bimestreLabel(bimestreDetectado));
+    toast(newFb.length+' avaliações importadas — '+bimestreLabel(bimestreDetectado));
   }catch(e){toast('Erro: '+e.message);console.error(e);}};
   if(isXlsx)r.readAsArrayBuffer(f);else r.readAsText(f,'utf-8');
 }
