@@ -1295,12 +1295,21 @@ function openOnboardingImport(){
     <p style="color:var(--text-2);font-size:.9em;margin-bottom:12px">Aceita a planilha de respostas do <b>Google Forms</b> exportada em <b>.xlsx</b>. As respostas serão adicionadas ao período selecionado: <b>${bimestreLabel(db.onboardingBimestre)}</b>.</p>
     <p class="hint" style="margin-bottom:12px">As respostas são <b>anônimas</b> por padrão. A partir de Julho/2026, se a planilha contiver colunas "Nome" e "Caixa", elas serão capturadas.</p>
     <div class="fld" style="margin-bottom:8px"><label>Arquivo (.xlsx ou .csv)</label><input type="file" accept=".xlsx,.xls,.csv" id="ob_file"></div>
-    <div class="fld" style="margin-bottom:14px"><label>Substituir respostas existentes deste período?</label>
-      <select id="ob_replace"><option value="add">Não — adicionar às existentes</option><option value="replace">Sim — substituir este período</option></select></div>
-    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="importOnboarding()">Importar e calcular</button></div>
+    <div class="fld" style="margin-bottom:14px"><label>O que fazer com respostas existentes deste período?</label>
+      <select id="ob_replace"><option value="replace">Limpar e substituir este período</option><option value="add">Adicionar às existentes</option></select></div>
+    <div class="modal-foot">
+      <button class="btn" style="color:var(--red-text);border-color:var(--red)" onclick="clearOnboardingBimestre()">🗑 Limpar período</button>
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="importOnboarding()">Importar</button>
+    </div>
   </div>`);
 }
 
+function clearOnboardingBimestre(){
+  if(!confirm('Limpar todas as respostas de "'+bimestreLabel(db.onboardingBimestre)+'"?'))return;
+  db.onboardingFeedbacks=(db.onboardingFeedbacks||[]).filter(f=>!inBimestre(f.date,db.onboardingBimestre));
+  persist(true);closeModal();render();toast('Período limpo');
+}
 function importOnboarding(){
   const f=document.getElementById('ob_file').files[0];if(!f){toast('Selecione um arquivo');return;}
   const replace=document.getElementById('ob_replace').value==='replace';
@@ -1341,7 +1350,13 @@ function importOnboarding(){
     rows.slice(1).forEach(rw=>{
       const dateRaw=get(rw,dateI);
       let date=null;
-      try{date=dateRaw?new Date(dateRaw).toISOString():new Date().toISOString();}catch(e){date=new Date().toISOString();}
+      try{
+        if(dateRaw){
+          // Formato '2025-10-21 11:53:35' ou '2025-10-21T11:53:35'
+          const d=new Date(dateRaw.replace(' ','T'));
+          date=isNaN(d)?new Date().toISOString():d.toISOString();
+        } else {date=new Date().toISOString();}
+      }catch(e){date=new Date().toISOString();}
       newFb.push({
         date,
         geral:get(rw,geralI),duracao:get(rw,duracaoI),materiais:get(rw,matI),
@@ -1352,6 +1367,7 @@ function importOnboarding(){
       });
     });
     if(!db.onboardingFeedbacks)db.onboardingFeedbacks=[];
+    // Limpa o período antes de importar (padrão: substituir)
     if(replace)db.onboardingFeedbacks=db.onboardingFeedbacks.filter(f=>!inBimestre(f.date,db.onboardingBimestre));
     db.onboardingFeedbacks.push(...newFb);
     persist();closeModal();render();toast(newFb.length+' avaliações importadas para '+bimestreLabel(db.onboardingBimestre));
