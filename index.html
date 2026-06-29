@@ -446,8 +446,8 @@ async function pushByParts(payload){
 }
 
 async function pullFromFirebase(){
-  // Se há push pendente, não sobrescreve dados locais
-  if(pendingSync||_pushing)return false;
+  // NUNCA bloqueia o pull — leitura independente do push
+  if(_pushing)return false; // só evita conflito durante push ativo
   syncStatus='syncing';updateSyncBadge();
   try{
     const r=await fetch(FB_URL);
@@ -518,10 +518,8 @@ function updateSyncBadge(){
   el.innerHTML=`<span style="color:${colors[syncStatus]}">${icons[syncStatus]} ${lbl[syncStatus]}</span>`;
 }
 
-// Auto-pull a cada 15s para todos verem dados atualizados
-setInterval(()=>{
-  if(!pendingSync&&!_pushing)pullFromFirebase();
-},15000);
+// Auto-pull a cada 10s — sem bloqueio
+setInterval(()=>{if(!_pushing)pullFromFirebase();},10000);
 /* ===== config ===== */
 const TYPES={
   'Onboarding':{badge:'--blue',bar:'#3b82f6'},
@@ -564,47 +562,28 @@ function statusStyle(s){const v=(STATUS[s]||{c:'--slate'}).c;return `background:
 
 /* ===== seed ===== */
 function seed(){
-  const QS=['Taxas','Parcelamento','Antifraude','Chargeback','Saques','Integrações API'];
-  const mk=(name,caixa,wrong,stars)=>{const a={};QS.forEach(q=>a[q]=!wrong.includes(q));return{analista:name,caixa,answers:a,stars};};
   return {
     settings:defaultSettings(),
     caixas:DEFAULT_CAIXAS.slice(),
     roster:defaultRoster(),
-    months:['Maio 2026','Junho 2026'], current:'Maio 2026',
-    pdis:[
-      {id:'p1',analyst:'Anna Gomes',title:'Organização e produtividade nos chats',date:'13–14/05',priority:'Alta',status:'Concluído',month:'Maio 2026',obs:'Acompanhar a Anna por dois dias de atendimento e perceber gaps na organização e tratativa de chats.',m:{slaB:16.5,slaA:12.06,crB:20.5,crA:26,cfB:20.2,cfA:21.7,tmaB:1.3,tmaA:1.2,csB:57.17,csA:100},hasResults:true},
-      {id:'p2',analyst:'Diogo Salcedo',title:'Produtividade — queda pós semana de treinamento',date:'19–20/05',priority:'Média',status:'Concluído',month:'Maio 2026',obs:'Reforço de produtividade após queda observada.',m:{slaB:6.03,slaA:3.08,crB:24,crA:31.6,cfB:16,cfA:23.6,tmaB:1.2,tmaA:1.1,csB:100,csA:90.91},hasResults:true},
-      {id:'p3',analyst:'Liara Arguilar',title:'Produtividade e organização nos atendimentos',date:'21–22/05',priority:'Alta',status:'Concluído',month:'Maio 2026',obs:'Foco em organização da fila e velocidade de resposta.',m:{slaB:6.4,slaA:4.09,crB:18.9,crA:38,cfB:18.9,cfA:20.5,tmaB:1.1,tmaA:1.0,csB:100,csA:100},hasResults:true},
-      {id:'p4',analyst:'Daniela Bitencourt',title:'Organização de fila e priorização',date:'28/05',priority:'Média',status:'Concluído',month:'Maio 2026',obs:'PDI registrado. Resultados a preencher nos 15 dias seguintes.',m:{slaB:0,slaA:0,crB:0,crA:0,cfB:0,cfA:0,tmaB:0,tmaA:0,csB:0,csA:0},hasResults:false}
-    ],
-    actions:[
-      {id:'a1',type:'Treinamento individual',title:'Treinamento Integração — Carol Spolavori',who:'Carol Spolavori',date:'27/05',priority:'Alta',status:'Material pronto',month:'Maio 2026',desc:'Treinamento introdutório de integração — taxas, parcelamento, funcionalidades das integrações.'},
-      {id:'a2',type:'Treinamento de time',title:'Mídias Sociais — Time Suporte',who:'Time Suporte',date:'28/05',priority:'Alta',status:'Construindo material',month:'Maio 2026',desc:'Como responder comentários e DMs, e quando apagar comentários.'},
-      {id:'a3',type:'Treinamento de time',title:'Descredenciados e Saques — Time',who:'Time Suporte',date:'28/05',priority:'Média',status:'Aplicando...',month:'Maio 2026',desc:'Parceiros descredenciados, tela de pedidos e informações práticas sobre saque.'},
-      {id:'a9',type:'Imersão Suporte',title:'Imersão Suporte — Turma de Maio',who:'Time Onboarding',date:'05–09/05',priority:'Média',status:'Concluído',month:'Maio 2026',desc:'Imersão completa de suporte: produto, ferramentas, SLAs e tratativas.'},
-      {id:'a4',type:'Treinamento individual',title:'Suporte PaaS — Pamela',who:'Pamela',date:'18–19/05',priority:'Baixa',status:'Concluído',month:'Maio 2026',desc:'Pamela vai atuar em suporte PaaS. Chargeback, saques, taxas e antifraude.'},
-      {id:'a5',type:'Treinamento individual',title:'Refresh Saques — Jessica, Julia, Andri',who:'Jessica / Julia / Andri',date:'26/05',priority:'Média',status:'Concluído',month:'Maio 2026',desc:'Processos de saques para atuar na caixa em dias de alta demanda.'},
-      {id:'a6',type:'Treinamento individual',title:'Treinamento Integração — Mari Nunes',who:'Mari Nunes',date:'20–21/05',priority:'Baixa',status:'Concluído',month:'Maio 2026',desc:'Mari Nunes vai atuar no time de integração. Treinamento para máxima autonomia.'},
-      {id:'a7',type:'Onboarding',title:'Onboarding — Kendra',who:'Kendra',date:'05/05',priority:'Média',status:'Concluído',month:'Maio 2026',desc:'Onboarding inicial de produto e ferramentas de atendimento.'},
-      {id:'a8',type:'Onboarding',title:'Onboarding — Frentes Estratégicas',who:'Time Frentes Estratégicas',date:'12/05',priority:'Baixa',status:'Concluído',month:'Maio 2026',desc:'Onboarding da caixa Frentes Estratégicas: rotinas, SLAs e escalonamento.'}
-    ],
-    docs:[{id:'d1',title:'Onboarding Unificado',priority:'Alta',status:'Material pronto',month:'Maio 2026',desc:'O que é o onboarding unificado, impacto em suporte e possíveis objeções dos parceiros.'}],
-    teamTrainings:[
-      {id:'t1',title:'Lançamento — Antecipação de Recebíveis',date:'15/05',month:'Maio 2026',status:'Concluído',
-        caixas:['Silver','Vip/Saques','Integração','Frentes Estratégicas','Suporte B2C'],questions:QS,
-        results:[
-          mk('Carol Spolavori','Silver',['Chargeback'],5), mk('Mari Nunes','Silver',['Chargeback','Saques'],4),
-          mk('Kendra','Vip/Saques',['Antifraude'],5), mk('Pamela','Vip/Saques',['Chargeback','Antifraude','Taxas'],3),
-          mk('Anna Gomes','Integração',[],5), mk('Diogo Salcedo','Integração',['Chargeback'],4),
-          mk('Liara Arguilar','Frentes Estratégicas',['Saques'],4), mk('Julia','Frentes Estratégicas',['Chargeback','Integrações API'],3),
-          mk('Jessica','Suporte B2C',['Chargeback','Antifraude'],4), mk('Andri','Suporte B2C',['Chargeback'],5)
-        ]},
-      {id:'t2',title:'Padronização — Tratativa de Chargeback',date:'22/05',month:'Maio 2026',status:'Aplicando...',
-        caixas:['Silver','Vip/Saques','Frentes Estratégicas'],questions:[],results:[]}
-    ],
-    macros:[]
+    months:['Junho 2026'], current:'Junho 2026',
+    pdis:[],actions:[],docs:[],teamTrainings:[],macros:[],
+    onboardingFeedbacks:[],onboardingBimestre:'2025-07'
   };
 }
+
+// Limpar localStorage se tiver dados de seed (dados de exemplo antigos)
+try{
+  const _raw=localStorage.getItem(KEY);
+  if(_raw){
+    const _d=JSON.parse(_raw);
+    // Se tem dados de seed (Anna Gomes é personagem de exemplo), limpa
+    if(_d.pdis&&_d.pdis.some&&_d.pdis.some(p=>p.id==='p1'&&p.analyst==='Anna Gomes')){
+      localStorage.removeItem(KEY);
+      console.log('Cache de seed removido — buscando dados reais do Firebase');
+    }
+  }
+}catch(e){}
 
 let db=load(); if(!db)db=seed();
 /* Aplica preferências visuais locais imediatamente (antes do Firebase responder) */
@@ -691,8 +670,9 @@ function upsertRoster(name,email,caixa){
 function applyTheme(){const s=db.settings;document.body.dataset.theme=s.theme;document.body.dataset.fs=s.fontSize;document.body.style.setProperty('--font-body',FONTS[s.bodyFont]||FONTS.Moderna);document.body.style.setProperty('--font-title',FONTS[s.titleFont]||FONTS.Serifada);}
 function initSync(){
   updateSyncBadge();
-  // Busca dados do Firebase em background — nunca bloqueia a renderização
-  setTimeout(()=>pullFromFirebase().catch(()=>{}), 100);
+  // Pull imediato ao abrir — ignora localStorage e vai direto ao Firebase
+  pendingSync=false;
+  pullFromFirebase().catch(()=>{});
 }
 function render(){
   // Data automática
