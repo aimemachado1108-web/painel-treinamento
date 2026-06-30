@@ -1188,7 +1188,8 @@ function inBimestre(dateStr,key){
     const d=new Date(dateStr);
     if(isNaN(d))return false;
     const [y,ms]=key.split('-'),s=parseInt(ms);
-    return d.getFullYear()===parseInt(y)&&d.getMonth()>=(s-1)&&d.getMonth()<=(s+3);
+    // s=1 → meses 0-5 (jan-jun) | s=7 → meses 6-11 (jul-dez)
+    return d.getFullYear()===parseInt(y)&&d.getMonth()>=(s-1)&&d.getMonth()<=(s+4);
   }catch(e){return false;}
 }
 function onboardingInBimestre(){
