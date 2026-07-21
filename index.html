@@ -407,7 +407,7 @@ async function sendToFirebase(){
   if(_syncing)return;
   _syncing=true;
   syncStatus='syncing';updateSyncBadge();
-  const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks'];
+  const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks','avaliacaoGrupos','acompanhamento'];
   let allOk=true;
   // Envia campo por campo
   for(const f of fields){
@@ -477,11 +477,22 @@ async function pullFromFirebase(){
     // Preservar feedbacks locais se existirem (podem ser mais recentes que Firebase)
     const localFeedbacks=db.onboardingFeedbacks&&db.onboardingFeedbacks.length?db.onboardingFeedbacks:null;
     const localFeedbacksCount=localFeedbacks?localFeedbacks.length:0;
+    // Preservar estado de navegação da aba avaliação
+    const curAvSub=db._avaliacaoSub;
+    const curAvGrupo=db._avGrupo;
+    const curAvSem=db._avSem;
     db=data;
     db.settings=prefs;
     db.settings.titles=Object.assign({},DEFAULT_TITLES,db.settings.titles||{});
+    // Forçar títulos renomeados — sobrescrever valores antigos salvos
+    db.settings.titles.onboarding='Feedback Onboarding B2B';
+    db.settings.titles.avaliacao='Onboarding B2B';
     if(curMonth&&db.months&&toArr(db.months).includes(curMonth))db.current=curMonth;
     db.onboardingBimestre=bim||curBim||db.onboardingBimestre||'2025-07';
+    // Restaurar estado de navegação da avaliação
+    if(curAvSub)db._avaliacaoSub=curAvSub;
+    if(curAvGrupo!=null)db._avGrupo=curAvGrupo;
+    if(curAvSem!=null)db._avSem=curAvSem;
     // Normalizar todos os arrays
     db.pdis=toArr(db.pdis);
     db.actions=toArr(db.actions);
@@ -578,7 +589,7 @@ const FONTS={
   'Arredondada':"'Nunito',-apple-system,sans-serif"
 };
 const SIZES={sm:'Pequeno',md:'Médio',lg:'Grande',xl:'Extra'};
-const DEFAULT_TITLES={visao:'Visão Geral','impacto-pdi':'Impacto - PDI','impacto-treino':'Impacto - Treinamento',pdis:'PDIs',treinamentos:'Treinamentos',documentacao:'Documentação',macros:'Macros',onboarding:'Onboarding B2B',organograma:'Organograma',planilha:'Planilha',importar:'Importar'};
+const DEFAULT_TITLES={visao:'Visão Geral','impacto-pdi':'Impacto - PDI','impacto-treino':'Impacto - Treinamento',pdis:'PDIs',treinamentos:'Treinamentos',documentacao:'Documentação',macros:'Macros',onboarding:'Feedback Onboarding B2B',avaliacao:'Onboarding B2B',organograma:'Organograma',planilha:'Planilha',importar:'Importar'};
 function defaultSettings(){return{theme:'claro',bodyFont:'Moderna',titleFont:'Serifada',fontSize:'md',titles:Object.assign({},DEFAULT_TITLES)};}
 
 function badgeStyle(t){const v=(TYPES[t]||{badge:'--slate'}).badge;return `background:var(${v}-soft);color:var(${v}-text)`;}
@@ -592,7 +603,7 @@ function seed(){
     roster:defaultRoster(),
     months:['Maio 2026','Junho 2026'], current:'Junho 2026',
     pdis:[],actions:[],docs:[],teamTrainings:[],macros:[],
-    onboardingFeedbacks:[],onboardingBimestre:'2025-07'
+    onboardingFeedbacks:[],avaliacaoGrupos:[],acompanhamento:[],onboardingBimestre:'2025-07'
   };
 }
 
@@ -602,7 +613,8 @@ const _localPrefs=loadPrefs();
 if(_localPrefs)db.settings=_localPrefs;
 if(!db.settings)db.settings=defaultSettings();
 db.settings.titles=Object.assign({},DEFAULT_TITLES,db.settings.titles||{});
-/* Firebase converte arrays em objetos — garantir arrays em todos os campos */
+db.settings.titles.onboarding='Feedback Onboarding B2B';
+db.settings.titles.avaliacao='Onboarding B2B';
 const toArr=v=>!v?[]:Array.isArray(v)?v:Object.values(v);
 db.pdis=toArr(db.pdis);
 db.actions=toArr(db.actions);
@@ -633,7 +645,7 @@ try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
 
 /* ===== nav / routing ===== */
 const NAV=[
-  {grp:'Principal',items:[{id:'visao',ic:'◈'},{id:'impacto-pdi',ic:'◇'},{id:'impacto-treino',ic:'★'},{id:'onboarding',ic:'🎓'}]},
+  {grp:'Principal',items:[{id:'visao',ic:'◈'},{id:'impacto-pdi',ic:'◇'},{id:'impacto-treino',ic:'★'},{id:'onboarding',ic:'🎓'},{id:'avaliacao',ic:'📋'}]},
   {grp:'Ações',items:[{id:'pdis',ic:'📁'},{id:'treinamentos',ic:'◎'},{id:'documentacao',ic:'▤'},{id:'macros',ic:'⚡'}]},
   {grp:'Registros',items:[{id:'organograma',ic:'🗂'},{id:'planilha',ic:'▦'},{id:'importar',ic:'↥'}]}
 ];
@@ -696,7 +708,7 @@ function render(){
   const _selEl=document.getElementById('monthSel');
   if(_selEl&&_selEl.value!==db.current){_selEl.value=db.current;}
   document.getElementById('tb-title').textContent=T(route.page);
-  const fn={visao:viewVisao,'impacto-pdi':viewImpactoPdi,'impacto-treino':viewImpactoTreino,pdis:viewPdis,treinamentos:viewTreinos,documentacao:viewDocs,macros:viewMacros,onboarding:viewOnboarding,organograma:viewOrganograma,planilha:viewPlanilha,importar:viewImportar}[route.page];
+  const fn={visao:viewVisao,'impacto-pdi':viewImpactoPdi,'impacto-treino':viewImpactoTreino,pdis:viewPdis,treinamentos:viewTreinos,documentacao:viewDocs,macros:viewMacros,onboarding:viewOnboarding,avaliacao:viewAvaliacao,organograma:viewOrganograma,planilha:viewPlanilha,importar:viewImportar}[route.page];
   try{document.getElementById('content').innerHTML=fn?fn():'';}
   catch(e){console.error('render error:',route.page,e);document.getElementById('content').innerHTML='<div class="empty">Erro ao carregar: '+esc(e.message)+'</div>';}
 }
@@ -1442,6 +1454,444 @@ function doImportOnboarding(){
   if(isXlsx)r.readAsArrayBuffer(f);else r.readAsText(f,'utf-8');
 }
 
+/* ========================================================
+   AVALIAÇÃO ONBOARDING B2B — avaliações + acompanhamento
+   ======================================================== */
+
+function setAvaliacaoSub(sub){
+  db._avaliacaoSub=sub;
+  try{localStorage.setItem('av_sub',sub);}catch(e){}
+  render();
+}
+
+function viewAvaliacao(){
+  try{const s=localStorage.getItem('av_sub');if(s)db._avaliacaoSub=s;}catch(e){}
+  const sub=db._avaliacaoSub||'avaliacoes';
+  if(!db.avaliacaoGrupos)db.avaliacaoGrupos=[];
+  if(!db.acompanhamento)db.acompanhamento=[];
+  const tabs=`<div style="display:flex;gap:4px;margin-bottom:20px;background:var(--input-bg);border:1px solid var(--border);border-radius:10px;padding:4px;width:fit-content">
+    <button onclick="setAvaliacaoSub('avaliacoes')" style="border:none;cursor:pointer;padding:7px 18px;border-radius:7px;font-size:.88em;font-weight:600;transition:.15s;background:${sub==='avaliacoes'?'var(--purple)':'transparent'};color:${sub==='avaliacoes'?'#fff':'var(--text-2)'}">📝 Avaliações</button>
+    <button onclick="setAvaliacaoSub('acompanhamento')" style="border:none;cursor:pointer;padding:7px 18px;border-radius:7px;font-size:.88em;font-weight:600;transition:.15s;background:${sub==='acompanhamento'?'var(--purple)':'transparent'};color:${sub==='acompanhamento'?'#fff':'var(--text-2)'}">📊 Acompanhamento Semanal</button>
+  </div>`;
+  const addBtn=sub==='avaliacoes'
+    ?`<button class="btn primary sm edit-only" style="margin-top:8px;white-space:nowrap" onclick="openNovoGrupo()">+ Nova turma</button>`
+    :'';
+  const header=`<div class="page-h" style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px">
+    <div><h1>📋 ${esc(T('avaliacao'))}</h1><p>Avaliação prática e acompanhamento semanal das novas analistas.</p></div>
+    ${addBtn}
+  </div>`;
+  return header+tabs+(sub==='avaliacoes'?viewAvaliacoesLista():viewAcompanhamento());
+}
+
+/* ===================== AVALIAÇÕES ===================== */
+function viewAvaliacoesLista(){
+  const grupos=db.avaliacaoGrupos||[];
+  // Detalhe de semana selecionada
+  if(db._avGrupo!=null&&db._avSem!=null){
+    const g=db.avaliacaoGrupos[db._avGrupo];
+    const av=g&&toArr(g.semanas)[db._avSem];
+    if(av&&av.responses)return viewAvaliacaoDetalhe(db._avGrupo,db._avSem);
+  }
+  if(!grupos.length)return`<div class="empty">Nenhuma turma criada ainda.<br><br><button class="btn primary edit-only" onclick="openNovoGrupo()">+ Nova turma</button></div>`;
+  return grupos.map((g,gi)=>{
+    const semanas=toArr(g.semanas||[null,null]);
+    return `<div style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:1.1em">📁</span>
+          <span style="font-weight:700;font-size:.98em">${esc(g.nome)}</span>
+          ${g.data?`<span style="font-size:.8em;color:var(--text-3)">${esc(g.data)}</span>`:''}
+        </div>
+        <button class="btn sm edit-only" style="color:var(--red-text);border-color:var(--red);font-size:.78em" onclick="if(confirm('Excluir turma ${g.nome.replace(/'/g,"\\'")} e todas as avaliações?')){db.avaliacaoGrupos.splice(${gi},1);db._avGrupo=null;db._avSem=null;_lastEdit=Date.now();try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}render();sendToFirebase().catch(()=>{})}">🗑 Excluir turma</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:640px">
+        ${[0,1].map(si=>{
+          const av=semanas[si];
+          const semLabel=(si===0?'1ª':'2ª')+' Semana';
+          const filled=av&&av.responses&&av.responses.length;
+          return `<div class="panel" style="padding:16px 18px;${filled?'cursor:pointer':'opacity:.75'}" ${filled?`onclick="db._avGrupo=${gi};db._avSem=${si};render()" onmouseenter="this.style.borderColor='var(--purple)'" onmouseleave="this.style.borderColor=''"`:''}>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div>
+                <span style="font-size:.82em;font-weight:700;color:var(--purple)">${semLabel}</span>
+                ${av&&av.data?`<div style="font-size:.75em;color:var(--text-3);margin-top:2px">${esc(av.data)}</div>`:''}
+              </div>
+              ${filled?`<span class="tag" style="background:var(--green-soft);color:var(--green-text)">${av.responses.length} analista${av.responses.length!==1?'s':''}</span>`:''}
+            </div>
+            ${filled
+              ?`<div style="font-size:.82em;color:var(--text-2)">Ver resultados →</div>`
+              :`<div style="margin-bottom:10px;font-size:.82em;color:var(--text-3)">Nenhuma importação</div>
+               <button class="btn sm edit-only" style="width:100%;font-size:.8em" onclick="event.stopPropagation();openImportSemana(${gi},${si})">↥ Importar planilha</button>`}
+            ${filled?`<button class="btn sm edit-only" style="width:100%;font-size:.78em;margin-top:8px" onclick="event.stopPropagation();openImportSemana(${gi},${si})">↥ Reimportar</button>`:''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function viewAvaliacaoDetalhe(gi,si){
+  const g=db.avaliacaoGrupos[gi];
+  const av=toArr(g.semanas)[si];
+  const resps=toArr(av.responses||[]);
+  const qs=toArr(av.questions||[]);
+  const scores=resps.map(r=>parseFloat(r.score)||0);
+  const avgScore=scores.reduce((s,v)=>s+v,0)/(scores.length||1);
+  const maxScore=Math.max(...scores,0);
+  const maxPossible=parseFloat(av.maxPossible)||maxScore||1;
+  const pctAcertos=Math.round(avgScore/maxPossible*100);
+  const TOPIC_KW=[
+    {label:'Leads & Cadastro de empresas',  kw:['cadastr','empresa','pj','credenciado','descredenciado','ativação','ativar','conta nova','nova empresa','lead','cross','aprovad','conta aprova','cadastro de']},
+    {label:'Estornos & Chargebacks',        kw:['estorn','chargeback','saldo para estorno','recuperação de chargeback','cb ','disputa','contestação','reembolso']},
+    {label:'Antifraude',                    kw:['antifraude','anti-fraude','anti fraude','análise de fraude','reanalise','reanálise','decisão sem','pedido negado','fraude','suspeito']},
+    {label:'Conquista Max',                 kw:['conquista','premiação','prêmio','aptidão','entrega de prêmio','conquista max','bonificação']},
+    {label:'Reatribuição de chats',         kw:['reatribuição','repassad','quando enviar','integração','retenção','vip saques','transferência de chat','chat para','encaminhar','direcionar','afiliado']},
+    {label:'Relatórios',                    kw:['relatório','relatorio','conferencia','conferência','auditoria','auditória','extrato','financeiro','emissão','valores','conciliação']},
+    {label:'Taxas',                         kw:['taxa','tpv','processamento','prazo','pix','boleto','cartão','cartao','parcelamento','recebimento','saque']},
+  ];
+  function detectTopic(q){const ql=q.toLowerCase();for(const t of TOPIC_KW)if(t.kw.some(k=>ql.includes(k)))return t.label;return null;}
+  const topicErrors={},topicTotal={};
+  qs.forEach((q,qi)=>{
+    if(q.type!=='mc')return;
+    const topic=detectTopic(q.label);if(!topic)return;
+    const ans=resps.map(r=>toArr(r.answers||[])[qi]).filter(a=>a&&a.trim());if(!ans.length)return;
+    const counts={};ans.forEach(a=>{counts[a]=(counts[a]||0)+1;});
+    const topAns=Object.entries(counts).sort((a,b)=>b[1]-a[1])[0][0];
+    topicErrors[topic]=(topicErrors[topic]||0)+ans.filter(a=>a!==topAns).length;
+    topicTotal[topic]=(topicTotal[topic]||0)+ans.length;
+  });
+  const topicAll=Object.entries(topicErrors).map(([t,e])=>({t,errPct:Math.round(e/(topicTotal[t]||1)*100),acertoPct:Math.round((1-e/(topicTotal[t]||1))*100)})).filter(x=>topicTotal[x.t]>0);
+  const top3Erros=[...topicAll].sort((a,b)=>b.errPct-a.errPct).slice(0,3);
+  const top3Acertos=[...topicAll].sort((a,b)=>b.acertoPct-a.acertoPct).slice(0,3);
+  while(top3Erros.length<3)top3Erros.push(null);
+  while(top3Acertos.length<3)top3Acertos.push(null);
+  function topicRow(item,i,isErro){
+    if(!item)return`<div style="display:flex;align-items:center;gap:8px;margin-top:8px;opacity:.3"><span style="font-size:.82em;min-width:16px">${i+1}º</span><div style="flex:1;font-size:.85em;color:var(--text-3)">—</div></div>`;
+    const pct=isErro?item.errPct:item.acertoPct;const color=isErro?'var(--red-text)':'var(--green-text)';
+    return`<div style="display:flex;align-items:center;gap:8px;margin-top:8px"><span style="font-size:.82em;color:${color};font-weight:700;min-width:16px">${i+1}º</span><div style="flex:1;font-size:.85em;color:var(--text-2)">${esc(item.t)}</div><span class="tag" style="background:${isErro?'rgba(239,68,68,.15)':'rgba(34,197,94,.15)'};color:${color}">${pct}%</span></div>`;
+  }
+  const cards=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px">
+    <div class="mcard"><div class="lbl">Analistas avaliadas</div><div class="val">${resps.length}</div></div>
+    <div class="mcard"><div class="lbl">% de acertos</div><div class="val" style="color:var(--purple)">${pctAcertos}%</div><div class="foot" style="margin-top:4px">média ${round(avgScore,1)} / ${maxPossible} pts</div></div>
+    <div class="mcard"><div class="lbl" style="color:var(--red-text)">🔴 Top 3 erros</div>${top3Erros.map((x,i)=>topicRow(x,i,true)).join('')}</div>
+    <div class="mcard"><div class="lbl" style="color:var(--green-text)">🟢 Top 3 acertos</div>${top3Acertos.map((x,i)=>topicRow(x,i,false)).join('')}</div>
+  </div>`;
+  const ranked=[...resps].sort((a,b)=>(parseFloat(b.score)||0)-(parseFloat(a.score)||0));
+  const rankingRows=ranked.map((r,i)=>{
+    const pct=maxScore>0?Math.round((parseFloat(r.score)||0)/maxScore*100):0;
+    const medal=i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
+    const name=r.nome||r.email.split('@')[0].split('.').map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(' ');
+    return`<tr><td style="font-weight:600">${medal} ${i+1}º</td>
+      <td><b>${esc(name)}</b>${r.mesAno?` <span style="font-size:.78em;color:var(--text-3)">${esc(r.mesAno)}</span>`:''}<div style="font-size:.78em;color:var(--text-3)">${esc(r.email)}</div></td>
+      <td style="font-family:'Inter',sans-serif;font-size:1.1em;font-weight:700;color:var(--gold)">${r.score}</td>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="track" style="width:100px"><div class="fill" style="width:${pct}%;background:var(--gold)"></div></div><span style="font-size:.82em;color:var(--text-3)">${pct}%</span></div></td>
+    </tr>`;
+  }).join('');
+  function getMcStats(qi){const ans=resps.map(r=>toArr(r.answers||[])[qi]).filter(a=>a&&a.trim());const c={};ans.forEach(a=>{c[a]=(c[a]||0)+1;});return Object.entries(c).sort((a,b)=>b[1]-a[1]);}
+  const questCards=qs.map((q,qi)=>{
+    const answers=resps.map(r=>({name:r.nome||r.email.split('@')[0].split('.').map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(' '),email:r.email,answer:toArr(r.answers||[])[qi]||''}));
+    if(!answers.some(a=>a.answer.trim()))return'';
+    if(q.type==='mc'){
+      const stats=getMcStats(qi);const total=answers.filter(a=>a.answer.trim()).length;
+      return`<div class="panel"><div class="panel-h"><div class="pi">✅</div><h2 style="font-size:.93em;line-height:1.4">${esc(q.label.substring(0,120))}${q.label.length>120?'…':''}</h2></div>
+        ${stats.map((s,i)=>{const isTop=i===0;const pct=total?Math.round(s[1]/total*100):0;return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px"><span style="font-size:.82em;color:${isTop?'var(--green-text)':'var(--text-3)'};min-width:18px;font-weight:700">${isTop?'✓':''}</span><div style="flex:1;font-size:.85em;color:var(--text-2);line-height:1.3">${esc(s[0])}</div><div class="track" style="width:80px;flex:none"><div class="fill" style="width:${pct}%;background:${isTop?'var(--green)':'var(--border-2)'}"></div></div><div style="width:52px;text-align:right;font-size:.82em"><b>${s[1]}</b>/${total}</div></div>`;}).join('')}
+        <details style="margin-top:10px"><summary style="cursor:pointer;font-size:.82em;color:var(--text-3);user-select:none">Ver respostas individuais</summary>
+        <div style="margin-top:10px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px">
+          ${answers.map(a=>`<div style="background:var(--input-bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px"><div style="font-size:.78em;font-weight:600;color:var(--purple);margin-bottom:4px">${esc(a.name)}</div><div style="font-size:.85em;color:var(--text-2)">${esc(a.answer||'—')}</div></div>`).join('')}
+        </div></details></div>`;
+    }
+    const valid=answers.filter(a=>a.answer.trim().length>2);if(!valid.length)return'';
+    return`<div class="panel"><div class="panel-h"><div class="pi">✍️</div><h2 style="font-size:.93em;line-height:1.4">${esc(q.label.substring(0,120))}${q.label.length>120?'…':''}</h2><span style="margin-left:auto;font-size:.8em;color:var(--text-3)">${valid.length} resp.</span></div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${valid.map(a=>`<div style="background:var(--input-bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px"><div style="font-size:.78em;font-weight:700;color:var(--purple);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">${esc(a.name)}</div><div style="font-size:.88em;color:var(--text-2);line-height:1.6;white-space:pre-wrap">${esc(a.answer)}</div></div>`).join('')}
+      </div></div>`;
+  }).join('');
+  const semLabel=(si===0?'1ª':'2ª')+' Semana';
+  return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+    <button class="btn" onclick="db._avGrupo=null;db._avSem=null;render()">← Voltar</button>
+    <span style="font-weight:700">${esc(g.nome)}</span>
+    <span class="tag" style="background:rgba(139,92,246,.15);color:var(--purple)">${semLabel}</span>
+    ${av.data?`<span style="font-size:.82em;color:var(--text-3)">${esc(av.data)}</span>`:''}
+    <button class="btn sm edit-only" style="margin-left:auto;color:var(--red-text);border-color:var(--red)" onclick="if(confirm('Limpar dados desta semana?')){const s=toArr(db.avaliacaoGrupos[${gi}].semanas);s[${si}]=null;db.avaliacaoGrupos[${gi}].semanas=s;_lastEdit=Date.now();try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}db._avGrupo=null;db._avSem=null;render();sendToFirebase().catch(()=>{})}">🗑 Limpar semana</button>
+  </div>
+  ${cards}
+  <div class="panel"><div class="panel-h"><div class="pi">🏆</div><h2>Ranking</h2></div>
+    <div class="wrap-x"><table class="tbl"><thead><tr><th>#</th><th>Analista</th><th>Pontuação</th><th>Performance</th></tr></thead><tbody>${rankingRows}</tbody></table></div></div>
+  <div class="panel-h" style="margin:24px 0 12px"><div class="pi">📝</div><h2>Respostas por questão</h2></div>
+  ${questCards}`;
+}
+
+function openNovoGrupo(){
+  show(`<div class="modal"><h2>📁 Nova Turma <button class="close" onclick="closeModal()">✕</button></h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div class="fld"><label>Nome da turma</label><input type="text" id="ng_nome" placeholder="Ex: Karen e Victor" style="margin-top:6px"></div>
+      <div class="fld"><label>Data/período</label><input type="text" id="ng_data" placeholder="Ex: Jul/2026" style="margin-top:6px"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveNovoGrupo()">Criar turma</button>
+    </div>
+  </div>`);
+}
+function saveNovoGrupo(){
+  const nome=((document.getElementById('ng_nome')||{}).value||'').trim();
+  const data=((document.getElementById('ng_data')||{}).value||'').trim();
+  if(!nome){toast('Informe o nome da turma');return;}
+  if(!db.avaliacaoGrupos)db.avaliacaoGrupos=[];
+  db.avaliacaoGrupos.push({nome,data,semanas:[null,null]});
+  _lastEdit=Date.now();
+  try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
+  closeModal();render();sendToFirebase().catch(()=>{});
+  toast('Turma "'+nome+'" criada');
+}
+
+function openImportSemana(gi,si){
+  const g=db.avaliacaoGrupos[gi];
+  const semLabel=(si===0?'1ª':'2ª')+' Semana';
+  show(`<div class="modal" style="width:540px"><h2>↥ Importar ${semLabel} — ${esc(g.nome)} <button class="close" onclick="closeModal()">✕</button></h2>
+    <p style="color:var(--text-2);font-size:.9em;margin-bottom:12px">Relatório de respostas exportado do Google Forms (.xlsx).</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="fld"><label>Data desta avaliação</label><input type="text" id="av_data" placeholder="Ex: 14/07/2026" style="margin-top:6px"></div>
+      <div class="fld"><label>Pontuação máxima</label><input type="number" id="av_max" placeholder="Ex: 35" min="1" style="margin-top:6px"></div>
+    </div>
+    <div class="fld" style="margin-bottom:16px"><label>Planilha de respostas (.xlsx)</label><input type="file" accept=".xlsx,.xls" id="av_file" style="margin-top:6px"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="doImportSemana(${gi},${si})">Importar</button>
+    </div>
+  </div>`);
+}
+
+function doImportSemana(gi,si){
+  const data=((document.getElementById('av_data')||{}).value||'').trim();
+  const maxPossible=parseFloat(((document.getElementById('av_max')||{}).value||''))||null;
+  const fileEl=document.getElementById('av_file');
+  if(!fileEl||!fileEl.files||!fileEl.files[0]){toast('Selecione um arquivo');return;}
+  const f=fileEl.files[0];
+  const r=new FileReader();
+  r.onload=function(){
+    closeModal();
+    try{
+      const wb=XLSX.read(r.result,{type:'array',cellDates:true});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''}).filter(rw=>rw.some(c=>String(c||'').trim()));
+      if(rows.length<2){toast('Arquivo vazio');return;}
+      const headers=rows[0].map(h=>String(h||'').trim());
+      const questions=headers.slice(3).map((h,qi)=>{
+        const ans=rows.slice(1).map(rw=>String(rw[qi+3]||'').trim()).filter(a=>a);
+        const unique=new Set(ans);const avgLen=ans.reduce((s,a)=>s+a.length,0)/(ans.length||1);
+        const firstAns=ans[0]||'';const looksMC=/^[a-d]\)|^(sim|não|yes|no)$/i.test(firstAns.trim());
+        return{label:h,type:(unique.size<=Math.max(4,ans.length*0.5)&&avgLen<200&&looksMC)?'mc':'written'};
+      });
+      const responses=rows.slice(1).map(rw=>{
+        const email=String(rw[1]||'').trim();
+        const nome=email.split('@')[0].split('.').map(p=>p.charAt(0).toUpperCase()+p.slice(1)).join(' ');
+        let mesAno='';try{const raw=rw[0];let d=raw instanceof Date?raw:new Date(String(raw).replace(' ','T'));if(!isNaN(d))mesAno=d.toLocaleDateString('pt-BR',{month:'short',year:'numeric'});}catch(e){}
+        return{email,nome,mesAno,score:String(rw[2]||'').trim(),answers:headers.slice(3).map((_,qi)=>String(rw[qi+3]||'').trim())};
+      }).filter(r=>r.email);
+      if(!responses.length){toast('Nenhuma resposta encontrada');return;}
+      if(!db.avaliacaoGrupos[gi].semanas)db.avaliacaoGrupos[gi].semanas=[null,null];
+      const semanas=toArr(db.avaliacaoGrupos[gi].semanas);
+      semanas[si]={questions,responses,maxPossible,data,importedAt:new Date().toISOString()};
+      db.avaliacaoGrupos[gi].semanas=semanas;
+      db._avGrupo=gi;db._avSem=si;
+      _lastEdit=Date.now();
+      try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
+      render();sendToFirebase().catch(()=>{});
+      toast('✓ '+responses.length+' analista'+(responses.length!==1?'s':'')+' importadas');
+    }catch(err){toast('Erro: '+err.message);console.error(err);}
+  };
+  r.readAsArrayBuffer(f);
+}
+
+/* ===================== ACOMPANHAMENTO SEMANAL ===================== */
+const CAIXAS_ONB=['Silver','Vip/Saques','Integração'];
+function getMetas(caixa){
+  const isSilver=(caixa||'Silver')==='Silver';
+  return{sla:isSilver?5:3, csat:isSilver?94:97, tma:24};
+}
+function corSLA(v,cx){if(v===null||v===undefined)return'var(--text)';return v<=getMetas(cx).sla?'var(--green)':'var(--red-text)';}
+function corCSAT(v,cx){if(v===null||v===undefined)return'var(--text)';return v>=getMetas(cx).csat?'var(--green)':'var(--red-text)';}
+function corTMA(v){if(v===null||v===undefined)return'var(--text)';return v<=24?'var(--green)':'var(--red-text)';}
+
+function viewAcompanhamento(){
+  const lista=db.acompanhamento||[];
+  const addBtn=`<div class="edit-only" style="margin-bottom:16px"><button class="btn primary sm" onclick="openAddAnalista()">+ Adicionar analista</button></div>`;
+  if(!lista.length)return addBtn+`<div class="empty">Nenhuma analista cadastrada.<br>Adicione para registrar a evolução semanal de atendimento.</div>`;
+
+  const cards=lista.map((a,ai)=>{
+    // Garantir array mesmo se Firebase retornou objeto
+    const rawSem=a.semanas||[];
+    const semanas=[0,1,2].map(si=>({
+      d: Array.isArray(rawSem)?rawSem[si]:(rawSem[si]??rawSem[String(si)]??null),
+      periodo: a['periodo'+(si+1)]||''
+    }));
+    const csats=semanas.map(s=>s.d?.csat??null).filter(v=>v!==null);
+    const sparkW=90,sparkH=32;
+    const pts=csats.map((n,i)=>`${Math.round(i/(Math.max(csats.length-1,1))*(sparkW-12)+6)},${Math.round(sparkH-4-((n/100)*(sparkH-8)))}`);
+    const spark=csats.length>=2?`<svg width="${sparkW}" height="${sparkH}" style="overflow:visible"><polyline points="${pts.join(' ')}" fill="none" stroke="var(--purple)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>${csats.map((n,i)=>`<circle cx="${pts[i].split(',')[0]}" cy="${pts[i].split(',')[1]}" r="2.5" fill="var(--purple)"/>`).join('')}</svg>`:'';
+    const tend=csats.length>=2?(csats[csats.length-1]>=csats[0]?'↑':'↓'):'';
+    const tendC=csats.length>=2?(csats[csats.length-1]>=csats[0]?'var(--green)':'var(--red-text)'):'';
+    const metas=getMetas(a.caixa);
+
+    return `<div class="panel" style="padding:18px 20px;margin-bottom:12px">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px">
+        <div>
+          <div style="font-weight:700;font-size:1em;margin-bottom:3px">${esc(a.nome)}</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-size:.8em;color:var(--text-3)">${esc(a.email||'')}</span>
+            ${a.caixa?`<span class="tag" style="background:rgba(139,92,246,.15);color:var(--purple)">${esc(a.caixa)}</span>`:''}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${spark}
+          ${tend?`<span style="font-size:1.2em;color:${tendC};font-weight:700">${tend}</span>`:''}
+          <button class="btn sm edit-only" style="color:var(--red-text);border-color:var(--red)" onclick="deletarAnalista(${ai})">✕</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+        ${semanas.map((sem,si)=>{
+          const s=sem.d;
+          const filled=s&&(s.sla!==null||s.csat!==null||s.recebidas!==null||s.fechadas!==null||s.tma!==null);
+          return `<div style="background:var(--input-bg);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+            <div style="padding:10px 12px 6px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)">
+              <div>
+                <div style="font-weight:700;font-size:.85em">Semana ${si+1}</div>
+                ${sem.periodo?`<div style="font-size:.72em;color:var(--purple);margin-top:1px">${esc(sem.periodo)}</div>`:`<div style="font-size:.72em;color:var(--text-3);margin-top:1px">sem período</div>`}
+              </div>
+              <button class="btn sm edit-only" style="padding:3px 8px;font-size:.78em" onclick="openEditSemana(${ai},${si})" title="Editar semana ${si+1}">✎</button>
+            </div>
+            <div style="padding:10px 12px">
+              ${filled?`
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px">
+                <div>
+                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">SLA <span style="color:var(--text-3);font-weight:400">≤${metas.sla}min</span></div>
+                  <div style="font-size:1.05em;font-weight:700;font-family:'Inter',sans-serif;color:${corSLA(s.sla,a.caixa)}">${s.sla!==null&&s.sla!==undefined?s.sla+'min':'—'}</div>
+                </div>
+                <div>
+                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">CSAT <span style="color:var(--text-3);font-weight:400">≥${metas.csat}%</span></div>
+                  <div style="font-size:1.05em;font-weight:700;font-family:'Inter',sans-serif;color:${corCSAT(s.csat,a.caixa)}">${s.csat!==null&&s.csat!==undefined?s.csat+'%':'—'}</div>
+                </div>
+                <div>
+                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Recebidas</div>
+                  <div style="font-size:1.05em;font-weight:600">${s.recebidas??'—'}</div>
+                </div>
+                <div>
+                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Fechadas</div>
+                  <div style="font-size:1.05em;font-weight:600">${s.fechadas??'—'}</div>
+                </div>
+                <div style="grid-column:span 2">
+                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">TMA <span style="color:var(--text-3);font-weight:400">≤24h</span></div>
+                  <div style="font-size:1.05em;font-weight:700;font-family:'Inter',sans-serif;color:${corTMA(s.tma)}">${s.tma!==null&&s.tma!==undefined?s.tma+'h':'—'}</div>
+                </div>
+                ${s.obs?`<div style="grid-column:span 2;border-top:1px solid var(--border);padding-top:6px;margin-top:2px;font-size:.75em;color:var(--text-3);line-height:1.4">${esc(s.obs)}</div>`:''}
+              </div>`
+              :`<div style="font-size:.82em;color:var(--text-3);padding:6px 0 4px">Sem registros</div>`}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }).join('');
+  return addBtn+cards;
+}
+
+function openAddAnalista(){
+  const caixaOpts=CAIXAS_ONB.map(c=>`<option>${c}</option>`).join('');
+  show(`<div class="modal"><h2>+ Adicionar Analista <button class="close" onclick="closeModal()">✕</button></h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="fld"><label>Nome</label><input type="text" id="an_nome" placeholder="Ana Gomes" style="margin-top:6px"></div>
+      <div class="fld"><label>E-mail</label><input type="text" id="an_email" placeholder="ana@appmax.com.br" style="margin-top:6px"></div>
+    </div>
+    <div class="fld" style="margin-bottom:12px"><label>Caixa de atendimento</label>
+      <select id="an_caixa" style="margin-top:6px;background:var(--input-bg);border:1px solid var(--border-2);border-radius:8px;padding:8px 10px;color:var(--text)">
+        <option value="">— selecione —</option>${caixaOpts}
+      </select>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
+      ${[1,2,3].map(n=>`<div class="fld"><label style="font-size:.8em">Período Semana ${n}</label><input type="text" id="an_p${n}" placeholder="13/07–17/07" style="margin-top:4px;font-size:.88em"></div>`).join('')}
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveAddAnalista()">Adicionar</button>
+    </div>
+  </div>`);
+}
+
+function saveAddAnalista(){
+  const nome=((document.getElementById('an_nome')||{}).value||'').trim();
+  const email=((document.getElementById('an_email')||{}).value||'').trim();
+  const caixa=((document.getElementById('an_caixa')||{}).value||'').trim();
+  if(!nome){toast('Informe o nome');return;}
+  const analista={nome,email,caixa,semanas:[null,null,null]};
+  [1,2,3].forEach(n=>{const v=((document.getElementById('an_p'+n)||{}).value||'').trim();if(v)analista['periodo'+n]=v;});
+  if(!db.acompanhamento)db.acompanhamento=[];
+  db.acompanhamento.push(analista);
+  _lastEdit=Date.now();
+  try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
+  closeModal();render();sendToFirebase().catch(()=>{});toast('Analista adicionada');
+}
+
+function openEditSemana(ai,si){
+  const a=db.acompanhamento[ai];
+  const rawSem=a.semanas||[];
+  const s=Array.isArray(rawSem)?rawSem[si]:(rawSem[si]??rawSem[String(si)]??null)||{};
+  const periodo=a['periodo'+(si+1)]||'';
+  const metas=getMetas(a.caixa||'Silver');
+  show(`<div class="modal" style="width:480px"><h2>✎ Semana ${si+1}${periodo?' · '+periodo:''} — ${esc(a.nome)} <button class="close" onclick="closeModal()">✕</button></h2>
+    <div class="fld" style="margin-bottom:10px"><label>Período da semana</label><input type="text" id="sem_periodo" value="${esc(periodo)}" placeholder="13/07–17/07" style="margin-top:6px"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div class="fld"><label>SLA (minutos) <small style="color:var(--text-3)">meta ≤${metas.sla}min</small></label><input type="number" id="sem_sla" min="0" step="0.1" value="${s.sla??''}" placeholder="Ex: 4.5" style="margin-top:6px"></div>
+      <div class="fld"><label>CSAT (%) <small style="color:var(--text-3)">meta ≥${metas.csat}%</small></label><input type="number" id="sem_csat" min="0" max="100" step="0.1" value="${s.csat??''}" placeholder="Ex: 96" style="margin-top:6px"></div>
+      <div class="fld"><label>Conversas recebidas</label><input type="number" id="sem_rec" min="0" value="${s.recebidas??''}" placeholder="Ex: 48" style="margin-top:6px"></div>
+      <div class="fld"><label>Conversas fechadas</label><input type="number" id="sem_fech" min="0" value="${s.fechadas??''}" placeholder="Ex: 45" style="margin-top:6px"></div>
+    </div>
+    <div class="fld" style="margin-bottom:10px"><label>TMA (horas) <small style="color:var(--text-3)">meta ≤24h</small></label><input type="number" id="sem_tma" min="0" step="0.1" value="${s.tma??''}" placeholder="Ex: 18.5" style="margin-top:6px"></div>
+    <div class="fld" style="margin-bottom:16px"><label>Observação</label><input type="text" id="sem_obs" value="${esc(s.obs||'')}" placeholder="Ex: Boa evolução em chargeback" style="margin-top:6px"></div>
+    <div class="modal-foot">
+      ${Object.keys(s).length?`<button class="btn" style="color:var(--red-text);border-color:var(--red);margin-right:auto" onclick="clearSemana(${ai},${si})">Limpar</button>`:''}
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveEditSemana(${ai},${si})">Salvar</button>
+    </div>
+  </div>`);
+}
+
+function saveEditSemana(ai,si){
+  const g=id=>((document.getElementById(id)||{}).value||'').trim();
+  const sla=g('sem_sla')!==''?parseFloat(g('sem_sla')):null;
+  const csat=g('sem_csat')!==''?parseFloat(g('sem_csat')):null;
+  const recebidas=g('sem_rec')!==''?parseInt(g('sem_rec')):null;
+  const fechadas=g('sem_fech')!==''?parseInt(g('sem_fech')):null;
+  const tma=g('sem_tma')!==''?parseFloat(g('sem_tma')):null;
+  const obs=g('sem_obs');const periodo=g('sem_periodo');
+  const rawSem=db.acompanhamento[ai].semanas||[];
+  const semArr=Array.isArray(rawSem)?[...rawSem]:[0,1,2].map(i=>rawSem[i]??rawSem[String(i)]??null);
+  while(semArr.length<3)semArr.push(null);
+  semArr[si]={sla,csat,recebidas,fechadas,tma,obs};
+  db.acompanhamento[ai].semanas=semArr;
+  if(periodo)db.acompanhamento[ai]['periodo'+(si+1)]=periodo;
+  _lastEdit=Date.now();
+  try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
+  closeModal();render();sendToFirebase().catch(()=>{});toast('Semana '+(si+1)+' registrada');
+}
+
+function clearSemana(ai,si){
+  const rawSem=db.acompanhamento[ai].semanas||[];
+  const semArr=Array.isArray(rawSem)?[...rawSem]:[0,1,2].map(i=>rawSem[i]??rawSem[String(i)]??null);
+  while(semArr.length<3)semArr.push(null);
+  semArr[si]=null;
+  db.acompanhamento[ai].semanas=semArr;
+  _lastEdit=Date.now();
+  try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
+  closeModal();render();sendToFirebase().catch(()=>{});
+}
+
+function deletarAnalista(ai){
+  if(!confirm('Remover esta analista?'))return;
+  db.acompanhamento.splice(ai,1);_lastEdit=Date.now();
+  try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
+  render();sendToFirebase().catch(()=>{});toast('Analista removida');
+}
+
 /* ---------- TREINAMENTOS ---------- */
 let trainFilter='Todos';
 function parseDateBR(s){
@@ -1779,7 +2229,7 @@ async function forceSyncAll(silent){
   if(!silent&&el)el.innerHTML='<span style="color:var(--amber-text)">⟳ Enviando dados...</span>';
   syncStatus='syncing';updateSyncBadge();
   const BASE=FB_URL.replace('.json','');
-  const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks'];
+  const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks','avaliacaoGrupos','acompanhamento'];
   let ok=true;
   for(const field of fields){
     const val=db[field];if(val===undefined)continue;
