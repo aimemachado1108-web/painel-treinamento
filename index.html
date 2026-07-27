@@ -783,6 +783,26 @@ function viewVisao(){
       <div class="lbl">Melhora média PDIs<span class="lbl-ic">↑</span></div>
       <div class="val">${melhora?'+'+melhora+'%':'—'}</div>
       <span class="tag" style="background:var(--green-soft);color:var(--green-text)">consolidado métricas</span>
+      ${(()=>{
+        const acomp=db.acompanhamento||[];
+        if(!acomp.length)return'';
+        const evolucoes=acomp.map(a=>{
+          const rawSem=a.semanas||[];
+          const sems=[0,1,2].map(i=>Array.isArray(rawSem)?rawSem[i]:(rawSem[i]||rawSem[String(i)]||null));
+          const csats=sems.map(s=>s&&s.csat!=null?s.csat:null).filter(v=>v!==null);
+          if(csats.length<2)return null;
+          return csats[csats.length-1]-csats[0];
+        }).filter(v=>v!==null);
+        if(!evolucoes.length)return'';
+        const avgEv=round(evolucoes.reduce((s,v)=>s+v,0)/evolucoes.length,1);
+        const sinal=avgEv>=0?'+':'';
+        const cor=avgEv>=0?'var(--green-text)':'var(--red-text)';
+        return`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+          <div style="font-size:.7em;color:var(--text-3);margin-bottom:3px">Evolução Onboarding B2B</div>
+          <div style="font-size:.95em;font-weight:700;color:${cor}">${sinal}${avgEv}% CSAT</div>
+          <div style="font-size:.68em;color:var(--text-3)">${evolucoes.length} analista${evolucoes.length!==1?'s':''} com evolução</div>
+        </div>`;
+      })()}
     </div>
 
     <div class="mcard" style="cursor:pointer" onclick="go('impacto-treino')">
@@ -1715,7 +1735,7 @@ function corTMA(v){if(v===null||v===undefined)return'var(--text)';return v<=24?'
 
 function viewAcompanhamento(){
   const lista=db.acompanhamento||[];
-  const addBtn=`<div class="edit-only" style="margin-bottom:16px"><button class="btn primary sm" onclick="openAddAnalista()">+ Adicionar analista</button></div>`;
+  const addBtn=`<div class="edit-only-block" style="margin-bottom:16px"><button class="btn primary sm" onclick="openAddAnalista()">+ Adicionar analista</button></div>`;
   if(!lista.length)return addBtn+`<div class="empty">Nenhuma analista cadastrada.<br>Adicione para registrar a evolução semanal de atendimento.</div>`;
 
   const cards=lista.map((a,ai)=>{
@@ -1736,11 +1756,11 @@ function viewAcompanhamento(){
     return `<div class="panel" style="padding:18px 20px;margin-bottom:12px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px">
         <div>
-          <div style="font-weight:700;font-size:1em;margin-bottom:3px">${esc(a.nome)}</div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <span style="font-size:.8em;color:var(--text-3)">${esc(a.email||'')}</span>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+            <span style="font-weight:700;font-size:1em">${esc(a.nome)}</span>
             ${a.caixa?`<span class="tag" style="background:rgba(139,92,246,.15);color:var(--purple)">${esc(a.caixa)}</span>`:''}
           </div>
+          <div style="font-size:.8em;color:var(--text-3)">${esc(a.email||'')}</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           ${spark}
@@ -1751,41 +1771,56 @@ function viewAcompanhamento(){
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
         ${semanas.map((sem,si)=>{
           const s=sem.d;
+          const prev=si>0?semanas[si-1].d:null;
           const filled=s&&(s.sla!==null||s.csat!==null||s.recebidas!==null||s.fechadas!==null||s.tma!==null);
+
+          // Delta vs semana anterior
+          function delta(curr,prevV,maiorMelhor){
+            if(curr==null||prevV==null||curr===''||prevV==='')return'';
+            const d=parseFloat(curr)-parseFloat(prevV);
+            if(d===0)return'<span style="font-size:.7em;color:var(--text-3)">= sem variação</span>';
+            const melhorou=maiorMelhor?d>0:d<0;
+            const sinal=d>0?'+':'';
+            return`<span style="font-size:.7em;color:${melhorou?'var(--green)':'var(--red-text)'};font-weight:600">${sinal}${d.toFixed(1)} ${melhorou?'↑':'↓'} vs S${si}</span>`;
+          }
+
           return `<div style="background:var(--input-bg);border:1px solid var(--border);border-radius:10px;overflow:hidden">
             <div style="padding:10px 12px 6px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)">
               <div>
                 <div style="font-weight:700;font-size:.85em">Semana ${si+1}</div>
                 ${sem.periodo?`<div style="font-size:.72em;color:var(--purple);margin-top:1px">${esc(sem.periodo)}</div>`:`<div style="font-size:.72em;color:var(--text-3);margin-top:1px">sem período</div>`}
               </div>
-              <button class="btn sm edit-only" style="padding:3px 8px;font-size:.78em" onclick="openEditSemana(${ai},${si})" title="Editar semana ${si+1}">✎</button>
+              <button class="btn sm" style="padding:3px 8px;font-size:.78em" onclick="openEditSemana(${ai},${si})" title="Registrar semana ${si+1}">✎</button>
             </div>
             <div style="padding:10px 12px">
               ${filled?`
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px">
                 <div>
-                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">SLA <span style="color:var(--text-3);font-weight:400">≤${metas.sla}min</span></div>
-                  <div style="font-size:1.05em;font-weight:700;font-family:'Inter',sans-serif;color:${corSLA(s.sla,a.caixa)}">${s.sla!==null&&s.sla!==undefined?s.sla+'min':'—'}</div>
+                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px">SLA ≤${metas.sla}min</div>
+                  <div style="font-size:1.05em;font-weight:700;font-family:'Inter',sans-serif;color:${corSLA(s.sla,a.caixa)}">${s.sla!=null?s.sla+'min':'—'}</div>
+                  ${prev?delta(s.sla,prev.sla,false):''}
                 </div>
                 <div>
-                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">CSAT <span style="color:var(--text-3);font-weight:400">≥${metas.csat}%</span></div>
-                  <div style="font-size:1.05em;font-weight:700;font-family:'Inter',sans-serif;color:${corCSAT(s.csat,a.caixa)}">${s.csat!==null&&s.csat!==undefined?s.csat+'%':'—'}</div>
+                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px">CSAT ≥${metas.csat}%</div>
+                  <div style="font-size:1.05em;font-weight:700;font-family:'Inter',sans-serif;color:${corCSAT(s.csat,a.caixa)}">${s.csat!=null?s.csat+'%':'—'}</div>
+                  ${prev?delta(s.csat,prev.csat,true):''}
                 </div>
                 <div>
-                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Recebidas</div>
+                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px">Recebidas</div>
                   <div style="font-size:1.05em;font-weight:600">${s.recebidas??'—'}</div>
                 </div>
                 <div>
-                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Fechadas</div>
+                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px">Fechadas</div>
                   <div style="font-size:1.05em;font-weight:600">${s.fechadas??'—'}</div>
                 </div>
                 <div style="grid-column:span 2">
-                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">TMA <span style="color:var(--text-3);font-weight:400">≤24h</span></div>
-                  <div style="font-size:1.05em;font-weight:700;font-family:'Inter',sans-serif;color:${corTMA(s.tma)}">${s.tma!==null&&s.tma!==undefined?s.tma+'h':'—'}</div>
+                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px">TMA ≤24h</div>
+                  <div style="font-size:1.05em;font-weight:700;font-family:'Inter',sans-serif;color:${corTMA(s.tma)}">${s.tma!=null?s.tma+'h':'—'}</div>
+                  ${prev?delta(s.tma,prev.tma,false):''}
                 </div>
                 ${s.obs?`<div style="grid-column:span 2;border-top:1px solid var(--border);padding-top:6px;margin-top:2px;font-size:.75em;color:var(--text-3);line-height:1.4">${esc(s.obs)}</div>`:''}
               </div>`
-              :`<div style="font-size:.82em;color:var(--text-3);padding:6px 0 4px">Sem registros</div>`}
+              :`<div style="font-size:.82em;color:var(--text-3);padding:4px 0 6px">Sem registros</div>`}
             </div>
           </div>`;
         }).join('')}
@@ -1831,24 +1866,39 @@ function saveAddAnalista(){
   closeModal();render();sendToFirebase().catch(()=>{});toast('Analista adicionada');
 }
 
+function handleEditSemana(btn){
+  const ai=parseInt(btn.getAttribute('data-ai'));
+  const si=parseInt(btn.getAttribute('data-si'));
+  openEditSemana(ai,si);
+}
+
 function openEditSemana(ai,si){
   const a=db.acompanhamento[ai];
+  if(!a){toast('Analista não encontrada');return;}
   const rawSem=a.semanas||[];
-  const s=Array.isArray(rawSem)?rawSem[si]:(rawSem[si]??rawSem[String(si)]??null)||{};
+  const raw=Array.isArray(rawSem)?rawSem[si]:(rawSem[si]||rawSem[String(si)]||null);
+  const s=raw||{};
   const periodo=a['periodo'+(si+1)]||'';
   const metas=getMetas(a.caixa||'Silver');
+  const slaV=s.sla!=null?s.sla:'';
+  const csatV=s.csat!=null?s.csat:'';
+  const recV=s.recebidas!=null?s.recebidas:'';
+  const fechV=s.fechadas!=null?s.fechadas:'';
+  const tmaV=s.tma!=null?s.tma:'';
+  const obsV=s.obs||'';
+  const hasData=slaV!==''||csatV!==''||recV!==''||fechV!==''||tmaV!=='';
   show(`<div class="modal" style="width:480px"><h2>✎ Semana ${si+1}${periodo?' · '+periodo:''} — ${esc(a.nome)} <button class="close" onclick="closeModal()">✕</button></h2>
     <div class="fld" style="margin-bottom:10px"><label>Período da semana</label><input type="text" id="sem_periodo" value="${esc(periodo)}" placeholder="13/07–17/07" style="margin-top:6px"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-      <div class="fld"><label>SLA (minutos) <small style="color:var(--text-3)">meta ≤${metas.sla}min</small></label><input type="number" id="sem_sla" min="0" step="0.1" value="${s.sla??''}" placeholder="Ex: 4.5" style="margin-top:6px"></div>
-      <div class="fld"><label>CSAT (%) <small style="color:var(--text-3)">meta ≥${metas.csat}%</small></label><input type="number" id="sem_csat" min="0" max="100" step="0.1" value="${s.csat??''}" placeholder="Ex: 96" style="margin-top:6px"></div>
-      <div class="fld"><label>Conversas recebidas</label><input type="number" id="sem_rec" min="0" value="${s.recebidas??''}" placeholder="Ex: 48" style="margin-top:6px"></div>
-      <div class="fld"><label>Conversas fechadas</label><input type="number" id="sem_fech" min="0" value="${s.fechadas??''}" placeholder="Ex: 45" style="margin-top:6px"></div>
+      <div class="fld"><label>SLA (minutos) <small style="color:var(--text-3)">meta ≤${metas.sla}min</small></label><input type="number" id="sem_sla" min="0" step="0.1" value="${slaV}" placeholder="Ex: 4.5" style="margin-top:6px"></div>
+      <div class="fld"><label>CSAT (%) <small style="color:var(--text-3)">meta ≥${metas.csat}%</small></label><input type="number" id="sem_csat" min="0" max="100" step="0.1" value="${csatV}" placeholder="Ex: 96" style="margin-top:6px"></div>
+      <div class="fld"><label>Conversas recebidas</label><input type="number" id="sem_rec" min="0" value="${recV}" placeholder="Ex: 48" style="margin-top:6px"></div>
+      <div class="fld"><label>Conversas fechadas</label><input type="number" id="sem_fech" min="0" value="${fechV}" placeholder="Ex: 45" style="margin-top:6px"></div>
     </div>
-    <div class="fld" style="margin-bottom:10px"><label>TMA (horas) <small style="color:var(--text-3)">meta ≤24h</small></label><input type="number" id="sem_tma" min="0" step="0.1" value="${s.tma??''}" placeholder="Ex: 18.5" style="margin-top:6px"></div>
-    <div class="fld" style="margin-bottom:16px"><label>Observação</label><input type="text" id="sem_obs" value="${esc(s.obs||'')}" placeholder="Ex: Boa evolução em chargeback" style="margin-top:6px"></div>
+    <div class="fld" style="margin-bottom:10px"><label>TMA (horas) <small style="color:var(--text-3)">meta ≤24h</small></label><input type="number" id="sem_tma" min="0" step="0.1" value="${tmaV}" placeholder="Ex: 18.5" style="margin-top:6px"></div>
+    <div class="fld" style="margin-bottom:16px"><label>Observação</label><input type="text" id="sem_obs" value="${esc(obsV)}" placeholder="Ex: Boa evolução em chargeback" style="margin-top:6px"></div>
     <div class="modal-foot">
-      ${Object.keys(s).length?`<button class="btn" style="color:var(--red-text);border-color:var(--red);margin-right:auto" onclick="clearSemana(${ai},${si})">Limpar</button>`:''}
+      ${hasData?`<button class="btn" style="color:var(--red-text);border-color:var(--red);margin-right:auto" onclick="clearSemana(${ai},${si})">Limpar</button>`:''}
       <button class="btn" onclick="closeModal()">Cancelar</button>
       <button class="btn primary" onclick="saveEditSemana(${ai},${si})">Salvar</button>
     </div>
