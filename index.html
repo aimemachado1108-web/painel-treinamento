@@ -780,29 +780,42 @@ function viewVisao(){
     </div>
 
     <div class="mcard">
-      <div class="lbl">Melhora média PDIs<span class="lbl-ic">↑</span></div>
-      <div class="val">${melhora?'+'+melhora+'%':'—'}</div>
-      <span class="tag" style="background:var(--green-soft);color:var(--green-text)">consolidado métricas</span>
-      ${(()=>{
-        const acomp=db.acompanhamento||[];
-        if(!acomp.length)return'';
-        const evolucoes=acomp.map(a=>{
-          const rawSem=a.semanas||[];
-          const sems=[0,1,2].map(i=>Array.isArray(rawSem)?rawSem[i]:(rawSem[i]||rawSem[String(i)]||null));
-          const csats=sems.map(s=>s&&s.csat!=null?s.csat:null).filter(v=>v!==null);
-          if(csats.length<2)return null;
-          return csats[csats.length-1]-csats[0];
-        }).filter(v=>v!==null);
-        if(!evolucoes.length)return'';
-        const avgEv=round(evolucoes.reduce((s,v)=>s+v,0)/evolucoes.length,1);
-        const sinal=avgEv>=0?'+':'';
-        const cor=avgEv>=0?'var(--green-text)':'var(--red-text)';
-        return`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
-          <div style="font-size:.7em;color:var(--text-3);margin-bottom:3px">Evolução Onboarding B2B</div>
-          <div style="font-size:.95em;font-weight:700;color:${cor}">${sinal}${avgEv}% CSAT</div>
-          <div style="font-size:.68em;color:var(--text-3)">${evolucoes.length} analista${evolucoes.length!==1?'s':''} com evolução</div>
-        </div>`;
-      })()}
+      <div class="lbl">Melhora média PDIs & Onboarding<span class="lbl-ic">↑</span></div>
+      <div style="display:flex;gap:16px;align-items:flex-start;margin-top:6px">
+        <div style="flex:1">
+          <div style="font-size:.68em;color:var(--text-3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">PDIs</div>
+          <div style="font-size:1.6em;font-weight:700;font-family:'Inter',sans-serif;color:${melhora>0?'var(--green)':melhora<0?'var(--red-text)':'var(--text-2)'}">${melhora?'+'+melhora+'%':'—'}</div>
+          <div style="font-size:.68em;color:var(--text-3);margin-top:2px">${done.length} PDI${done.length!==1?'s':''} concluído${done.length!==1?'s':''}</div>
+        </div>
+        <div style="width:1px;background:var(--border);align-self:stretch;margin:0 4px"></div>
+        ${(()=>{
+          const acomp=db.acompanhamento||[];
+          if(!acomp.length)return'<div style="flex:1"><div style="font-size:.68em;color:var(--text-3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">Onboarding B2B</div><div style="font-size:.82em;color:var(--text-3);margin-top:8px">Sem dados</div></div>';
+          const evCSAT=[],evSLA=[],evTMA=[];
+          acomp.forEach(a=>{
+            const rawSem=a.semanas||[];
+            const sems=[0,1,2].map(i=>Array.isArray(rawSem)?rawSem[i]:(rawSem[i]||rawSem[String(i)]||null));
+            const csats=sems.map(s=>s&&s.csat!=null?s.csat:null).filter(v=>v!==null);
+            const slas=sems.map(s=>s&&s.sla!=null?s.sla:null).filter(v=>v!==null);
+            const tmas=sems.map(s=>s&&s.tma!=null?s.tma:null).filter(v=>v!==null);
+            if(csats.length>=2)evCSAT.push(csats[csats.length-1]-csats[0]);
+            if(slas.length>=2)evSLA.push(slas[slas.length-1]-slas[0]);
+            if(tmas.length>=2)evTMA.push(tmas[tmas.length-1]-tmas[0]);
+          });
+          const totalAn=acomp.length;
+          const comEv=evCSAT.length;
+          if(!comEv)return'<div style="flex:1"><div style="font-size:.68em;color:var(--text-3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">Onboarding B2B</div><div style="font-size:.82em;color:var(--text-3);margin-top:4px">'+totalAn+' analista'+(totalAn!==1?'s':'')+'<br>aguardando semana 2</div></div>';
+          const avgC=round(evCSAT.reduce((s,v)=>s+v,0)/evCSAT.length,1);
+          const avgS=evSLA.length?round(evSLA.reduce((s,v)=>s+v,0)/evSLA.length,1):null;
+          const avgT=evTMA.length?round(evTMA.reduce((s,v)=>s+v,0)/evTMA.length,1):null;
+          const corC=avgC>=0?'var(--green)':'var(--red-text)';
+          const sinC=avgC>=0?'+':'';
+          let metricas=`<div style="font-size:.92em;font-weight:700;color:${corC}">${sinC}${avgC}% CSAT</div>`;
+          if(avgS!==null){const corS=avgS<=0?'var(--green)':'var(--red-text)';metricas+=`<div style="font-size:.78em;font-weight:600;color:${corS}">${avgS>0?'+':''}${avgS}min SLA</div>`;}
+          if(avgT!==null){const corT=avgT<=0?'var(--green)':'var(--red-text)';metricas+=`<div style="font-size:.78em;font-weight:600;color:${corT}">${avgT>0?'+':''}${avgT}h TMA</div>`;}
+          return`<div style="flex:1"><div style="font-size:.68em;color:var(--text-3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">Onboarding B2B</div>${metricas}<div style="font-size:.68em;color:var(--text-3);margin-top:2px">${comEv} analista${comEv!==1?'s':''} com evolução</div></div>`;
+        })()}
+      </div>
     </div>
 
     <div class="mcard" style="cursor:pointer" onclick="go('impacto-treino')">
