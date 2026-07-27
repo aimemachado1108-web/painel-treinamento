@@ -798,22 +798,50 @@ function viewVisao(){
             const csats=sems.map(s=>s&&s.csat!=null?s.csat:null).filter(v=>v!==null);
             const slas=sems.map(s=>s&&s.sla!=null?s.sla:null).filter(v=>v!==null);
             const tmas=sems.map(s=>s&&s.tma!=null?s.tma:null).filter(v=>v!==null);
-            if(csats.length>=2)evCSAT.push(csats[csats.length-1]-csats[0]);
+            if(csats.length>=2)evCSAT.push({delta:csats[csats.length-1]-csats[0],atual:csats[csats.length-1]});
+            if(csats.length===1)evCSAT.push({delta:0,atual:csats[0]});
             if(slas.length>=2)evSLA.push(slas[slas.length-1]-slas[0]);
             if(tmas.length>=2)evTMA.push(tmas[tmas.length-1]-tmas[0]);
           });
           const totalAn=acomp.length;
           const comEv=evCSAT.length;
-          if(!comEv)return'<div style="flex:1"><div style="font-size:.68em;color:var(--text-3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">Onboarding B2B</div><div style="font-size:.82em;color:var(--text-3);margin-top:4px">'+totalAn+' analista'+(totalAn!==1?'s':'')+'<br>aguardando semana 2</div></div>';
-          const avgC=round(evCSAT.reduce((s,v)=>s+v,0)/evCSAT.length,1);
+          if(!comEv)return'<div style="flex:1"><div style="font-size:.68em;color:var(--text-3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">Onboarding B2B</div><div style="font-size:.82em;color:var(--text-3);margin-top:4px">'+totalAn+' analista'+(totalAn!==1?'s':'')+'<br>aguardando dados</div></div>';
+          const avgAtual=round(evCSAT.reduce((s,v)=>s+v.atual,0)/evCSAT.length,1);
+          const avgDelta=round(evCSAT.reduce((s,v)=>s+v.delta,0)/evCSAT.length,1);
           const avgS=evSLA.length?round(evSLA.reduce((s,v)=>s+v,0)/evSLA.length,1):null;
           const avgT=evTMA.length?round(evTMA.reduce((s,v)=>s+v,0)/evTMA.length,1):null;
-          const corC=avgC>=0?'var(--green)':'var(--red-text)';
-          const sinC=avgC>=0?'+':'';
-          let metricas=`<div style="font-size:.92em;font-weight:700;color:${corC}">${sinC}${avgC}% CSAT</div>`;
-          if(avgS!==null){const corS=avgS<=0?'var(--green)':'var(--red-text)';metricas+=`<div style="font-size:.78em;font-weight:600;color:${corS}">${avgS>0?'+':''}${avgS}min SLA</div>`;}
-          if(avgT!==null){const corT=avgT<=0?'var(--green)':'var(--red-text)';metricas+=`<div style="font-size:.78em;font-weight:600;color:${corT}">${avgT>0?'+':''}${avgT}h TMA</div>`;}
-          return`<div style="flex:1"><div style="font-size:.68em;color:var(--text-3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">Onboarding B2B</div>${metricas}<div style="font-size:.68em;color:var(--text-3);margin-top:2px">${comEv} analista${comEv!==1?'s':''} com evolução</div></div>`;
+
+          // Consolidar: contar melhorias vs pioras
+          const metricsArr=[];
+          // CSAT: maior=melhor
+          if(avgDelta>0)metricsArr.push({label:'CSAT '+((avgDelta>0?'+':'')+avgDelta+'%'),bom:true});
+          else if(avgDelta<0)metricsArr.push({label:'CSAT '+avgDelta+'%',bom:false});
+          else if(avgAtual>=94)metricsArr.push({label:'CSAT '+avgAtual+'% ✓',bom:true});
+          // SLA: menor=melhor
+          if(avgS!==null&&avgS<0)metricsArr.push({label:'SLA '+avgS+'min',bom:true});
+          else if(avgS!==null&&avgS>0)metricsArr.push({label:'SLA +'+avgS+'min',bom:false});
+          // TMA: menor=melhor
+          if(avgT!==null&&avgT<0)metricsArr.push({label:'TMA '+avgT+'h',bom:true});
+          else if(avgT!==null&&avgT>0)metricsArr.push({label:'TMA +'+avgT+'h',bom:false});
+
+          const bons=metricsArr.filter(m=>m.bom);
+          const ruins=metricsArr.filter(m=>!m.bom);
+          const totalMetricas=metricsArr.length||1;
+          const pctMelhora=Math.round(bons.length/totalMetricas*100);
+          const consolidadoBom=bons.length>=ruins.length;
+          const corConsolidado=consolidadoBom?'var(--green)':'var(--red-text)';
+          const txtConsolidado=consolidadoBom?(pctMelhora===100?'Evolução total':'Evolução parcial'):'Atenção';
+
+          let tags='';
+          if(bons.length){const best=bons[0];tags+=`<span style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:6px;font-size:.68em;font-weight:600;background:rgba(34,197,94,.15);color:var(--green)">${best.label}</span> `;}
+          if(ruins.length){const worst=ruins[0];tags+=`<span style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:6px;font-size:.68em;font-weight:600;background:rgba(239,68,68,.15);color:var(--red-text)">${worst.label}</span>`;}
+
+          return`<div style="flex:1"><div style="font-size:.68em;color:var(--text-3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">Onboarding B2B</div>
+            <div style="font-size:1.4em;font-weight:700;font-family:'Inter',sans-serif;color:${corConsolidado}">${pctMelhora}%</div>
+            <div style="font-size:.7em;color:${corConsolidado};font-weight:600;margin-bottom:4px">${txtConsolidado}</div>
+            ${tags}
+            <div style="font-size:.65em;color:var(--text-3);margin-top:4px">${comEv} analista${comEv!==1?'s':''}</div>
+          </div>`;
         })()}
       </div>
     </div>
