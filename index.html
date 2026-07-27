@@ -589,7 +589,7 @@ const FONTS={
   'Arredondada':"'Nunito',-apple-system,sans-serif"
 };
 const SIZES={sm:'Pequeno',md:'Médio',lg:'Grande',xl:'Extra'};
-const DEFAULT_TITLES={visao:'Visão Geral','impacto-pdi':'Impacto - PDI','impacto-treino':'Impacto - Treinamento',pdis:'PDIs',treinamentos:'Treinamentos',documentacao:'Documentação',macros:'Macros',onboarding:'Feedback Onboarding B2B',avaliacao:'Onboarding B2B',organograma:'Organograma',planilha:'Planilha',importar:'Importar'};
+const DEFAULT_TITLES={visao:'Visão Geral','impacto-pdi':'Impacto - PDI','impacto-treino':'Impacto - Treinamento',pdis:'PDIs',treinamentos:'Treinamentos',documentacao:'Documentação',macros:'Macros & Taxonomias',onboarding:'Feedback Onboarding B2B',avaliacao:'Onboarding B2B',organograma:'Organograma',planilha:'Planilha',importar:'Importar'};
 function defaultSettings(){return{theme:'claro',bodyFont:'Moderna',titleFont:'Serifada',fontSize:'md',titles:Object.assign({},DEFAULT_TITLES)};}
 
 function badgeStyle(t){const v=(TYPES[t]||{badge:'--slate'}).badge;return `background:var(${v}-soft);color:var(${v}-text)`;}
@@ -774,7 +774,7 @@ function viewVisao(){
     </div>
 
     <div class="mcard">
-      <div class="lbl">Macros criadas<span class="lbl-ic">⚡</span></div>
+      <div class="lbl">Macros & Taxonomias<span class="lbl-ic">⚡</span></div>
       <div class="val">${macros.length}</div>
       <div class="foot">não somada em ações</div>
     </div>
@@ -2121,64 +2121,67 @@ function show(html){document.getElementById('overlay').innerHTML=html;document.g
 function viewMacros(){
   const macros=inMonth(db.macros||[]);
   const cards=macros.map(m=>{
-    const dias=m.dataSolic&&m.dateConc?Math.round((new Date(m.dateConc.split('/').reverse().join('-'))-new Date(m.dataSolic.split('/').reverse().join('-')))/(864e5)):null;
+    const tipo=m.tipo||'Macro';
+    const icone=tipo==='Taxonomia'?'🏷':'⚡';
+    const caixas=Array.isArray(m.caixas)?m.caixas:(m.caixa?[m.caixa]:[]);
     return '<div class="acard '+(m.status==='Concluído'?'done':'')+'" style="border-left-color:var(--purple)">'
-      // linha 1: ícone + título + botões (canto direito)
       +'<div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:8px">'
         +'<div style="flex:1;min-width:0">'
           +'<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:5px">'
-            +'<span style="font-size:.82em">⚡</span>'
+            +'<span style="font-size:.82em">'+icone+'</span>'
             +'<b style="font-size:.97em;line-height:1.3">'+esc(m.topic)+'</b>'
+            +'<span class="tag" style="background:rgba(139,92,246,.12);color:var(--purple);font-size:.72em">'+esc(tipo)+'</span>'
           +'</div>'
-          // badges: caixa + status
           +'<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'
-            +(m.caixa?'<span class="badge" style="background:var(--purple-soft);color:var(--purple-dark)">'+esc(m.caixa)+'</span>':'')
+            +caixas.map(function(c){return '<span class="badge" style="background:var(--purple-soft);color:var(--purple-dark)">'+esc(c)+'</span>';}).join('')
             +statusSelect(m.status,'setMacroStatus(\''+m.id+'\',this.value)',TRAIN_STATUS)
           +'</div>'
         +'</div>'
-        // botões no canto direito
         +'<div style="display:flex;gap:5px;flex-shrink:0">'
           +'<button class="x" title="Editar" onclick="editMacroModal(\''+m.id+'\')">✎</button>'
           +'<button class="x" title="Remover" onclick="delMacro(\''+m.id+'\')">✕</button>'
         +'</div>'
       +'</div>'
-      // linha 2: datas + tempo
-      +(m.dataSolic||m.dateConc?
-        '<div style="font-size:.8em;color:var(--text-2);display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px">'
-          +(m.dataSolic?'<span>📋 '+esc(m.dataSolic)+'</span>':'')
-          +(m.dateConc?'<span>✓ '+esc(m.dateConc)+'</span>':'')
-          +(dias!==null&&!isNaN(dias)&&dias>=0?'<span style="color:var(--purple-dark);font-weight:600">⏱ '+dias+'d</span>':'')
-        +'</div>':'')
-      // linha 3: detalhamento
+      +(m.dataCriacao?'<div style="font-size:.8em;color:var(--text-2);margin-bottom:6px">📅 Criação: '+esc(m.dataCriacao)+'</div>':'')
       +(m.detail?'<div class="desc">'+esc(m.detail)+'</div>':'')
       +'</div>';
   }).join('');
-  return '<div class="page-h"><h1>'+esc(T('macros'))+'</h1><p>Macros criadas por mês. Não somadas no total de ações — contabilizadas separadamente.</p></div>'
-    +'<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn primary edit-only" onclick="openMacroModal()">+ Nova Macro</button></div>'
+  return '<div class="page-h"><h1>'+esc(T('macros'))+' ⚡</h1><p>Macros e taxonomias criadas por mês. Não somadas no total de ações.</p></div>'
+    +'<div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn primary edit-only" onclick="openMacroModal()">+ Nova</button></div>'
     +(macros.length?'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">'+cards+'</div>'
-    :'<div class="empty">Nenhuma macro registrada neste mês.</div>');
+    :'<div class="empty">Nenhuma macro ou taxonomia registrada neste mês.</div>');
 }
 function setMacroStatus(id,s){(db.macros||[]).find(m=>m.id===id).status=s;persist();render();}
 function delMacro(id){if(confirm('Remover esta macro?')){db.macros=db.macros.filter(m=>m.id!==id);persist();render();}}
+const MACRO_CAIXAS=['Suporte Silver','Suporte Integração','Frentes Estratégicas','Suporte Vip/Saques','Suporte Max','Suporte B2C'];
 function _macroFormBody(m){
-  const cx=db.caixas.map(c=>'<option '+(m&&m.caixa===c?'selected':'')+'>'+esc(c)+'</option>').join('');
+  const mCaixas=Array.isArray(m&&m.caixas)?m.caixas:(m&&m.caixa?[m.caixa]:[]);
+  const cxChecks=MACRO_CAIXAS.map(c=>'<label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" class="mc_cx" value="'+esc(c)+'" '+(mCaixas.includes(c)?'checked':'')+'><span style="font-size:.88em">'+esc(c)+'</span></label>').join('');
   const st=TRAIN_STATUS.map(s=>'<option '+(m&&m.status===s?'selected':'')+'>'+s+'</option>').join('');
-  return '<div class="full fld"><label>Tópico da macro</label><input id="mc_topic" value="'+(m?esc(m.topic):'')+'" placeholder="Ex: Macro saque antecipado"></div>'
-    +'<div class="row"><div class="fld"><label>Data da solicitação</label><input id="mc_solic" value="'+(m?esc(m.dataSolic||''):'')+'" placeholder="dd/mm"></div>'
-    +'<div class="fld"><label>Data de conclusão</label><input id="mc_conc" value="'+(m?esc(m.dateConc||''):'')+'" placeholder="dd/mm"></div></div>'
-    +'<div class="full fld"><label>Caixa de atendimento</label><select id="mc_caixa"><option value="">— Todas —</option>'+cx+'</select></div>'
+  const tipoSel=m&&m.tipo||'Macro';
+  return '<div class="full fld"><label>Tópico</label><input id="mc_topic" value="'+(m?esc(m.topic):'')+'" placeholder="Ex: Macro saque antecipado"></div>'
+    +'<div class="row"><div class="fld"><label>Tipo</label><select id="mc_tipo"><option '+(tipoSel==='Macro'?'selected':'')+'>Macro</option><option '+(tipoSel==='Taxonomia'?'selected':'')+'>Taxonomia</option></select></div>'
+    +'<div class="fld"><label>Data de criação</label><input id="mc_data" value="'+(m?esc(m.dataCriacao||m.dataSolic||''):'')+'" placeholder="dd/mm/aaaa"></div></div>'
+    +'<div class="full fld"><label>Caixas de atendimento</label><table style="width:100%;margin-top:8px;padding:12px 16px;background:var(--input-bg);border:1px solid var(--border);border-radius:8px;border-collapse:separate;border-spacing:12px 8px"><tr>'
+    +MACRO_CAIXAS.slice(0,3).map(c=>'<td style="white-space:nowrap"><label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" class="mc_cx" value="'+esc(c)+'" '+(mCaixas.includes(c)?'checked':'')+'><span style="font-size:.88em">'+esc(c)+'</span></label></td>').join('')
+    +'</tr><tr>'
+    +MACRO_CAIXAS.slice(3,6).map(c=>'<td style="white-space:nowrap"><label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" class="mc_cx" value="'+esc(c)+'" '+(mCaixas.includes(c)?'checked':'')+'><span style="font-size:.88em">'+esc(c)+'</span></label></td>').join('')
+    +'</tr></table></div>'
     +'<div class="full fld"><label>Status</label><select id="mc_status">'+st+'</select></div>'
     +'<div class="full fld"><label>Detalhamento</label><textarea id="mc_detail" rows="3" placeholder="Contexto, finalidade, link...">'+(m?esc(m.detail||''):'')+'</textarea></div>';
 }
-function openMacroModal(){show('<div class="modal"><h2>Nova Macro <button class="close" onclick="closeModal()">✕</button></h2>'+_macroFormBody(null)+'<div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveMacro(null)">Salvar</button></div></div>');}
-function editMacroModal(id){const m=(db.macros||[]).find(x=>x.id===id);if(!m)return;show('<div class="modal"><h2>Editar Macro <button class="close" onclick="closeModal()">✕</button></h2>'+_macroFormBody(m)+'<div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveMacro(\''+id+'\')">Salvar</button></div></div>');}
+function openMacroModal(){show('<div class="modal"><h2>Nova Macro / Taxonomia <button class="close" onclick="closeModal()">✕</button></h2>'+_macroFormBody(null)+'<div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveMacro(null)">Salvar</button></div></div>');}
+function editMacroModal(id){const m=(db.macros||[]).find(x=>x.id===id);if(!m)return;show('<div class="modal"><h2>Editar <button class="close" onclick="closeModal()">✕</button></h2>'+_macroFormBody(m)+'<div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveMacro(\''+id+'\')">Salvar</button></div></div>');}
 function saveMacro(id){
   const topic=document.getElementById('mc_topic').value.trim();if(!topic){toast('Informe o tópico');return;}
-  const obj={id:id||'mc'+Date.now(),topic,dataSolic:document.getElementById('mc_solic').value.trim(),dateConc:document.getElementById('mc_conc').value.trim(),caixa:document.getElementById('mc_caixa').value,status:document.getElementById('mc_status').value,detail:document.getElementById('mc_detail').value.trim(),month:db.current};
+  const tipo=document.getElementById('mc_tipo').value;
+  const caixas=[...document.querySelectorAll('.mc_cx:checked')].map(c=>c.value);
+  const obj={id:id||'mc'+Date.now(),topic,tipo,dataCriacao:document.getElementById('mc_data').value.trim(),caixas,status:document.getElementById('mc_status').value,detail:document.getElementById('mc_detail').value.trim(),month:db.current};
   if(!db.macros)db.macros=[];
   if(id){const i=db.macros.findIndex(m=>m.id===id);if(i>=0)db.macros[i]=obj;}else db.macros.push(obj);
-  persist(true);closeModal();render();toast(id?'Macro atualizada':'Macro salva');
+  persist(true);closeModal();render();toast(id?'Atualizado':'Salvo');
 }
+
 
 /* ===== MODAIS DE EDIÇÃO ===== */
 function _actionFormBody(a){
