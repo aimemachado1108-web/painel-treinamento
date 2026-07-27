@@ -721,7 +721,12 @@ function viewVisao(){
   const allResults=teams.flatMap(t=>(t.results||[]));
   const totalAval=allResults.length;
   const allStarsAll=allResults.map(r=>r.stars).filter(Boolean);
-  const avgStarsAll=allStarsAll.length?round(allStarsAll.reduce((s,x)=>s+x,0)/allStarsAll.length,1):0;
+  // Incluir notas "geral" do Feedback Onboarding B2B
+  const obFeedbacks=db.onboardingFeedbacks||[];
+  const obStars=obFeedbacks.map(f=>parseFloat(f.geral)).filter(v=>!isNaN(v)&&v>0);
+  const combinedStars=[...allStarsAll,...obStars];
+  const avgStarsAll=combinedStars.length?round(combinedStars.reduce((s,x)=>s+x,0)/combinedStars.length,1):0;
+  const totalAvalCombined=totalAval+obStars.length;
   const totalAc=allResults.reduce((s,r)=>s+(typeof r.ac==='number'?r.ac:0),0);
   const totalTot=allResults.reduce((s,r)=>s+(typeof r.ac==='number'?r.ac+(typeof r.er==='number'?r.er:0):0),0);
   const avgAcert=totalTot?Math.round(totalAc/totalTot*100):0;
@@ -767,90 +772,72 @@ function viewVisao(){
       <span class="tag" style="background:var(--green-soft);color:var(--green-text)">↑ ${total?Math.round(concl/total*100):0}%</span>
     </div>
 
-    <div class="mcard">
-      <div class="lbl">Ações pendentes<span class="lbl-ic">⌛</span></div>
-      <div class="val">${andamento+pend}</div>
-      <span class="tag" style="background:var(--amber-soft);color:var(--amber-text)">em progresso</span>
-    </div>
-
-    <div class="mcard">
+    <div class="mcard" style="cursor:pointer" onclick="go('macros')">
       <div class="lbl">Macros & Taxonomias<span class="lbl-ic">⚡</span></div>
       <div class="val">${macros.length}</div>
       <div class="foot">não somada em ações</div>
     </div>
 
-    <div class="mcard">
-      <div class="lbl">Melhora média PDIs & Onboarding<span class="lbl-ic">↑</span></div>
-      <div style="display:flex;gap:16px;align-items:flex-start;margin-top:6px">
-        <div style="flex:1">
-          <div style="font-size:.68em;color:var(--text-3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">PDIs</div>
-          <div style="font-size:1.6em;font-weight:700;font-family:'Inter',sans-serif;color:${melhora>0?'var(--green)':melhora<0?'var(--red-text)':'var(--text-2)'}">${melhora?'+'+melhora+'%':'—'}</div>
-          <div style="font-size:.68em;color:var(--text-3);margin-top:2px">${done.length} PDI${done.length!==1?'s':''} concluído${done.length!==1?'s':''}</div>
-        </div>
-        <div style="width:1px;background:var(--border);align-self:stretch;margin:0 4px"></div>
-        ${(()=>{
-          const acomp=db.acompanhamento||[];
-          if(!acomp.length)return'<div style="flex:1"><div style="font-size:.68em;color:var(--text-3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">Onboarding B2B</div><div style="font-size:.82em;color:var(--text-3);margin-top:8px">Sem dados</div></div>';
-          const evCSAT=[],evSLA=[],evTMA=[];
-          acomp.forEach(a=>{
-            const rawSem=a.semanas||[];
-            const sems=[0,1,2].map(i=>Array.isArray(rawSem)?rawSem[i]:(rawSem[i]||rawSem[String(i)]||null));
-            const csats=sems.map(s=>s&&s.csat!=null?s.csat:null).filter(v=>v!==null);
-            const slas=sems.map(s=>s&&s.sla!=null?s.sla:null).filter(v=>v!==null);
-            const tmas=sems.map(s=>s&&s.tma!=null?s.tma:null).filter(v=>v!==null);
-            if(csats.length>=2)evCSAT.push({delta:csats[csats.length-1]-csats[0],atual:csats[csats.length-1]});
-            if(csats.length===1)evCSAT.push({delta:0,atual:csats[0]});
-            if(slas.length>=2)evSLA.push(slas[slas.length-1]-slas[0]);
-            if(tmas.length>=2)evTMA.push(tmas[tmas.length-1]-tmas[0]);
-          });
-          const totalAn=acomp.length;
-          const comEv=evCSAT.length;
-          if(!comEv)return'<div style="flex:1"><div style="font-size:.68em;color:var(--text-3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">Onboarding B2B</div><div style="font-size:.82em;color:var(--text-3);margin-top:4px">'+totalAn+' analista'+(totalAn!==1?'s':'')+'<br>aguardando dados</div></div>';
-          const avgAtual=round(evCSAT.reduce((s,v)=>s+v.atual,0)/evCSAT.length,1);
-          const avgDelta=round(evCSAT.reduce((s,v)=>s+v.delta,0)/evCSAT.length,1);
-          const avgS=evSLA.length?round(evSLA.reduce((s,v)=>s+v,0)/evSLA.length,1):null;
-          const avgT=evTMA.length?round(evTMA.reduce((s,v)=>s+v,0)/evTMA.length,1):null;
+    <div class="mcard" style="cursor:pointer" onclick="go('impacto-pdi')">
+      <div class="lbl">Melhora média PDIs<span class="lbl-ic">↑</span></div>
+      <div class="val">${melhora?'+'+melhora+'%':'—'}</div>
+      <span class="tag" style="background:var(--green-soft);color:var(--green-text)">consolidado métricas</span>
+      <div class="foot" style="margin-top:4px">${done.length} PDI${done.length!==1?'s':''} concluído${done.length!==1?'s':''}</div>
+    </div>
 
-          // Consolidar: contar melhorias vs pioras
-          const metricsArr=[];
-          // CSAT: maior=melhor
-          if(avgDelta>0)metricsArr.push({label:'CSAT '+((avgDelta>0?'+':'')+avgDelta+'%'),bom:true});
-          else if(avgDelta<0)metricsArr.push({label:'CSAT '+avgDelta+'%',bom:false});
-          else if(avgAtual>=94)metricsArr.push({label:'CSAT '+avgAtual+'% ✓',bom:true});
-          // SLA: menor=melhor
-          if(avgS!==null&&avgS<0)metricsArr.push({label:'SLA '+avgS+'min',bom:true});
-          else if(avgS!==null&&avgS>0)metricsArr.push({label:'SLA +'+avgS+'min',bom:false});
-          // TMA: menor=melhor
-          if(avgT!==null&&avgT<0)metricsArr.push({label:'TMA '+avgT+'h',bom:true});
-          else if(avgT!==null&&avgT>0)metricsArr.push({label:'TMA +'+avgT+'h',bom:false});
-
-          const bons=metricsArr.filter(m=>m.bom);
-          const ruins=metricsArr.filter(m=>!m.bom);
-          const totalMetricas=metricsArr.length||1;
-          const pctMelhora=Math.round(bons.length/totalMetricas*100);
-          const consolidadoBom=bons.length>=ruins.length;
-          const corConsolidado=consolidadoBom?'var(--green)':'var(--red-text)';
-          const txtConsolidado=consolidadoBom?(pctMelhora===100?'Evolução total':'Evolução parcial'):'Atenção';
-
-          let tags='';
-          if(bons.length){const best=bons[0];tags+=`<span style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:6px;font-size:.68em;font-weight:600;background:rgba(34,197,94,.15);color:var(--green)">${best.label}</span> `;}
-          if(ruins.length){const worst=ruins[0];tags+=`<span style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:6px;font-size:.68em;font-weight:600;background:rgba(239,68,68,.15);color:var(--red-text)">${worst.label}</span>`;}
-
-          return`<div style="flex:1"><div style="font-size:.68em;color:var(--text-3);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px">Onboarding B2B</div>
-            <div style="font-size:1.4em;font-weight:700;font-family:'Inter',sans-serif;color:${corConsolidado}">${pctMelhora}%</div>
-            <div style="font-size:.7em;color:${corConsolidado};font-weight:600;margin-bottom:4px">${txtConsolidado}</div>
-            ${tags}
-            <div style="font-size:.65em;color:var(--text-3);margin-top:4px">${comEv} analista${comEv!==1?'s':''}</div>
-          </div>`;
-        })()}
-      </div>
+    <div class="mcard" style="cursor:pointer" onclick="go('avaliacao');setAvaliacaoSub('acompanhamento')">
+      <div class="lbl">Rampagem New Hire<span class="lbl-ic">🚀</span></div>
+      ${(()=>{
+        const acomp=db.acompanhamento||[];
+        if(!acomp.length)return'<div class="val" style="color:var(--text-3)">—</div><div class="foot">sem analistas cadastrados</div>';
+        const evCSAT=[],evSLA=[],evTMA=[];
+        acomp.forEach(a=>{
+          const rawSem=a.semanas||[];
+          const sems=[0,1,2].map(i=>Array.isArray(rawSem)?rawSem[i]:(rawSem[i]||rawSem[String(i)]||null));
+          const csats=sems.map(s=>s&&s.csat!=null?s.csat:null).filter(v=>v!==null);
+          const slas=sems.map(s=>s&&s.sla!=null?s.sla:null).filter(v=>v!==null);
+          const tmas=sems.map(s=>s&&s.tma!=null?s.tma:null).filter(v=>v!==null);
+          if(csats.length>=2)evCSAT.push({delta:csats[csats.length-1]-csats[0],atual:csats[csats.length-1]});
+          else if(csats.length===1)evCSAT.push({delta:0,atual:csats[0]});
+          if(slas.length>=2)evSLA.push(slas[slas.length-1]-slas[0]);
+          if(tmas.length>=2)evTMA.push(tmas[tmas.length-1]-tmas[0]);
+        });
+        const totalAn=acomp.length;
+        const comEv=evCSAT.filter(e=>e.delta!==0).length;
+        if(!evCSAT.length)return'<div class="val" style="color:var(--text-3)">—</div><div class="foot">'+totalAn+' analista'+(totalAn!==1?'s':'')+' · aguardando dados</div>';
+        const avgAtual=round(evCSAT.reduce((s,v)=>s+v.atual,0)/evCSAT.length,1);
+        const avgDelta=round(evCSAT.reduce((s,v)=>s+v.delta,0)/evCSAT.length,1);
+        const avgS=evSLA.length?round(evSLA.reduce((s,v)=>s+v,0)/evSLA.length,1):null;
+        const avgT=evTMA.length?round(evTMA.reduce((s,v)=>s+v,0)/evTMA.length,1):null;
+        const metricsArr=[];
+        if(avgDelta>0)metricsArr.push({label:'CSAT +'+(avgDelta)+'%',bom:true});
+        else if(avgDelta<0)metricsArr.push({label:'CSAT '+avgDelta+'%',bom:false});
+        else if(avgAtual>=94)metricsArr.push({label:'CSAT '+avgAtual+'% ✓',bom:true});
+        if(avgS!==null&&avgS<0)metricsArr.push({label:'SLA '+avgS+'min',bom:true});
+        else if(avgS!==null&&avgS>0)metricsArr.push({label:'SLA +'+avgS+'min',bom:false});
+        if(avgT!==null&&avgT<0)metricsArr.push({label:'TMA '+avgT+'h',bom:true});
+        else if(avgT!==null&&avgT>0)metricsArr.push({label:'TMA +'+avgT+'h',bom:false});
+        const bons=metricsArr.filter(m=>m.bom);
+        const ruins=metricsArr.filter(m=>!m.bom);
+        const consolidadoBom=bons.length>=ruins.length;
+        const corVal=consolidadoBom?'var(--green)':'var(--red-text)';
+        const pctMelhora=metricsArr.length?Math.round(bons.length/metricsArr.length*100):0;
+        const statusTxt=bons.length===metricsArr.length&&metricsArr.length?'Evolução total':consolidadoBom?'Evolução parcial':'Atenção';
+        let tags='';
+        if(bons.length)tags+=`<span style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:6px;font-size:.68em;font-weight:600;background:rgba(34,197,94,.15);color:var(--green)">${bons[0].label}</span> `;
+        if(ruins.length)tags+=`<span style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:6px;font-size:.68em;font-weight:600;background:rgba(239,68,68,.15);color:var(--red-text)">${ruins[0].label}</span>`;
+        return`<div class="val" style="color:${corVal}">${metricsArr.length?pctMelhora+'%':'—'}</div>
+          <div style="font-size:.72em;color:${corVal};font-weight:600">${statusTxt}</div>
+          <div style="margin-top:2px">${tags}</div>
+          <div class="foot" style="margin-top:4px">${totalAn} analista${totalAn!==1?'s':''}</div>`;
+      })()}
     </div>
 
     <div class="mcard" style="cursor:pointer" onclick="go('impacto-treino')">
       <div class="lbl">Média: Avaliação dos treinamentos<span class="lbl-ic">★</span></div>
       <div class="val" style="color:var(--gold)">${avgStarsAll?avgStarsAll+'/5 ★':'—'}</div>
-      ${totalAval
-        ? `<span class="tag" style="background:var(--green-soft);color:var(--green-text)">✓ ${avgAcert}% acertos</span>`
+      ${totalAvalCombined
+        ? `<span class="tag" style="background:var(--green-soft);color:var(--green-text)">${totalAvalCombined} avaliações</span>`
         : '<span class="tag" style="background:var(--slate-soft);color:var(--slate-text)">sem dados ainda</span>'}
     </div>
 
