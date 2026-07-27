@@ -721,8 +721,14 @@ function viewVisao(){
   const allResults=teams.flatMap(t=>(t.results||[]));
   const totalAval=allResults.length;
   const allStarsAll=allResults.map(r=>r.stars).filter(Boolean);
-  // Incluir notas "geral" do Feedback Onboarding B2B
-  const obFeedbacks=db.onboardingFeedbacks||[];
+  // Incluir notas "geral" do Feedback Onboarding B2B — filtrado pelo mês atual
+  const obFeedbacks=(db.onboardingFeedbacks||[]).filter(f=>{
+    if(!f.date)return false;
+    const d=new Date(f.date);
+    const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    const mesAno=meses[d.getMonth()]+' '+d.getFullYear();
+    return mesAno===db.current;
+  });
   const obStars=obFeedbacks.map(f=>parseFloat(f.geral)).filter(v=>!isNaN(v)&&v>0);
   const combinedStars=[...allStarsAll,...obStars];
   const avgStarsAll=combinedStars.length?round(combinedStars.reduce((s,x)=>s+x,0)/combinedStars.length,1):0;
