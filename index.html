@@ -12,10 +12,10 @@
 <style>
 /* ===== themes (light: claro / lilas / roxo · dark) ===== */
 :root{
-  --bg:#f5f4fb; --surface:#fff; --sidebar:#fbfaff;
-  --border:#e9e7f3; --border-2:#dcd9ec;
+  --bg:#efe8fa; --surface:#f9f6ff; --sidebar:#f4eefe;
+  --border:#efe3f8; --border-2:#e0cff1;
   --text:#1f2030; --text-2:#6b6a7e; --text-3:#a09eb2;
-  --purple:#6d5de0; --purple-2:#8b7df0; --purple-dark:#5848c4; --purple-soft:#efecfd;
+  --purple:#8b5cf6; --purple-2:#a78bfa; --purple-dark:#6d28d9; --purple-soft:#f1e7fe;
   --blue:#3b82f6; --blue-soft:#e0ecfd; --blue-text:#1d4ed8;
   --teal:#14b8a6; --teal-soft:#d2f6ef; --teal-text:#0f766e;
   --pink:#ec4899; --pink-soft:#fce4ef; --pink-text:#be185d;
@@ -24,7 +24,7 @@
   --red:#ef4444; --red-soft:#fde4e4; --red-text:#b91c1c;
   --slate-soft:#eef1f6; --slate-text:#5b6472;
   --card-done:#f1faf3; --card-done-bd:#d2eddb;
-  --track:#f1eff8; --bar-alt:#cfc7f3; --input-bg:#fafbff; --hover:#f1eefb; --count-bg:#ece9f8;
+  --track:#f3ebfb; --bar-alt:#d6c4f5; --input-bg:#fcf9ff; --hover:#f3eafd; --count-bg:#eee0fb;
   --gold:#f5a623;
   --font-body:'Plus Jakarta Sans','Inter',-apple-system,sans-serif;
   --font-title:'DM Serif Display',Georgia,serif;
@@ -32,19 +32,40 @@
   --radius:12px; --radius-sm:9px;
   --shadow:0 1px 2px rgba(40,30,80,.05);
 }
-body[data-theme="lilas"]{
-  --bg:#f7f1fc; --surface:#fff; --sidebar:#fcf7ff;
-  --border:#efe3f8; --border-2:#e0cff1;
-  --purple:#8b5cf6; --purple-2:#a78bfa; --purple-dark:#6d28d9; --purple-soft:#f1e7fe;
-  --track:#f3ebfb; --bar-alt:#d6c4f5; --hover:#f3eafd; --count-bg:#eee0fb; --input-bg:#fcf9ff;
-}
+
 body[data-theme="roxo"]{
-  --bg:#efe9fb; --surface:#fff; --sidebar:#f4eefc;
-  --border:#e4d9f5; --border-2:#cfbdee;
-  --purple:#6d28d9; --purple-2:#8b5cf6; --purple-dark:#5b21b6; --purple-soft:#e9dcfb;
-  --text:#241a3a; --text-2:#5e5474;
-  --track:#ece2f8; --bar-alt:#c9b6ee; --hover:#ece2f8; --count-bg:#e3d4f7; --input-bg:#faf7fe;
+  --bg:#1a1528; --surface:#231d35; --sidebar:#1e1830;
+  --border:#362d50; --border-2:#453a62;
+  --text:#e4dff5; --text-2:#b5aed0; --text-3:#8a82a5;
+  --purple:#a78bfa; --purple-2:#c4b5fc; --purple-dark:#d4c8ff; --purple-soft:#352b55;
+  --blue:#818cf8; --blue-soft:#252848; --blue-text:#a5adf8;
+  --teal:#34d399; --teal-soft:#1a3530; --teal-text:#6ee7b7;
+  --pink:#f472b6; --pink-soft:#3a2035; --pink-text:#f9a8d4;
+  --amber:#fbbf24; --amber-soft:#3a2c18; --amber-text:#fcd34d;
+  --green:#4ade80; --green-soft:#1a3522; --green-text:#86efac;
+  --red:#f87171; --red-soft:#3a2020; --red-text:#fca5a5;
+  --slate-soft:#2e2845; --slate-text:#c4bedd;
+  --card-done:#182418; --card-done-bd:#253825;
+  --track:#2e2648; --bar-alt:#5a4d80; --input-bg:#2a2340; --hover:#302850; --count-bg:#3d3560;
+  --gold:#fbbf24;
+  --shadow:0 1px 3px rgba(0,0,0,.25);
 }
+body[data-theme="roxo"] input,body[data-theme="roxo"] select,body[data-theme="roxo"] textarea{background:var(--input-bg);color:var(--text);border-color:var(--border-2);}
+body[data-theme="roxo"] .modal{background:#231d35;}
+body[data-theme="roxo"] select option{background:#231d35;color:#e4dff5;}
+body[data-theme="roxo"] .mcard{background:var(--surface);}
+body[data-theme="roxo"] .acard{background:var(--surface);}
+body[data-theme="roxo"] .acard.done{background:var(--card-done);}
+body[data-theme="roxo"] .folder{background:var(--surface);border-color:var(--border);}
+body[data-theme="roxo"] .folder.neutral{background:var(--surface);}
+body[data-theme="roxo"] code{background:var(--track);color:var(--text-2);}
+body[data-theme="roxo"] .orgcol{background:var(--surface);}
+body[data-theme="roxo"] .orgm{background:var(--input-bg);}
+body[data-theme="roxo"] .prio button{background:var(--surface);color:var(--text);}
+body[data-theme="roxo"] .seg button{background:var(--surface);color:var(--text);}
+body[data-theme="roxo"] .btn{background:var(--surface);color:var(--text);}
+body[data-theme="roxo"] .btn.primary{background:var(--purple);color:#fff;}
+body[data-theme="roxo"] .selpill{background:var(--surface);color:var(--text);}
 body[data-theme="dark"]{
   --bg:#0d0b14; --surface:#13101f; --sidebar:#100e1a;
   --border:#2a2340; --border-2:#352b4a;
@@ -57,7 +78,7 @@ body[data-theme="dark"]{
   --green:#4ade80; --green-soft:#16331f; --green-text:#76db9c;
   --red:#f87171; --red-soft:#3a1e1e; --red-text:#f29a9a;
   --slate-soft:#2a2738; --slate-text:#b6b1cb;
-  --card-done:#172a1d; --card-done-bd:#2c4a37;
+  --card-done:#111f16; --card-done-bd:#1e3527;
   --track:#2a2640; --bar-alt:#4a4170; --input-bg:#262236; --hover:#2a2640; --count-bg:#342e4c;
   --gold:#fbbf24;
   --shadow:0 1px 2px rgba(0,0,0,.3);
@@ -95,16 +116,17 @@ input,select,textarea{font-family:inherit;font-size:.95em;color:var(--text)}
 code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 
 .app{display:flex;min-height:100vh}
-.sidebar{width:212px;flex-shrink:0;background:var(--sidebar);border-right:1px solid var(--border);padding:18px 14px;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
+.sidebar{width:240px;flex-shrink:0;background:var(--sidebar);border-right:1px solid var(--border);padding:18px 14px;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column}
 .brand{display:block;padding:4px}
 .brand .badge-wrap{display:flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--purple-2),var(--purple-dark));border-radius:12px;padding:10px 12px;box-shadow:0 4px 12px rgba(109,93,224,.25)}
 .brand .star{font-size:13px;margin-right:4px;opacity:.9}
 .brand .brand-text{flex:1;min-width:0}
-.brand .name{font-family:var(--font-title);font-style:italic;font-weight:400;font-size:13.5px;color:#fff;line-height:1.25;white-space:normal;word-break:break-word}
+.brand .name{font-family:var(--font-title);font-style:normal;font-weight:600;font-size:13.5px;color:#fff;line-height:1.25;white-space:normal;word-break:break-word}
 .brand .sub{font-size:9px;color:rgba(255,255,255,.55);margin-top:3px;white-space:normal;word-break:break-word;font-weight:400;letter-spacing:.02em}
-.navgroup{margin-top:18px}
+.navgroup{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.navgroup:first-child{border-top:none;padding-top:0}
 .navgroup .label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);font-weight:600;padding:0 8px 6px}
-.navitem{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:none;color:var(--text-2);padding:8px 10px;border-radius:9px;font-size:.96em;font-weight:500;margin-bottom:2px;font-family:inherit}
+.navitem{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:none;color:var(--text-2);padding:8px 10px;border-radius:9px;font-size:.9em;font-weight:500;margin-bottom:2px;font-family:inherit;white-space:nowrap;cursor:pointer}
 .navitem:hover{background:var(--hover);color:var(--text)}
 .navitem.active{background:var(--purple-soft);color:var(--purple-dark)}
 .navitem .ic{width:16px;text-align:center;opacity:.85}
@@ -137,12 +159,35 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 .mcards{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:22px}
 @media(max-width:1200px){.mcards{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:700px){.mcards{grid-template-columns:repeat(2,1fr)}}
-.mcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;box-shadow:var(--shadow);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;text-align:center;min-height:70px}
+@media(max-width:768px){
+  .wrap{flex-direction:column}
+  .sidebar{width:100%;height:auto;position:relative;border-right:none;border-bottom:1px solid var(--border);padding:12px;overflow-y:visible}
+  .sidebar .brand{margin-bottom:8px}
+  .sidebar nav{display:flex;flex-wrap:wrap;gap:2px}
+  .sidebar .navgroup{margin-top:0;padding-top:0;border-top:none;display:flex;flex-wrap:wrap;gap:2px;align-items:center}
+  .sidebar .navgroup .label{padding:4px 8px;font-size:9px;white-space:nowrap}
+  .sidebar .navitem{padding:6px 10px;font-size:.82em;white-space:nowrap}
+  .sidebar .navitem .ct{font-size:9px;padding:0 5px}
+  .main{padding:14px}
+  .topbar{flex-wrap:wrap;gap:8px;padding:10px 14px}
+  .page-h h1{font-size:1.3em}
+  .mcards{grid-template-columns:repeat(2,1fr)!important}
+  .grid2{grid-template-columns:1fr!important}
+  .tbl{font-size:.82em}
+  .modal{width:95vw!important;max-width:95vw!important;margin:10px}
+  .panel{padding:12px}
+}
+@media(max-width:480px){
+  .mcards{grid-template-columns:1fr!important}
+  .mcard .val{font-size:1.8em}
+  .sidebar .navitem .ic{display:none}
+}
+.mcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 14px 12px;box-shadow:var(--shadow);position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:90px}
 .mcard .lbl{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);font-weight:600;line-height:1.3;min-height:auto;display:flex;align-items:flex-start;padding-right:0}
 .mcard .lbl-ic{position:absolute;top:10px;right:10px;color:var(--text-3);font-size:12px}
-.mcard .val{font-family:'Inter',var(--font-body);font-size:1.6em;font-weight:700;margin-top:4px;letter-spacing:-.5px;line-height:1;height:auto;display:flex;align-items:center;justify-content:center}
-.mcard .foot{font-size:.75em;color:var(--text-3);margin-top:auto;padding-top:4px}
-.mcard .tag{display:inline-block;font-size:10px;font-weight:600;border-radius:20px;padding:1px 7px;margin-top:4px;white-space:nowrap}
+.mcard .val{font-family:'Inter',var(--font-body);font-size:2.4em;font-weight:800;margin:8px 0 6px;letter-spacing:-.5px;line-height:1;height:auto;display:flex;align-items:center;justify-content:center;flex:1}
+.mcard .foot{font-size:.75em;color:var(--text-3);padding-top:2px}
+.mcard .tag{display:inline-block;font-size:10px;font-weight:600;border-radius:20px;padding:1px 7px;margin-top:2px;white-space:nowrap}
 
 .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;box-shadow:var(--shadow);margin-bottom:18px}
 .panel-h{display:flex;align-items:center;gap:9px;margin-bottom:16px}
@@ -209,7 +254,7 @@ code{background:var(--track);padding:1px 5px;border-radius:5px;font-size:.85em}
 .acards-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
 @media(max-width:800px){.acards-grid{grid-template-columns:1fr}}
 .acard{position:relative;background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--red);border-radius:var(--radius);padding:16px 18px 14px 18px}
-.acard.done{background:var(--card-done);border-color:var(--card-done-bd)}
+.acard.done{background:var(--card-done);border-color:var(--card-done-bd);opacity:.82}
 .acard .top{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
 .acard .top-left{flex:1;min-width:0}
 .acard h3{font-size:1em;font-weight:600;line-height:1.3}
@@ -316,6 +361,9 @@ body:not(.editmode) .orgx{display:none!important}
 body:not(.editmode) [onclick*="delPdiGroup"]{display:none!important}
 .lock-btn{background:none;border:none;cursor:pointer;font-size:16px;padding:2px 6px;border-radius:6px;color:var(--text-3);transition:.15s}
 .lock-btn:hover{color:var(--purple)}
+.acard[data-status="Pausado"]{border-left-color:#9ca3af!important}
+.acard[data-status="Migrado"]{border-left-color:#f472b6!important}
+
 /* ===== modo leitura — bloqueio de edição ===== */
 .edit-only{display:none!important}
 body.editmode .edit-only{display:inline-flex!important}
@@ -324,6 +372,9 @@ body.editmode .edit-only-grid{display:grid!important}
 body.editmode .edit-only-block{display:block!important}
 .lock-btn{background:none;border:none;cursor:pointer;font-size:16px;padding:2px 4px;border-radius:6px;color:var(--text-3);transition:.15s}
 .lock-btn:hover{color:var(--purple)}
+.acard[data-status="Pausado"]{border-left-color:#9ca3af!important}
+.acard[data-status="Migrado"]{border-left-color:#f472b6!important}
+
 
 
 
@@ -407,7 +458,7 @@ async function sendToFirebase(){
   if(_syncing)return;
   _syncing=true;
   syncStatus='syncing';updateSyncBadge();
-  const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks','avaliacaoGrupos','acompanhamento','avalConhecimento'];
+  const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks','avaliacaoGrupos','acompanhamento'];
   let allOk=true;
   // Envia campo por campo
   for(const f of fields){
@@ -452,6 +503,28 @@ async function sendToFirebase(){
   updateSyncBadge();
 }
 
+const _AVAL_DATA=[{"n": "Luana Soares", "cx": "Frentes Estratégicas (Suporte Ativo, Enteprise, Retenção e PaaS)", "g": 28, "pg": 93, "r": 28, "tr": 30, "pr": 93, "rel": ["Suporte Geral", "Processos Saques", "Suporte Integração"], "sg": 95, "ps": 100, "si": 80, "dg": "4.0", "ds": "5.0", "di": "1.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 1}, {"s": "SI", "t": "Processamento internacional.", "a": 1}, {"s": "SI", "t": "API", "a": 1}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 1}]}, {"n": "Mariana Rosa", "cx": "Integração", "g": 27, "pg": 90, "r": 22, "tr": 25, "pr": 88, "rel": ["Suporte Geral", "Suporte Integração"], "sg": 85, "ps": 100, "si": 100, "dg": "3.0", "ds": "4.0", "di": "4.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 0}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 1}, {"s": "SI", "t": "Processamento internacional.", "a": 1}, {"s": "SI", "t": "API", "a": 1}, {"s": "SI", "t": "Usuários", "a": 1}, {"s": "SI", "t": "Split de pagamento", "a": 1}]}, {"n": "Gabrieli Vieira", "cx": "Vip/Saques", "g": 23, "pg": 77, "r": 23, "tr": 30, "pr": 77, "rel": ["Suporte Geral", "Processos Saques", "Suporte Integração"], "sg": 85, "ps": 100, "si": 20, "dg": "4.0", "ds": "5.0", "di": "2.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 1}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Bruno Alves", "cx": "Integração", "g": 27, "pg": 90, "r": 24, "tr": 25, "pr": 96, "rel": ["Suporte Geral", "Suporte Integração"], "sg": 95, "ps": 60, "si": 100, "dg": "3.0", "ds": "3.0", "di": "3.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 1}, {"s": "SI", "t": "Processamento internacional.", "a": 1}, {"s": "SI", "t": "API", "a": 1}, {"s": "SI", "t": "Usuários", "a": 1}, {"s": "SI", "t": "Split de pagamento", "a": 1}]}, {"n": "Pamela Santos", "cx": "Frentes Estratégicas (Suporte Ativo, Enteprise, Retenção e PaaS)", "g": 27, "pg": 90, "r": 27, "tr": 30, "pr": 90, "rel": ["Suporte Geral", "Processos Saques", "Suporte Integração"], "sg": 90, "ps": 80, "si": 100, "dg": "2.0", "ds": "2.0", "di": "4.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 1}, {"s": "SI", "t": "Processamento internacional.", "a": 1}, {"s": "SI", "t": "API", "a": 1}, {"s": "SI", "t": "Usuários", "a": 1}, {"s": "SI", "t": "Split de pagamento", "a": 1}]}, {"n": "Matheus Wuerdig", "cx": "Integração", "g": 20, "pg": 67, "r": 18, "tr": 25, "pr": 72, "rel": ["Suporte Geral", "Suporte Integração"], "sg": 65, "ps": 40, "si": 100, "dg": "3.0", "ds": "3.0", "di": "1.0", "det": [{"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 0}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 1}, {"s": "SI", "t": "Processamento internacional.", "a": 1}, {"s": "SI", "t": "API", "a": 1}, {"s": "SI", "t": "Usuários", "a": 1}, {"s": "SI", "t": "Split de pagamento", "a": 1}]}, {"n": "Julia Santos", "cx": "Max", "g": 23, "pg": 77, "r": 19, "tr": 25, "pr": 76, "rel": ["Suporte Geral", "Processos Saques"], "sg": 80, "ps": 60, "si": 80, "dg": "4.0", "ds": "3.0", "di": "1.0", "det": [{"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 0}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 1}, {"s": "SI", "t": "Processamento internacional.", "a": 1}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 1}, {"s": "SI", "t": "Split de pagamento", "a": 1}]}, {"n": "Jessica Machado", "cx": "Max", "g": 19, "pg": 63, "r": 18, "tr": 25, "pr": 72, "rel": ["Suporte Geral", "Processos Saques"], "sg": 70, "ps": 80, "si": 20, "dg": "3.0", "ds": "2.0", "di": "1.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 0}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 1}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Livia Silva", "cx": "Vip/Saques", "g": 17, "pg": 57, "r": 17, "tr": 30, "pr": 57, "rel": ["Suporte Geral", "Processos Saques", "Suporte Integração"], "sg": 60, "ps": 80, "si": 20, "dg": "3.0", "ds": "2.0", "di": "3.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 0}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 1}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Andriele Silva", "cx": "Max", "g": 17, "pg": 57, "r": 16, "tr": 25, "pr": 64, "rel": ["Suporte Geral", "Processos Saques"], "sg": 75, "ps": 20, "si": 20, "dg": "4.0", "ds": "2.0", "di": "1.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 1}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Kendra Dreher", "cx": "Frentes Estratégicas (Suporte Ativo, Enteprise, Retenção e PaaS)", "g": 16, "pg": 53, "r": 16, "tr": 25, "pr": 64, "rel": ["Suporte Geral", "Processos Saques"], "sg": 70, "ps": 40, "si": 0, "dg": "3.0", "ds": "2.0", "di": "", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Romullo Cutes", "cx": "Vip/Saques", "g": 17, "pg": 57, "r": 17, "tr": 30, "pr": 57, "rel": ["Suporte Geral", "Processos Saques", "Suporte Integração"], "sg": 60, "ps": 100, "si": 0, "dg": "2.0", "ds": "5.0", "di": "1.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 0}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 0}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 0}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 0}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Diogo Salcedo", "cx": "Silver", "g": 18, "pg": 60, "r": 16, "tr": 20, "pr": 80, "rel": ["Suporte Geral"], "sg": 80, "ps": 40, "si": 0, "dg": "3.0", "ds": "2.0", "di": "1.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 0}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Giovanni Junior", "cx": "Silver", "g": 23, "pg": 77, "r": 19, "tr": 20, "pr": 95, "rel": ["Suporte Geral"], "sg": 95, "ps": 60, "si": 20, "dg": "4.0", "ds": "3.0", "di": "2.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 1}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Graziella Dalenogare", "cx": "Vip/Saques", "g": 20, "pg": 67, "r": 20, "tr": 30, "pr": 67, "rel": ["Suporte Geral", "Processos Saques", "Suporte Integração"], "sg": 80, "ps": 80, "si": 0, "dg": "4.0", "ds": "5.0", "di": "1.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Lauren Esmerio", "cx": "Integração", "g": 19, "pg": 63, "r": 16, "tr": 25, "pr": 64, "rel": ["Suporte Geral", "Suporte Integração"], "sg": 60, "ps": 60, "si": 80, "dg": "3.0", "ds": "", "di": "5.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Prazo de recebimento", "a": 0}, {"s": "SG", "t": "Liquidação Centralizada", "a": 0}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 1}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 1}, {"s": "SI", "t": "Usuários", "a": 1}, {"s": "SI", "t": "Split de pagamento", "a": 1}]}, {"n": "Douglas Brayer", "cx": "Vip/Saques", "g": 17, "pg": 57, "r": 17, "tr": 30, "pr": 57, "rel": ["Suporte Geral", "Processos Saques", "Suporte Integração"], "sg": 65, "ps": 80, "si": 0, "dg": "4.0", "ds": "4.0", "di": "", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 0}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Liara Arguilar", "cx": "Silver", "g": 22, "pg": 73, "r": 19, "tr": 20, "pr": 95, "rel": ["Suporte Geral"], "sg": 95, "ps": 60, "si": 0, "dg": "4.0", "ds": "3.0", "di": "2.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Victor Lopes", "cx": "Silver", "g": 7, "pg": 23, "r": 7, "tr": 20, "pr": 35, "rel": ["Suporte Geral"], "sg": 35, "ps": 0, "si": 0, "dg": "4.0", "ds": "5.0", "di": "5.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 0}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 0}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 0}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Daniela Bitencourt", "cx": "Silver", "g": 8, "pg": 27, "r": 7, "tr": 20, "pr": 35, "rel": ["Suporte Geral"], "sg": 35, "ps": 0, "si": 20, "dg": "3.0", "ds": "1.0", "di": "2.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 0}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 0}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 0}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 0}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 1}]}, {"n": "Karen Rosa", "cx": "Silver", "g": 13, "pg": 43, "r": 13, "tr": 20, "pr": 65, "rel": ["Suporte Geral"], "sg": 65, "ps": 0, "si": 0, "dg": "3.0", "ds": "2.0", "di": "1.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 0}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 0}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}];
+
+function getAvalConhecimentos(){
+  try{
+    if(!db.avalConhecimentos)db.avalConhecimentos=[];
+    if(!Array.isArray(db.avalConhecimentos))db.avalConhecimentos=[];
+    // Sempre garantir Julho/2026
+    if(!db.avalConhecimentos.some(a=>a.id==='ac_jul2026'&&a.analistas&&a.analistas.length===21)){
+      db.avalConhecimentos=db.avalConhecimentos.filter(a=>a.id!=='ac_jul2026'&&a.month!=='Julho 2026');
+      var an=_AVAL_DATA.map(function(r){
+        var det=r.det.map(function(d){return{secao:d.s==='SG'?'Suporte Geral':d.s==='PS'?'Processos Saques':'Suporte Integração',topico:d.t,acertou:d.a};});
+        return{nome:r.n,caixa:r.cx,ta_g:r.g,tq_g:30,pct_g:r.pg,ta_r:r.r,tq_r:r.tr,pct_r:r.pr,
+          secoes_relevantes:r.rel,
+          secoes:{'Suporte Geral':{pct:r.sg,dificuldade:r.dg},'Processos Saques':{pct:r.ps,dificuldade:r.ds},'Suporte Integração':{pct:r.si,dificuldade:r.di}},
+          detalhes:det};
+      });
+      db.avalConhecimentos.unshift({id:'ac_jul2026',data:'Julho/2026',month:'Julho 2026',analistas:an});
+    }
+  }catch(e){console.error('getAvalConhecimentos error:',e);}
+  return db.avalConhecimentos||[];
+}
+
 async function pullFromFirebase(){
   if(_syncing)return false;
   syncStatus='syncing';updateSyncBadge();
@@ -481,6 +554,8 @@ async function pullFromFirebase(){
     const curAvSub=db._avaliacaoSub;
     const curAvGrupo=db._avGrupo;
     const curAvSem=db._avSem;
+    const curTriQ=db._triQ;
+    const curTriAno=db._triAno;
     db=data;
     db.settings=prefs;
     db.settings.titles=Object.assign({},DEFAULT_TITLES,db.settings.titles||{});
@@ -489,10 +564,12 @@ async function pullFromFirebase(){
     db.settings.titles.avaliacao='Onboarding B2B';
     if(curMonth&&db.months&&toArr(db.months).includes(curMonth))db.current=curMonth;
     db.onboardingBimestre=bim||curBim||db.onboardingBimestre||'2025-07';
-    // Restaurar estado de navegação da avaliação
+    // Restaurar estado de navegação
     if(curAvSub)db._avaliacaoSub=curAvSub;
     if(curAvGrupo!=null)db._avGrupo=curAvGrupo;
     if(curAvSem!=null)db._avSem=curAvSem;
+    if(curTriQ!=null)db._triQ=curTriQ;
+    if(curTriAno!=null)db._triAno=curTriAno;
     // Normalizar todos os arrays
     db.pdis=toArr(db.pdis);
     db.actions=toArr(db.actions);
@@ -527,6 +604,8 @@ async function pullFromFirebase(){
       });
     });
     try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
+    // Reconstruir avaliação de conhecimento (dados embutidos, não vêm do Firebase)
+    initAvalConhecimento();
     syncStatus='ok';lastSyncTime=new Date();updateSyncBadge();
     applyTheme();render();
     return true;
@@ -564,9 +643,9 @@ const TYPES={
   'PDI':{badge:'--blue',bar:'#2563eb'},
   'Documentação':{badge:'--pink',bar:'#ec4899'}
 };
-const STATUS={'Pendente':{c:'--slate'},'Construindo material':{c:'--amber'},'Material pronto':{c:'--green'},'Aplicando...':{c:'--red'},'Concluído':{c:'--green'}};
-const DOC_STATUS=['Pendente','Construindo material','Material pronto'];
-const TRAIN_STATUS=['Pendente','Construindo material','Material pronto','Aplicando...','Concluído'];
+const STATUS={'Pendente':{c:'--slate'},'Construindo material':{c:'--amber'},'Material pronto':{c:'--green'},'Aplicando...':{c:'--red'},'Concluído':{c:'--green'},'Pausado':{c:'--slate'},'Migrado':{c:'--pink'}};
+const DOC_STATUS=['Pendente','Construindo material','Pausado','Migrado','Material pronto'];
+const TRAIN_STATUS=['Pendente','Em andamento','Pausado','Migrado','Concluído'];
 const PRIO={'Alta':'var(--red)','Média':'var(--amber)','Baixa':'var(--green)'};
 const DEFAULT_CAIXAS=['Silver','Vip/Saques','Integração','Frentes Estratégicas','Suporte B2C','Suporte Max'];
 function defaultRoster(){return [
@@ -589,7 +668,7 @@ const FONTS={
   'Arredondada':"'Nunito',-apple-system,sans-serif"
 };
 const SIZES={sm:'Pequeno',md:'Médio',lg:'Grande',xl:'Extra'};
-const DEFAULT_TITLES={visao:'Visão Geral','impacto-pdi':'Impacto - PDI','impacto-treino':'Impacto - Treinamento',pdis:'PDIs',treinamentos:'Treinamentos',documentacao:'Documentação',macros:'Macros & Taxonomias',onboarding:'Feedback Onboarding B2B',avaliacao:'Onboarding B2B',organograma:'Organograma',planilha:'Planilha',importar:'Importar'};
+const DEFAULT_TITLES={visao:'Visão Geral','impacto-pdi':'Impacto - PDI','impacto-treino':'Impacto - Treinamento',pdis:'PDIs',treinamentos:'Treinamentos',documentacao:'Documentação',macros:'Macros & Taxonomias',trimestre:'Impacto - Trimestre',onboarding:'Feedback Onboarding B2B',avaliacao:'Onboarding B2B',organograma:'Organograma',planilha:'Planilha',importar:'Importar'};
 function defaultSettings(){return{theme:'claro',bodyFont:'Moderna',titleFont:'Serifada',fontSize:'md',titles:Object.assign({},DEFAULT_TITLES)};}
 
 function badgeStyle(t){const v=(TYPES[t]||{badge:'--slate'}).badge;return `background:var(${v}-soft);color:var(${v}-text)`;}
@@ -603,7 +682,7 @@ function seed(){
     roster:defaultRoster(),
     months:['Maio 2026','Junho 2026'], current:'Junho 2026',
     pdis:[],actions:[],docs:[],teamTrainings:[],macros:[],
-    onboardingFeedbacks:[],avaliacaoGrupos:[],acompanhamento:[],avalConhecimento:null,onboardingBimestre:'2025-07'
+    onboardingFeedbacks:[],avaliacaoGrupos:[],acompanhamento:[],avalConhecimentos:[],onboardingBimestre:'2025-07'
   };
 }
 
@@ -645,11 +724,11 @@ try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
 
 /* ===== nav / routing ===== */
 const NAV=[
-  {grp:'Principal',items:[{id:'visao',ic:'◈'},{id:'impacto-pdi',ic:'◇'},{id:'impacto-treino',ic:'★'},{id:'onboarding',ic:'🎓'},{id:'avaliacao',ic:'📋'}]},
+  {grp:'Principal',items:[{id:'visao',ic:'◈'},{id:'trimestre',ic:'◆'},{id:'impacto-pdi',ic:'◇'},{id:'impacto-treino',ic:'★'},{id:'avaliacao',ic:'📋'}]},
   {grp:'Ações',items:[{id:'pdis',ic:'📁'},{id:'treinamentos',ic:'◎'},{id:'documentacao',ic:'▤'},{id:'macros',ic:'⚡'}]},
-  {grp:'Registros',items:[{id:'organograma',ic:'🗂'},{id:'planilha',ic:'▦'},{id:'importar',ic:'↥'}]}
+  {grp:'Registros',items:[{id:'onboarding',ic:'🎓'},{id:'organograma',ic:'🗂'},{id:'planilha',ic:'▦'},{id:'importar',ic:'↥'}]}
 ];
-const COUNTS={pdis:()=>db.pdis.filter(p=>p.month===db.current).length,treinamentos:()=>db.actions.filter(a=>a.month===db.current).length,documentacao:()=>db.docs.filter(d=>d.month===db.current).length,'impacto-treino':()=>db.teamTrainings.filter(t=>t.month===db.current).length,organograma:()=>db.roster.length,macros:()=>(db.macros||[]).filter(m=>m.month===db.current).length};
+const COUNTS={pdis:()=>db.pdis.filter(p=>p.month===db.current).length,treinamentos:()=>db.actions.filter(a=>a.month===db.current).length,documentacao:()=>db.docs.filter(d=>d.month===db.current).length,organograma:()=>db.roster.length,macros:()=>(db.macros||[]).filter(m=>m.month===db.current).length};
 function T(id){return db.settings.titles[id]||DEFAULT_TITLES[id];}
 let route={page:'visao',pdiId:null,teamId:null};
 function go(p){route={page:p,pdiId:null,teamId:null};render();window.scrollTo(0,0);}
@@ -708,7 +787,7 @@ function render(){
   const _selEl=document.getElementById('monthSel');
   if(_selEl&&_selEl.value!==db.current){_selEl.value=db.current;}
   document.getElementById('tb-title').textContent=T(route.page);
-  const fn={visao:viewVisao,'impacto-pdi':viewImpactoPdi,'impacto-treino':viewImpactoTreino,pdis:viewPdis,treinamentos:viewTreinos,documentacao:viewDocs,macros:viewMacros,onboarding:viewOnboarding,avaliacao:viewAvaliacao,organograma:viewOrganograma,planilha:viewPlanilha,importar:viewImportar}[route.page];
+  const fn={visao:viewVisao,'impacto-pdi':viewImpactoPdi,'impacto-treino':viewImpactoTreino,trimestre:viewTrimestre,pdis:viewPdis,treinamentos:viewTreinos,documentacao:viewDocs,macros:viewMacros,onboarding:viewOnboarding,avaliacao:viewAvaliacao,organograma:viewOrganograma,planilha:viewPlanilha,importar:viewImportar}[route.page];
   try{document.getElementById('content').innerHTML=fn?fn():'';}
   catch(e){console.error('render error:',route.page,e);document.getElementById('content').innerHTML='<div class="empty">Erro ao carregar: '+esc(e.message)+'</div>';}
 }
@@ -738,7 +817,10 @@ function viewVisao(){
   const avgAcert=totalTot?Math.round(totalAc/totalTot*100):0;
   const isDone=x=>x.status==='Concluído'||(x.status==='Material pronto'&&x._tipo==='doc');
   const all=[...pdis.map(p=>({type:'PDI',status:p.status})),...acts.map(a=>({type:a.type,status:a.status})),...docs.map(d=>({type:'Documentação',status:d.status,_tipo:'doc'}))];
-  const total=all.length,concl=all.filter(x=>isDone(x)).length,pend=all.filter(x=>x.status==='Pendente').length,andamento=total-concl-pend;
+  const total=all.length,concl=all.filter(x=>isDone(x)).length,pend=all.filter(x=>x.status==='Pendente').length;
+  const pausados=all.filter(x=>x.status==='Pausado').length;
+  const migrados=all.filter(x=>x.status==='Migrado').length;
+  const andamento=total-concl-pend-pausados-migrados;
   const done=pdis.filter(p=>p.hasResults);
   const melhora=done.length?round(done.reduce((s,p)=>s+pdiOverall(p),0)/done.length,1):0;
   const byType={};all.forEach(x=>byType[x.type]=(byType[x.type]||0)+1);
@@ -746,7 +828,7 @@ function viewVisao(){
   const rows=order.filter(t=>byType[t]).map(t=>({t,n:byType[t]}));
   const maxN=Math.max(1,...rows.map(r=>r.n));
   const bars=rows.map(r=>`<div class="barrow"><div class="nm">${esc(r.t)}</div><div class="track"><div class="fill" style="width:${r.n/maxN*100}%;background:${(TYPES[r.t]||{}).bar||'#999'}"></div></div><div class="vl">${r.n}</div></div>`).join('');
-  const seg=[['Concluído',concl,'var(--green)'],['Em andamento',andamento,'var(--blue)'],['Pendente',pend,'var(--amber)']];let acc=0;
+  const seg=[['Concluído',concl,'var(--green)'],['Em andamento',andamento,'var(--blue)'],['Pendente',pend,'var(--amber)'],['Pausado',pausados,'#9ca3af'],['Migrado',migrados,'var(--purple)']].filter(s=>s[1]>0);let acc=0;
   const stops=seg.map(([_,v,c])=>{const a=acc/Math.max(1,total)*360;acc+=v;return `${c} ${a}deg ${acc/Math.max(1,total)*360}deg`;}).join(',');
   /* comparativo por mês — inclui TODAS as coleções */
   const ms=db.months.map(mn=>{
@@ -794,57 +876,122 @@ function viewVisao(){
     <div class="mcard" style="cursor:pointer" onclick="go('avaliacao');setAvaliacaoSub('acompanhamento')">
       <div class="lbl">Rampagem New Hire<span class="lbl-ic">🚀</span></div>
       ${(()=>{
-        const acomp=db.acompanhamento||[];
-        if(!acomp.length)return'<div class="val" style="color:var(--text-3)">—</div><div class="foot">sem analistas cadastrados</div>';
+        const _meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+        function acompMes(a){
+          // Detecta mês+ano pela data do período 1 (formato dd/mm/aaaa)
+          const p=a.periodo1||a.month||'';
+          const m=p.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+          if(m){return _meses[parseInt(m[2])-1]+' '+m[3];}
+          // Fallback: campo month explícito
+          if(a.month)return a.month;
+          return null;
+        }
+        const acomp=(db.acompanhamento||[]).filter(a=>{const m=acompMes(a);return !m||m===db.current;});
+        if(!acomp.length)return'<div class="val" style="color:var(--text-3)">—</div><div class="foot">sem rampagem neste mês</div>';
         const evCSAT=[],evSLA=[],evTMA=[];
+        // Metas por caixa
+        function getMetas(cx){
+          const c=(cx||'').toLowerCase();
+          if(c.includes('silver'))return{sla:5,csat:94,tma:24};
+          if(c.includes('integração')||c.includes('integra'))return{sla:3,csat:97,tma:24};
+          if(c.includes('vip')||c.includes('saque'))return{sla:3,csat:97,tma:24};
+          return{sla:5,csat:94,tma:24};
+        }
         acomp.forEach(a=>{
           const rawSem=a.semanas||[];
           const sems=[0,1,2].map(i=>Array.isArray(rawSem)?rawSem[i]:(rawSem[i]||rawSem[String(i)]||null));
           const csats=sems.map(s=>s&&s.csat!=null?s.csat:null).filter(v=>v!==null);
           const slas=sems.map(s=>s&&s.sla!=null?s.sla:null).filter(v=>v!==null);
           const tmas=sems.map(s=>s&&s.tma!=null?s.tma:null).filter(v=>v!==null);
-          if(csats.length>=2)evCSAT.push({delta:csats[csats.length-1]-csats[0],atual:csats[csats.length-1]});
-          else if(csats.length===1)evCSAT.push({delta:0,atual:csats[0]});
-          if(slas.length>=2)evSLA.push(slas[slas.length-1]-slas[0]);
-          if(tmas.length>=2)evTMA.push(tmas[tmas.length-1]-tmas[0]);
+          const meta=getMetas(a.caixa);
+          const lastCSAT=csats.length?csats[csats.length-1]:null;
+          const lastSLA=slas.length?slas[slas.length-1]:null;
+          const lastTMA=tmas.length?tmas[tmas.length-1]:null;
+          const deltaCSAT=csats.length>=2?csats[csats.length-1]-csats[0]:0;
+          const deltaSLA=slas.length>=2?slas[slas.length-1]-slas[0]:null;
+          const deltaTMA=tmas.length>=2?tmas[tmas.length-1]-tmas[0]:null;
+          if(lastCSAT!==null)evCSAT.push({delta:deltaCSAT,atual:lastCSAT,meta:meta.csat});
+          if(lastSLA!==null)evSLA.push({delta:deltaSLA,atual:lastSLA,meta:meta.sla});
+          if(lastTMA!==null)evTMA.push({delta:deltaTMA,atual:lastTMA,meta:meta.tma});
         });
         const totalAn=acomp.length;
-        const comEv=evCSAT.filter(e=>e.delta!==0).length;
         if(!evCSAT.length)return'<div class="val" style="color:var(--text-3)">—</div><div class="foot">'+totalAn+' analista'+(totalAn!==1?'s':'')+' · aguardando dados</div>';
-        const avgAtual=round(evCSAT.reduce((s,v)=>s+v.atual,0)/evCSAT.length,1);
-        const avgDelta=round(evCSAT.reduce((s,v)=>s+v.delta,0)/evCSAT.length,1);
-        const avgS=evSLA.length?round(evSLA.reduce((s,v)=>s+v,0)/evSLA.length,1):null;
-        const avgT=evTMA.length?round(evTMA.reduce((s,v)=>s+v,0)/evTMA.length,1):null;
+        // Avaliar cada métrica: bom = melhorou OU dentro da meta
         const metricsArr=[];
-        if(avgDelta>0)metricsArr.push({label:'CSAT +'+(avgDelta)+'%',bom:true});
-        else if(avgDelta<0)metricsArr.push({label:'CSAT '+avgDelta+'%',bom:false});
-        else if(avgAtual>=94)metricsArr.push({label:'CSAT '+avgAtual+'% ✓',bom:true});
-        if(avgS!==null&&avgS<0)metricsArr.push({label:'SLA '+avgS+'min',bom:true});
-        else if(avgS!==null&&avgS>0)metricsArr.push({label:'SLA +'+avgS+'min',bom:false});
-        if(avgT!==null&&avgT<0)metricsArr.push({label:'TMA '+avgT+'h',bom:true});
-        else if(avgT!==null&&avgT>0)metricsArr.push({label:'TMA +'+avgT+'h',bom:false});
+        // CSAT
+        const avgCSAT=round(evCSAT.reduce((s,v)=>s+v.atual,0)/evCSAT.length,1);
+        const avgCSATmeta=round(evCSAT.reduce((s,v)=>s+v.meta,0)/evCSAT.length,0);
+        const csatBom=avgCSAT>=avgCSATmeta;
+        const csatDelta=round(evCSAT.reduce((s,v)=>s+v.delta,0)/evCSAT.length,1);
+        metricsArr.push({label:'CSAT '+avgCSAT+'%'+(csatDelta!==0?' ('+(csatDelta>0?'+':'')+csatDelta+'%)':''),bom:csatBom});
+        // SLA
+        if(evSLA.length){
+          const avgSLAatual=round(evSLA.reduce((s,v)=>s+v.atual,0)/evSLA.length,1);
+          const avgSLAmeta=round(evSLA.reduce((s,v)=>s+v.meta,0)/evSLA.length,0);
+          const slaBom=avgSLAatual<=avgSLAmeta;
+          const slaDelta=evSLA.filter(v=>v.delta!==null).length?round(evSLA.filter(v=>v.delta!==null).reduce((s,v)=>s+v.delta,0)/evSLA.filter(v=>v.delta!==null).length,1):null;
+          metricsArr.push({label:'SLA '+avgSLAatual+'min'+(slaDelta!==null&&slaDelta!==0?' ('+(slaDelta>0?'+':'')+slaDelta+')':''),bom:slaBom});
+        }
+        // TMA
+        if(evTMA.length){
+          const avgTMAatual=round(evTMA.reduce((s,v)=>s+v.atual,0)/evTMA.length,1);
+          const avgTMAmeta=round(evTMA.reduce((s,v)=>s+v.meta,0)/evTMA.length,0);
+          const tmaBom=avgTMAatual<=avgTMAmeta;
+          const tmaDelta=evTMA.filter(v=>v.delta!==null).length?round(evTMA.filter(v=>v.delta!==null).reduce((s,v)=>s+v.delta,0)/evTMA.filter(v=>v.delta!==null).length,1):null;
+          metricsArr.push({label:'TMA '+avgTMAatual+'h'+(tmaDelta!==null&&tmaDelta!==0?' ('+(tmaDelta>0?'+':'')+tmaDelta+')':''),bom:tmaBom});
+        }
         const bons=metricsArr.filter(m=>m.bom);
         const ruins=metricsArr.filter(m=>!m.bom);
         const consolidadoBom=bons.length>=ruins.length;
         const corVal=consolidadoBom?'var(--green)':'var(--red-text)';
         const pctMelhora=metricsArr.length?Math.round(bons.length/metricsArr.length*100):0;
-        const statusTxt=bons.length===metricsArr.length&&metricsArr.length?'Evolução total':consolidadoBom?'Evolução parcial':'Atenção';
-        let tags='';
-        if(bons.length)tags+=`<span style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:6px;font-size:.68em;font-weight:600;background:rgba(34,197,94,.15);color:var(--green)">${bons[0].label}</span> `;
-        if(ruins.length)tags+=`<span style="display:inline-block;margin-top:4px;padding:2px 8px;border-radius:6px;font-size:.68em;font-weight:600;background:rgba(239,68,68,.15);color:var(--red-text)">${ruins[0].label}</span>`;
+        const statusTxt=bons.length===metricsArr.length&&metricsArr.length?'Evolução total':bons.length>ruins.length?'Evolução parcial':ruins.length>bons.length?'Atenção':'Estável';
+        function mTag(m){return`<span style="display:inline-block;padding:2px 7px;border-radius:6px;font-size:.62em;font-weight:600;background:${m.bom?'rgba(34,197,94,.15)':'rgba(239,68,68,.15)'};color:${m.bom?'var(--green)':'var(--red-text)'}">${m.label}</span>`;}
+        const csatM=metricsArr.find(m=>m.label.includes('CSAT'));
+        const tmaM=metricsArr.find(m=>m.label.includes('TMA'));
+        const slaM=metricsArr.find(m=>m.label.includes('SLA'));
         return`<div class="val" style="color:${corVal}">${metricsArr.length?pctMelhora+'%':'—'}</div>
           <div style="font-size:.72em;color:${corVal};font-weight:600">${statusTxt}</div>
-          <div style="margin-top:2px">${tags}</div>
-          <div class="foot" style="margin-top:4px">${totalAn} analista${totalAn!==1?'s':''}</div>`;
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 6px;margin-top:3px;align-items:center">
+            ${csatM?mTag(csatM):''}${tmaM?mTag(tmaM):''}
+            ${slaM?mTag(slaM):''}<span style="font-size:.62em;color:var(--text-3);text-align:right">${totalAn} analista${totalAn!==1?'s':''}</span>
+          </div>`;
       })()}
     </div>
 
     <div class="mcard" style="cursor:pointer" onclick="go('impacto-treino')">
-      <div class="lbl">Média: Avaliação dos treinamentos<span class="lbl-ic">★</span></div>
-      <div class="val" style="color:var(--gold)">${avgStarsAll?avgStarsAll+'/5 ★':'—'}</div>
-      ${totalAvalCombined
-        ? `<span class="tag" style="background:var(--green-soft);color:var(--green-text)">${totalAvalCombined} avaliações</span>`
-        : '<span class="tag" style="background:var(--slate-soft);color:var(--slate-text)">sem dados ainda</span>'}
+      <div class="lbl">Média Treinamentos<span class="lbl-ic">★</span></div>
+      ${(()=>{
+        // % acertos dos treinamentos de time DO MÊS
+        const teamsDoMes=inMonth(db.teamTrainings||[]);
+        const tResults=teamsDoMes.flatMap(t=>(t.results||[]));
+        const tTotalAc=tResults.reduce((s,r)=>s+(typeof r.ac==='number'?r.ac:0),0);
+        const tTotalTot=tResults.reduce((s,r)=>s+(typeof r.ac==='number'?r.ac+(typeof r.er==='number'?r.er:0):0),0);
+        const treinoPct=tTotalTot?Math.round(tTotalAc/tTotalTot*100):null;
+        // % acertos avaliação de conhecimento DO MÊS
+        const acVG=getAvalConhecimentos().find(a=>a.month===db.current);
+        const acMesOk=acVG&&acVG.analistas&&acVG.analistas.length;
+        const acPct=acMesOk?Math.round(acVG.analistas.reduce((s,a)=>s+a.pct_g,0)/acVG.analistas.length):null;
+        // Média combinada
+        const vals=[treinoPct,acPct].filter(v=>v!==null);
+        const mediaAcertos=vals.length?Math.round(vals.reduce((s,v)=>s+v,0)/vals.length):null;
+        // Estrelas dos treinamentos DO MÊS (não inclui outros meses)
+        const starsDoMes=tResults.map(r=>r.stars).filter(Boolean);
+        const avgStarsMes=starsDoMes.length?round(starsDoMes.reduce((s,x)=>s+x,0)/starsDoMes.length,1):null;
+        
+        let txt='';
+        if(mediaAcertos!==null){
+          txt+=`<div class="val" style="color:${mediaAcertos>=60?'var(--green)':'var(--red-text)'}">${mediaAcertos}%</div>`;
+        } else {
+          txt+='<div class="val" style="color:var(--text-3)">—</div>';
+        }
+        if(avgStarsMes){
+          const full=Math.floor(avgStarsMes);const half=avgStarsMes-full>=0.5?1:0;
+          txt+=`<span class="tag" style="background:rgba(245,158,11,.15);color:var(--amber);font-size:12px;letter-spacing:1px">${'★'.repeat(full)}${'½'.repeat(half)}${'☆'.repeat(5-full-half)}</span>`;
+        }
+        else txt+=`<span class="tag" style="background:var(--input-bg);color:var(--text-3)">—</span>`;
+        return txt;
+      })()}
     </div>
 
   </div>
@@ -852,7 +999,7 @@ function viewVisao(){
     <div class="panel"><div class="panel-h"><div class="pi">▦</div><h2>Ações por tipo — ${db.current}</h2></div>${bars||'<div class="empty">Sem ações neste mês.</div>'}</div>
     <div class="panel"><div class="panel-h"><div class="pi">◔</div><h2>Status</h2></div>
       <div class="donut-wrap"><div class="donut" style="background:conic-gradient(${stops||'#ccc 0 360deg'})"><div class="hole"><b>${total}</b><span>ações</span></div></div>
-        <div class="legend"><span><i style="background:var(--green)"></i>Concluído (${concl})</span><span><i style="background:var(--blue)"></i>Em and. (${andamento})</span><span><i style="background:var(--amber)"></i>Pendente (${pend})</span></div></div></div>
+        <div class="legend"><span><i style="background:var(--green)"></i>Concluído (${concl})</span><span><i style="background:var(--blue)"></i>Em and. (${andamento})</span><span><i style="background:var(--amber)"></i>Pendente (${pend})</span>${pausados?`<span><i style="background:#9ca3af"></i>Pausado (${pausados})</span>`:''}${migrados?`<span><i style="background:var(--purple)"></i>Migrado (${migrados})</span>`:''}</div></div></div>
   </div>
   <div class="panel"><div class="panel-h"><div class="pi">↑</div><h2>Comparativo — todos os meses</h2></div><div class="mbars">${cmp}</div>
     <div class="legend" style="margin-top:6px"><span><i style="background:var(--purple-2)"></i>Total</span><span><i style="background:var(--bar-alt)"></i>Concluídos</span></div></div>
@@ -966,7 +1113,7 @@ function teamCompute(t){
 }
 function worstCaixa(arr){return [...arr].filter(c=>c.name!=='Não atribuído'&&c.er>0).sort((a,b)=>b.errRate-a.errRate)[0];}
 function viewImpactoTreino(){
-  if(route.teamId==='avalConhecimento')return viewAvalConhecimento();
+  if(route.teamId&&getAvalConhecimentos().some(a=>a.id===route.teamId))return viewAvalConhecimento();
   if(route.teamId)return viewTeamDetail(route.teamId);
   const teams=inMonth(db.teamTrainings);
   const cards=teams.map(t=>{const c=teamCompute(t);const totA=c.analysts.length;
@@ -975,25 +1122,23 @@ function viewImpactoTreino(){
     const allStars=c.res.map(r=>r.stars).filter(Boolean);const avgS=allStars.length?round(allStars.reduce((s,x)=>s+x,0)/allStars.length,1):0;
     return `<div class="folder neutral" style="position:relative"><button onclick="delTeam('${t.id}')" style="position:absolute;top:10px;right:10px;border:none;background:none;color:var(--text-3);font-size:15px;cursor:pointer;padding:2px 5px;border-radius:6px;line-height:1" title="Excluir treino">✕</button><div style="cursor:pointer" onclick="openTeam('${t.id}')"><div class="ico">★</div><h3>${esc(t.title)}</h3><div class="meta">${esc(t.date)} · ${(t.caixas||[]).length} caixas · ${totA} avaliações</div>
       <div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">${totA?`<span class="chip" style="color:var(--purple-dark);border-color:var(--purple-soft)">acerto ${tot?Math.round(accRate/tot*100):0}%</span>${avgS?`<span class="chip" style="color:var(--amber-text);border-color:var(--amber-soft)">${avgS}/5 ★</span>`:''}${worst?`<span class="chip" style="color:var(--red-text);border-color:var(--red-soft)">⚠ ${esc(worst.name)}</span>`:''}`:'<span class="chip" style="color:var(--amber-text);border-color:var(--amber-soft)">aguardando importação</span>'}</div></div></div>`;}).join('');
-  // Card Avaliação de Conhecimento
-  const ac=db.avalConhecimento;
-  const acCard=`<div class="folder neutral" style="position:relative;border-left:3px solid var(--purple)">
-    ${ac&&ac.analistas&&ac.analistas.length?`<div style="cursor:pointer" onclick="route.teamId='avalConhecimento';render();window.scrollTo(0,0)">
-      <div class="ico">📊</div><h3>Avaliação de Conhecimento</h3>
-      <div class="meta">${esc(ac.data||'')} · ${ac.analistas.length} analistas · 30 questões</div>
-      <div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">
-        <span class="chip" style="color:var(--purple-dark);border-color:var(--purple-soft)">média ${Math.round(ac.analistas.reduce((s,a)=>s+a.pct_g,0)/ac.analistas.length)}%</span>
-      </div>
-    </div>`:`<div><div class="ico">📊</div><h3>Avaliação de Conhecimento</h3>
-      <div class="meta">Nenhuma avaliação importada</div>
-      <div style="margin-top:9px"><button class="btn sm primary edit-only" onclick="openImportAvalConhecimento()">↥ Importar</button></div>
-    </div>`}
-  </div>`;
+  // Cards de Avaliação de Conhecimento do mês
+  const acsDoMes=getAvalConhecimentos().filter(a=>a.month===db.current);
+  const acCards=acsDoMes.map(ac=>`<div class="folder neutral" style="position:relative;border-left:3px solid var(--purple);cursor:pointer" onclick="route.teamId='${ac.id}';render();window.scrollTo(0,0)">
+    <div class="ico">📊</div><h3>Avaliação de Conhecimento</h3>
+    <div class="meta">${esc(ac.data||'')} · ${ac.analistas.length} analistas</div>
+    <div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">
+      <span class="chip" style="color:var(--purple-dark);border-color:var(--purple-soft)">média ${Math.round(ac.analistas.reduce((s,a)=>s+a.pct_g,0)/ac.analistas.length)}%</span>
+    </div>
+  </div>`).join('');
 
   return `<div class="page-h"><h1>${esc(T('impacto-treino'))}</h1><p>Treinamentos de lançamento de produto e padronização de processo. Avaliações pós-treino por analista e por caixa de atendimento.</p></div>
-    <div style="display:flex;justify-content:flex-end;margin-bottom:14px"><button class="btn primary edit-only" onclick="openTeamModal()">+ Novo treinamento de time</button></div>
-    <div class="folders">${acCard}${cards}</div>
-    ${!teams.length&&!ac?'<div class="empty">Nenhum treinamento neste mês.</div>':''}`;
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:14px;flex-wrap:wrap">
+      <button class="btn primary edit-only" onclick="openImportAvalConhecimento()">+ Avaliação de conhecimento</button>
+      <button class="btn primary edit-only" onclick="openTeamModal()">+ Treinamento de time</button>
+    </div>
+    <div class="folders">${acCards}${cards}</div>
+    ${!teams.length&&!acsDoMes.length?'<div class="empty">Nenhum treinamento neste mês.</div>':''}`;
 }
 function delTeam(id){const t=db.teamTrainings.find(x=>x.id===id);if(!t)return;if(!confirm('Excluir o treino "'+t.title+'" e todas as avaliações importadas?'))return;db.teamTrainings=db.teamTrainings.filter(x=>x.id!==id);persist();render();toast('Treino excluído');}
 function openTeam(id){route.teamId=id;render();window.scrollTo(0,0);}
@@ -1242,6 +1387,235 @@ function downloadTeamTemplate(id){
   const ex=['Maria Silva',(t.caixas&&t.caixas[0])||'Silver','5',...qs.map((_,i)=>i%2?'erro':'acerto')];
   const csv=[head,ex].map(r=>r.map(c=>`"${c}"`).join(',')).join('\n');
   dl(csv,`modelo-${t.title.slice(0,20).replace(/\W+/g,'-')}.csv`);
+}
+
+/* ========================================================
+   IMPACTO TRIMESTRE — visão consolidada trimestral
+   ======================================================== */
+const TRIMESTRES=[
+  {label:'Q1',meses:['Janeiro','Fevereiro','Março']},
+  {label:'Q2',meses:['Abril','Maio','Junho']},
+  {label:'Q3',meses:['Julho','Agosto','Setembro']},
+  {label:'Q4',meses:['Outubro','Novembro','Dezembro']},
+];
+
+function getCurrentTrimestre(){
+  const d=new Date();
+  const q=Math.floor(d.getMonth()/3);
+  return{qi:q,ano:d.getFullYear()};
+}
+
+function viewTrimestre(){
+  if(!db._triAno)db._triAno=getCurrentTrimestre().ano;
+  if(db._triQ==null)db._triQ=getCurrentTrimestre().qi;
+  const qi=db._triQ, ano=db._triAno;
+  const tri=TRIMESTRES[qi];
+  const mesesDoTri=tri.meses.map(m=>m+' '+ano);
+
+  // Helper: filtrar itens dos 3 meses
+  function inTri(arr){return(arr||[]).filter(x=>mesesDoTri.includes(x.month));}
+
+  const allActions=inTri(db.actions);
+  const allDocs=inTri(db.docs);
+  const allPdis=inTri(db.pdis);
+  const allMacros=inTri(db.macros);
+  const allTeams=(db.teamTrainings||[]).filter(t=>mesesDoTri.includes(t.month));
+  const items=[...allActions,...allDocs,...allPdis];
+
+  const total=items.length;
+  const concl=items.filter(x=>x.status==='Concluído'||x.status==='Material pronto').length;
+  const pend=items.filter(x=>x.status==='Pendente').length;
+  const pausados=items.filter(x=>x.status==='Pausado').length;
+  const migrados=items.filter(x=>x.status==='Migrado').length;
+  const andamento=total-concl-pend-pausados-migrados;
+
+  // PDIs
+  const donePdis=allPdis.filter(p=>p.hasResults);
+  const melhora=donePdis.length?round(donePdis.reduce((s,p)=>s+pdiOverall(p),0)/donePdis.length,1):0;
+
+  // Treinamentos
+  const tResults=allTeams.flatMap(t=>(t.results||[]));
+  const tAc=tResults.reduce((s,r)=>s+(typeof r.ac==='number'?r.ac:0),0);
+  const tTot=tResults.reduce((s,r)=>s+(typeof r.ac==='number'?r.ac+(typeof r.er==='number'?r.er:0):0),0);
+  const treinoPct=tTot?Math.round(tAc/tTot*100):null;
+  const tStars=tResults.map(r=>r.stars).filter(Boolean);
+  const avgStars=tStars.length?round(tStars.reduce((s,x)=>s+x,0)/tStars.length,1):null;
+
+  // Avaliação de conhecimento (se estiver no trimestre)
+  const acsTri=getAvalConhecimentos().filter(a=>a.analistas&&a.analistas.length&&mesesDoTri.includes(a.month));
+  const acMesOk=acsTri.length>0;
+  const acPct=acMesOk?Math.round(acsTri.flatMap(x=>x.analistas).reduce((s,a)=>s+a.pct_g,0)/acsTri.flatMap(x=>x.analistas).length):null;
+  const mediaAcertoVals=[treinoPct,acPct].filter(v=>v!==null);
+  const mediaAcerto=mediaAcertoVals.length?Math.round(mediaAcertoVals.reduce((s,v)=>s+v,0)/mediaAcertoVals.length):null;
+
+  // Rampagem
+  const _meses2=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  function acompMesTri(a){
+    const p=a.periodo1||'';
+    const m=p.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if(m)return _meses2[parseInt(m[2])-1]+' '+m[3];
+    return a.month||null;
+  }
+  const acompTri=(db.acompanhamento||[]).filter(a=>{const m=acompMesTri(a);return m&&mesesDoTri.includes(m);});
+
+  // Seletor
+  const anos=[];for(let y=2025;y<=new Date().getFullYear()+1;y++)anos.push(y);
+  const selHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+    <label style="font-size:.85em;font-weight:600;color:var(--text-2)">Trimestre:</label>
+    <select style="border:1px solid var(--border-2);background:var(--surface);border-radius:9px;padding:8px 14px;font-size:.95em;color:var(--text);font-weight:500" onchange="db._triQ=parseInt(this.value);render()">
+      ${TRIMESTRES.map((t,i)=>`<option value="${i}" ${i===qi?'selected':''}>${t.label} — ${t.meses[0].slice(0,3)}/${t.meses[1].slice(0,3)}/${t.meses[2].slice(0,3)}</option>`).join('')}
+    </select>
+    <select style="border:1px solid var(--border-2);background:var(--surface);border-radius:9px;padding:8px 14px;font-size:.95em;color:var(--text);font-weight:500" onchange="db._triAno=parseInt(this.value);render()">
+      ${anos.map(y=>`<option ${y===ano?'selected':''}>${y}</option>`).join('')}
+    </select>
+    <span style="font-size:.82em;color:var(--text-3)">${tri.meses.join(', ')} ${ano}</span>
+  </div>`;
+
+  // Cards
+  const cards=`<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:20px">
+    <div class="mcard"><div class="lbl">Ações programadas</div><div class="val">${total}</div><div class="foot">${tri.label} ${ano}</div></div>
+    <div class="mcard"><div class="lbl">Ações concluídas</div><div class="val">${concl}</div><span class="tag" style="background:var(--green-soft);color:var(--green-text)">${total?Math.round(concl/total*100):0}%</span></div>
+    <div class="mcard"><div class="lbl">Macros & Taxonomias</div><div class="val">${allMacros.length}</div></div>
+    <div class="mcard"><div class="lbl">Melhora média PDIs</div><div class="val">${melhora?'+'+melhora+'%':'—'}</div><div class="foot">${donePdis.length} PDI${donePdis.length!==1?'s':''}</div></div>
+    <div class="mcard"><div class="lbl">Rampagem New Hire</div>
+      ${(()=>{
+        if(!acompTri.length)return'<div class="val" style="color:var(--text-3)">—</div><div class="foot">sem rampagem</div>';
+        function getMetasTri(cx){const c=(cx||'').toLowerCase();if(c.includes('silver'))return{sla:5,csat:94,tma:24};if(c.includes('integração')||c.includes('integra')||c.includes('vip')||c.includes('saque'))return{sla:3,csat:97,tma:24};return{sla:5,csat:94,tma:24};}
+        const eC=[],eS=[],eT=[];
+        acompTri.forEach(a=>{const rs=a.semanas||[];const ss=[0,1,2].map(i=>Array.isArray(rs)?rs[i]:(rs[i]||rs[String(i)]||null));const cs=ss.map(s=>s&&s.csat!=null?s.csat:null).filter(v=>v!==null);const sl=ss.map(s=>s&&s.sla!=null?s.sla:null).filter(v=>v!==null);const tm=ss.map(s=>s&&s.tma!=null?s.tma:null).filter(v=>v!==null);const mt=getMetasTri(a.caixa);if(cs.length)eC.push({atual:cs[cs.length-1],meta:mt.csat});if(sl.length)eS.push({atual:sl[sl.length-1],meta:mt.sla});if(tm.length)eT.push({atual:tm[tm.length-1],meta:mt.tma});});
+        const mm=[];
+        if(eC.length){const avg=round(eC.reduce((s,v)=>s+v.atual,0)/eC.length,1);const m=round(eC.reduce((s,v)=>s+v.meta,0)/eC.length,0);mm.push({l:'CSAT '+avg+'%',b:avg>=m});}
+        if(eS.length){const avg=round(eS.reduce((s,v)=>s+v.atual,0)/eS.length,1);const m=round(eS.reduce((s,v)=>s+v.meta,0)/eS.length,0);mm.push({l:'SLA '+avg+'min',b:avg<=m});}
+        if(eT.length){const avg=round(eT.reduce((s,v)=>s+v.atual,0)/eT.length,1);mm.push({l:'TMA '+avg+'h',b:avg<=24});}
+        const bn=mm.filter(m=>m.b).length;const pct=mm.length?Math.round(bn/mm.length*100):0;
+        const cor=bn>=mm.length?'var(--green)':bn>mm.filter(m=>!m.b).length?'var(--green)':'var(--red-text)';
+        function mt(m){return`<span style="padding:2px 6px;border-radius:5px;font-size:.6em;font-weight:600;background:${m.b?'rgba(34,197,94,.15)':'rgba(239,68,68,.15)'};color:${m.b?'var(--green)':'var(--red-text)'}">${m.l}</span>`;}
+        return`<div class="val" style="color:${cor}">${pct}%</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 4px;margin-top:2px;align-items:center">${mm.map(m=>mt(m)).join('')}<span style="font-size:.6em;color:var(--text-3)">${acompTri.length} an.</span></div>`;
+      })()}
+    </div>
+    <div class="mcard"><div class="lbl">Média Treinamentos</div>
+      ${mediaAcerto!==null?`<div class="val" style="color:${mediaAcerto>=60?'var(--green)':'var(--red-text)'}">${mediaAcerto}%</div>`:'<div class="val" style="color:var(--text-3)">—</div>'}
+      ${avgStars?`<span class="tag" style="background:rgba(245,158,11,.15);color:var(--amber)">${avgStars}/5 ★</span>`:`<span class="tag" style="background:var(--input-bg);color:var(--text-3)">—</span>`}
+    </div>
+  </div>`;
+
+  // Ações por tipo — % dentro da barra
+  const tipoData=[
+    {label:'Treinamentos',val:allActions.length,color:'var(--purple)'},
+    {label:'Documentação',val:allDocs.length,color:'var(--blue)'},
+    {label:'PDIs',val:allPdis.length,color:'var(--green)'},
+    {label:'Macros & Taxonomias',val:allMacros.length,color:'var(--amber)'},
+  ];
+  const tipoMax=Math.max(1,...tipoData.map(t=>t.val));
+  const tipoBars=tipoData.map(t=>{
+    const pct=total?Math.round(t.val/total*100):0;
+    const w=Math.max(t.val/tipoMax*100,pct?14:0);
+    return`<div class="barrow"><div class="nm">${t.label}</div><div class="track" style="position:relative"><div class="fill" style="width:${w}%;background:${t.color}"><span style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:.72em;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.3)">${t.val} (${pct}%)</span></div></div></div>`;
+  }).join('');
+  const tipoHTML=`<div class="panel"><div class="panel-h"><div class="pi">▦</div><h2>Ações por tipo — ${tri.label} ${ano}</h2></div>${tipoBars||'<div class="empty">Sem ações</div>'}</div>`;
+
+  // Resumo por mês
+  const resumoMes=mesesDoTri.map(mes=>{
+    const mAct=(db.actions||[]).filter(x=>x.month===mes);
+    const mDoc=(db.docs||[]).filter(x=>x.month===mes);
+    const mPdi=(db.pdis||[]).filter(x=>x.month===mes);
+    const mMacro=(db.macros||[]).filter(x=>x.month===mes);
+    const mAll=[...mAct,...mDoc,...mPdi];
+    const mTotal=mAll.length;
+    const mConcl=mAll.filter(x=>x.status==='Concluído'||x.status==='Material pronto').length;
+    const pct=mTotal?Math.round(mConcl/mTotal*100):0;
+    const mesNome=mes.split(' ')[0];
+    return`<div class="c"><h3>${esc(mesNome)}</h3>
+      <p style="font-size:1.6em;font-weight:800;font-family:'Inter',sans-serif;color:${pct>=60?'var(--green)':pct>0?'var(--amber)':'var(--text-3)'};margin:6px 0 4px">${pct}%</p>
+      <div class="st">${mTotal} ações · ${mConcl} concl.</div>
+      <div class="st" style="margin-top:3px">${mAct.length} treinos · ${mDoc.length} docs · ${mPdi.length} PDIs · ${mMacro.length} macros</div>
+    </div>`;
+  }).join('');
+
+  // Top 3 melhores + Top 3 atenção
+  const anRank={};
+  const acsTri5=getAvalConhecimentos().filter(a=>a.analistas&&a.analistas.length&&mesesDoTri.includes(a.month));
+  acsTri5.forEach(ac=>ac.analistas.forEach(a=>{
+    if(!anRank[a.nome])anRank[a.nome]={nome:a.nome,caixa:a.caixa||'',scores:[],count:0};
+    anRank[a.nome].scores.push(a.pct_g);anRank[a.nome].count++;
+  }));
+  const allTeamsTri=(db.teamTrainings||[]).filter(t=>mesesDoTri.includes(t.month));
+  allTeamsTri.forEach(t=>(t.results||[]).forEach(r=>{
+    if(!r.analista)return;
+    const tot=(typeof r.ac==='number'?r.ac:0)+(typeof r.er==='number'?r.er:0);
+    if(!tot)return;
+    const pctR=Math.round((r.ac||0)/tot*100);
+    if(!anRank[r.analista])anRank[r.analista]={nome:r.analista,caixa:r.caixa||'',scores:[],count:0};
+    anRank[r.analista].scores.push(pctR);anRank[r.analista].count++;
+  }));
+  const allRanked=Object.values(anRank).map(a=>({...a,avg:Math.round(a.scores.reduce((s,v)=>s+v,0)/a.scores.length)}));
+  const top3=allRanked.sort((a,b)=>b.avg-a.avg).slice(0,3);
+  const bot3=allRanked.sort((a,b)=>a.avg-b.avg).slice(0,3);
+  function rankRow(a,i,isTop){
+    const medal=isTop?(i===0?'🥇':i===1?'🥈':i===2?'🥉':''):'';
+    return`<tr><td style="font-weight:600">${medal} ${i+1}º</td><td><b>${esc(a.nome)}</b><div style="font-size:.72em;color:var(--text-3)">${esc(a.caixa)}</div></td><td style="font-weight:700;color:${a.avg>=60?'var(--green)':'var(--red-text)'}">${a.avg}%</td></tr>`;
+  }
+  const topHTML=allRanked.length?`<div class="grid2">
+    <div class="panel"><div class="panel-h"><div class="pi">🏆</div><h2>Top 3 melhores — ${tri.label} ${ano}</h2></div>
+      <div class="wrap-x"><table class="tbl"><thead><tr><th>#</th><th>Analista</th><th>Média</th></tr></thead><tbody>${top3.map((a,i)=>rankRow(a,i,true)).join('')}</tbody></table></div></div>
+    <div class="panel"><div class="panel-h"><div class="pi">⚠</div><h2>Top 3 atenção — ${tri.label} ${ano}</h2></div>
+      <div class="wrap-x"><table class="tbl"><thead><tr><th>#</th><th>Analista</th><th>Média</th></tr></thead><tbody>${bot3.map((a,i)=>rankRow(a,i,false)).join('')}</tbody></table></div></div>
+  </div>`:''
+
+  // Rampagem % metas — calcular para trimestre atual e anterior
+  function calcRampPct(acompArr){
+    if(!acompArr.length)return 0;
+    function gM(cx){const c=(cx||'').toLowerCase();if(c.includes('silver'))return{sla:5,csat:94,tma:24};if(c.includes('integração')||c.includes('integra')||c.includes('vip')||c.includes('saque'))return{sla:3,csat:97,tma:24};return{sla:5,csat:94,tma:24};}
+    let totalM=0,bonsM=0;
+    acompArr.forEach(a=>{const rs=a.semanas||[];const ss=[0,1,2].map(i=>Array.isArray(rs)?rs[i]:(rs[i]||rs[String(i)]||null));const cs=ss.map(s=>s&&s.csat!=null?s.csat:null).filter(v=>v!==null);const sl=ss.map(s=>s&&s.sla!=null?s.sla:null).filter(v=>v!==null);const tm=ss.map(s=>s&&s.tma!=null?s.tma:null).filter(v=>v!==null);const mt=gM(a.caixa);
+      if(cs.length){totalM++;if(cs[cs.length-1]>=mt.csat)bonsM++;}
+      if(sl.length){totalM++;if(sl[sl.length-1]<=mt.sla)bonsM++;}
+      if(tm.length){totalM++;if(tm[tm.length-1]<=mt.tma)bonsM++;}
+    });
+    return totalM?Math.round(bonsM/totalM*100):0;
+  }
+  const rampPctCur=calcRampPct(acompTri);
+  const prevAcompArr=(db.acompanhamento||[]).filter(a=>{const p=a.periodo1||'';const mt=p.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(mt){const _mN2=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];return prevMeses.includes(_mN2[parseInt(mt[2])-1]+' '+mt[3]);}return false;});
+  const rampPctPrev=calcRampPct(prevAcompArr);
+
+  // Comparativo com trimestre anterior
+  const prevQi=qi===0?3:qi-1;
+  const prevAno2=qi===0?ano-1:ano;
+  const prevTri=TRIMESTRES[prevQi];
+  const prevMeses=prevTri.meses.map(m=>m+' '+prevAno2);
+  const prevItems=[...(db.actions||[]).filter(x=>prevMeses.includes(x.month)),...(db.docs||[]).filter(x=>prevMeses.includes(x.month)),...(db.pdis||[]).filter(x=>prevMeses.includes(x.month))];
+  const prevTotal=prevItems.length;
+  const prevConcl=prevItems.filter(x=>x.status==='Concluído'||x.status==='Material pronto').length;
+  const prevPctC=prevTotal?Math.round(prevConcl/prevTotal*100):0;
+  const curPctC=total?Math.round(concl/total*100):0;
+  const prevMacrosN=(db.macros||[]).filter(m=>prevMeses.includes(m.month)).length;
+  function compC(label,cur,prev,suffix){
+    const sf=suffix||'';
+    const d=cur-prev;
+    return`<div style="text-align:center"><div style="font-size:.7em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">${label}</div>
+      <div style="font-size:1.3em;font-weight:800;color:${d>0?'var(--green)':d<0?'var(--red-text)':'var(--text-3)'}">${d>0?'↑ +':d<0?'↓ ':''}${d!==0?Math.abs(d):'='}${sf}</div>
+      <div style="font-size:.68em;color:var(--text-3)">${cur}${sf} vs ${prev}${sf}</div></div>`;
+  }
+  const compHTML=`<div class="panel" style="padding:18px"><div class="panel-h" style="margin-bottom:14px"><div class="pi">↕</div><h2>Comparativo vs ${prevTri.label} ${prevAno2}</h2></div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:14px">
+      ${compC('% Conclusão',curPctC,prevPctC,'%')}
+      ${compC('Concluídas',concl,prevConcl)}
+      ${compC('Total ações',total,prevTotal)}
+      ${compC('Macros & Tax.',allMacros.length,prevMacrosN)}
+      ${compC('Rampagem',rampPctCur,rampPctPrev,'%')}
+    </div></div>`;
+
+  return `<div class="page-h"><h1>◆ ${esc(T('trimestre'))}</h1><p>Visão consolidada do trimestre — ações, PDIs, treinamentos e rampagem agregados.</p></div>
+  ${selHTML}${cards}
+  <div class="grid2">
+    ${tipoHTML}
+    <div class="panel"><div class="panel-h"><div class="pi">📅</div><h2>Resumo por mês</h2></div>
+      <div class="msum">${resumoMes}</div>
+    </div>
+  </div>
+  ${topHTML}
+  ${compHTML}`;
 }
 
 /* ========================================================
@@ -1894,7 +2268,7 @@ function openAddAnalista(){
       </select>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
-      ${[1,2,3].map(n=>`<div class="fld"><label style="font-size:.8em">Período Semana ${n}</label><input type="text" id="an_p${n}" placeholder="13/07–17/07" style="margin-top:4px;font-size:.88em"></div>`).join('')}
+      ${[1,2,3].map(n=>`<div class="fld"><label style="font-size:.8em">Período Semana ${n}</label><input type="text" id="an_p${n}" placeholder="13/07/2026–17/07/2026" style="margin-top:4px;font-size:.88em"></div>`).join('')}
     </div>
     <div class="modal-foot">
       <button class="btn" onclick="closeModal()">Cancelar</button>
@@ -1908,8 +2282,9 @@ function saveAddAnalista(){
   const email=((document.getElementById('an_email')||{}).value||'').trim();
   const caixa=((document.getElementById('an_caixa')||{}).value||'').trim();
   if(!nome){toast('Informe o nome');return;}
-  const analista={nome,email,caixa,semanas:[null,null,null]};
+  const analista={nome,email,caixa,semanas:[null,null,null],month:db.current};
   [1,2,3].forEach(n=>{const v=((document.getElementById('an_p'+n)||{}).value||'').trim();if(v)analista['periodo'+n]=v;});
+  analista.month=db.current;
   if(!db.acompanhamento)db.acompanhamento=[];
   db.acompanhamento.push(analista);
   _lastEdit=Date.now();
@@ -1939,7 +2314,7 @@ function openEditSemana(ai,si){
   const obsV=s.obs||'';
   const hasData=slaV!==''||csatV!==''||recV!==''||fechV!==''||tmaV!=='';
   show(`<div class="modal" style="width:480px"><h2>✎ Semana ${si+1}${periodo?' · '+periodo:''} — ${esc(a.nome)} <button class="close" onclick="closeModal()">✕</button></h2>
-    <div class="fld" style="margin-bottom:10px"><label>Período da semana</label><input type="text" id="sem_periodo" value="${esc(periodo)}" placeholder="13/07–17/07" style="margin-top:6px"></div>
+    <div class="fld" style="margin-bottom:10px"><label>Período da semana</label><input type="text" id="sem_periodo" value="${esc(periodo)}" placeholder="13/07/2026–17/07/2026" style="margin-top:6px"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
       <div class="fld"><label>SLA (minutos) <small style="color:var(--text-3)">meta ≤${metas.sla}min</small></label><input type="number" id="sem_sla" min="0" step="0.1" value="${slaV}" placeholder="Ex: 4.5" style="margin-top:6px"></div>
       <div class="fld"><label>CSAT (%) <small style="color:var(--text-3)">meta ≥${metas.csat}%</small></label><input type="number" id="sem_csat" min="0" max="100" step="0.1" value="${csatV}" placeholder="Ex: 96" style="margin-top:6px"></div>
@@ -1998,12 +2373,24 @@ function deletarAnalista(ai){
    AVALIAÇÃO DE CONHECIMENTO
    ======================================================== */
 
-const _AVAL_DATA=[{"n": "Luana Soares", "cx": "Frentes Estratégicas (Suporte Ativo, Enteprise, Retenção e PaaS)", "g": 28, "pg": 93, "r": 28, "tr": 30, "pr": 93, "rel": ["Suporte Geral", "Processos Saques", "Suporte Integração"], "sg": 95, "ps": 100, "si": 80, "dg": "4.0", "ds": "5.0", "di": "1.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 1}, {"s": "SI", "t": "Processamento internacional.", "a": 1}, {"s": "SI", "t": "API", "a": 1}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 1}]}, {"n": "Mariana Rosa", "cx": "Integração", "g": 27, "pg": 90, "r": 22, "tr": 25, "pr": 88, "rel": ["Suporte Geral", "Suporte Integração"], "sg": 85, "ps": 100, "si": 100, "dg": "3.0", "ds": "4.0", "di": "4.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 0}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 1}, {"s": "SI", "t": "Processamento internacional.", "a": 1}, {"s": "SI", "t": "API", "a": 1}, {"s": "SI", "t": "Usuários", "a": 1}, {"s": "SI", "t": "Split de pagamento", "a": 1}]}, {"n": "Gabrieli Vieira", "cx": "Vip/Saques", "g": 23, "pg": 77, "r": 23, "tr": 30, "pr": 77, "rel": ["Suporte Geral", "Processos Saques", "Suporte Integração"], "sg": 85, "ps": 100, "si": 20, "dg": "4.0", "ds": "5.0", "di": "2.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 1}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Bruno Alves", "cx": "Integração", "g": 27, "pg": 90, "r": 24, "tr": 25, "pr": 96, "rel": ["Suporte Geral", "Suporte Integração"], "sg": 95, "ps": 60, "si": 100, "dg": "3.0", "ds": "3.0", "di": "3.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 1}, {"s": "SI", "t": "Processamento internacional.", "a": 1}, {"s": "SI", "t": "API", "a": 1}, {"s": "SI", "t": "Usuários", "a": 1}, {"s": "SI", "t": "Split de pagamento", "a": 1}]}, {"n": "Pamela Santos", "cx": "Frentes Estratégicas (Suporte Ativo, Enteprise, Retenção e PaaS)", "g": 27, "pg": 90, "r": 27, "tr": 30, "pr": 90, "rel": ["Suporte Geral", "Processos Saques", "Suporte Integração"], "sg": 90, "ps": 80, "si": 100, "dg": "2.0", "ds": "2.0", "di": "4.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 1}, {"s": "SI", "t": "Processamento internacional.", "a": 1}, {"s": "SI", "t": "API", "a": 1}, {"s": "SI", "t": "Usuários", "a": 1}, {"s": "SI", "t": "Split de pagamento", "a": 1}]}, {"n": "Matheus Wuerdig", "cx": "Integração", "g": 20, "pg": 67, "r": 18, "tr": 25, "pr": 72, "rel": ["Suporte Geral", "Suporte Integração"], "sg": 65, "ps": 40, "si": 100, "dg": "3.0", "ds": "3.0", "di": "1.0", "det": [{"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 0}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 1}, {"s": "SI", "t": "Processamento internacional.", "a": 1}, {"s": "SI", "t": "API", "a": 1}, {"s": "SI", "t": "Usuários", "a": 1}, {"s": "SI", "t": "Split de pagamento", "a": 1}]}, {"n": "Julia Santos", "cx": "Max", "g": 23, "pg": 77, "r": 19, "tr": 25, "pr": 76, "rel": ["Suporte Geral", "Processos Saques"], "sg": 80, "ps": 60, "si": 80, "dg": "4.0", "ds": "3.0", "di": "1.0", "det": [{"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 0}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 1}, {"s": "SI", "t": "Processamento internacional.", "a": 1}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 1}, {"s": "SI", "t": "Split de pagamento", "a": 1}]}, {"n": "Jessica Machado", "cx": "Max", "g": 19, "pg": 63, "r": 18, "tr": 25, "pr": 72, "rel": ["Suporte Geral", "Processos Saques"], "sg": 70, "ps": 80, "si": 20, "dg": "3.0", "ds": "2.0", "di": "1.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 0}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 1}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Livia Silva", "cx": "Vip/Saques", "g": 17, "pg": 57, "r": 17, "tr": 30, "pr": 57, "rel": ["Suporte Geral", "Processos Saques", "Suporte Integração"], "sg": 60, "ps": 80, "si": 20, "dg": "3.0", "ds": "2.0", "di": "3.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 0}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 1}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Andriele Silva", "cx": "Max", "g": 17, "pg": 57, "r": 16, "tr": 25, "pr": 64, "rel": ["Suporte Geral", "Processos Saques"], "sg": 75, "ps": 20, "si": 20, "dg": "4.0", "ds": "2.0", "di": "1.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 1}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Kendra Dreher", "cx": "Frentes Estratégicas (Suporte Ativo, Enteprise, Retenção e PaaS)", "g": 16, "pg": 53, "r": 16, "tr": 25, "pr": 64, "rel": ["Suporte Geral", "Processos Saques"], "sg": 70, "ps": 40, "si": 0, "dg": "3.0", "ds": "2.0", "di": "", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Romullo Cutes", "cx": "Vip/Saques", "g": 17, "pg": 57, "r": 17, "tr": 30, "pr": 57, "rel": ["Suporte Geral", "Processos Saques", "Suporte Integração"], "sg": 60, "ps": 100, "si": 0, "dg": "2.0", "ds": "5.0", "di": "1.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 0}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 0}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 0}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 0}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Diogo Salcedo", "cx": "Silver", "g": 18, "pg": 60, "r": 16, "tr": 20, "pr": 80, "rel": ["Suporte Geral"], "sg": 80, "ps": 40, "si": 0, "dg": "3.0", "ds": "2.0", "di": "1.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 0}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Giovanni Junior", "cx": "Silver", "g": 23, "pg": 77, "r": 19, "tr": 20, "pr": 95, "rel": ["Suporte Geral"], "sg": 95, "ps": 60, "si": 20, "dg": "4.0", "ds": "3.0", "di": "2.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 1}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Graziella Dalenogare", "cx": "Vip/Saques", "g": 20, "pg": 67, "r": 20, "tr": 30, "pr": 67, "rel": ["Suporte Geral", "Processos Saques", "Suporte Integração"], "sg": 80, "ps": 80, "si": 0, "dg": "4.0", "ds": "5.0", "di": "1.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Lauren Esmerio", "cx": "Integração", "g": 19, "pg": 63, "r": 16, "tr": 25, "pr": 64, "rel": ["Suporte Geral", "Suporte Integração"], "sg": 60, "ps": 60, "si": 80, "dg": "3.0", "ds": "", "di": "5.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Prazo de recebimento", "a": 0}, {"s": "SG", "t": "Liquidação Centralizada", "a": 0}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 1}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 1}, {"s": "SI", "t": "Usuários", "a": 1}, {"s": "SI", "t": "Split de pagamento", "a": 1}]}, {"n": "Douglas Brayer", "cx": "Vip/Saques", "g": 17, "pg": 57, "r": 17, "tr": 30, "pr": 57, "rel": ["Suporte Geral", "Processos Saques", "Suporte Integração"], "sg": 65, "ps": 80, "si": 0, "dg": "4.0", "ds": "4.0", "di": "", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 0}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Liara Arguilar", "cx": "Silver", "g": 22, "pg": 73, "r": 19, "tr": 20, "pr": 95, "rel": ["Suporte Geral"], "sg": 95, "ps": 60, "si": 0, "dg": "4.0", "ds": "3.0", "di": "2.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 1}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Victor Lopes", "cx": "Silver", "g": 7, "pg": 23, "r": 7, "tr": 20, "pr": 35, "rel": ["Suporte Geral"], "sg": 35, "ps": 0, "si": 0, "dg": "4.0", "ds": "5.0", "di": "5.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 0}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 0}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 0}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}, {"n": "Daniela Bitencourt", "cx": "Silver", "g": 8, "pg": 27, "r": 7, "tr": 20, "pr": 35, "rel": ["Suporte Geral"], "sg": 35, "ps": 0, "si": 20, "dg": "3.0", "ds": "1.0", "di": "2.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 1}, {"s": "SG", "t": "Liquidação Centralizada", "a": 0}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Taxas", "a": 0}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Antifraude", "a": 0}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 0}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 1}]}, {"n": "Karen Rosa", "cx": "Silver", "g": 13, "pg": 43, "r": 13, "tr": 20, "pr": 65, "rel": ["Suporte Geral"], "sg": 65, "ps": 0, "si": 0, "dg": "3.0", "ds": "2.0", "di": "1.0", "det": [{"s": "SG", "t": "Chargeback", "a": 1}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Chargeback", "a": 0}, {"s": "SG", "t": "Prazo de recebimento", "a": 0}, {"s": "SG", "t": "Liquidação Centralizada", "a": 1}, {"s": "SG", "t": "Taxas", "a": 0}, {"s": "SG", "t": "Taxas", "a": 1}, {"s": "SG", "t": "Estorno", "a": 1}, {"s": "SG", "t": "Estorno", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 0}, {"s": "SG", "t": "Antifraude", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Lead & Cadastro de Empresas", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Relatórios", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 0}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "SG", "t": "Reatribuição de Chats", "a": 1}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Pendência de saque", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "PS", "t": "Termo de pagamento", "a": 0}, {"s": "SI", "t": "Bloqueio de processamento.", "a": 0}, {"s": "SI", "t": "Processamento internacional.", "a": 0}, {"s": "SI", "t": "API", "a": 0}, {"s": "SI", "t": "Usuários", "a": 0}, {"s": "SI", "t": "Split de pagamento", "a": 0}]}];
 
 function initAvalConhecimento(){
-  if(db.avalConhecimento&&db.avalConhecimento.analistas&&db.avalConhecimento.analistas.length===21)return;
-  // Expandir dados compactos
-  const SEC_MAP={'Su':'Suporte Geral','Pr':'Processos Saques'};
+  // Garantir array
+  if(!db.avalConhecimentos)db.avalConhecimentos=[];
+  if(!Array.isArray(db.avalConhecimentos)){
+    try{db.avalConhecimentos=Object.values(db.avalConhecimentos);}catch(e){db.avalConhecimentos=[];}
+  }
+  // Normalizar analistas de objeto para array em todas as entradas (Firebase converte)
+  db.avalConhecimentos.forEach(a=>{
+    if(a&&a.analistas&&!Array.isArray(a.analistas))a.analistas=Object.values(a.analistas);
+    if(a&&a.analistas)a.analistas.forEach(an=>{
+      if(an.detalhes&&!Array.isArray(an.detalhes))an.detalhes=Object.values(an.detalhes);
+      if(an.secoes_relevantes&&!Array.isArray(an.secoes_relevantes))an.secoes_relevantes=Object.values(an.secoes_relevantes);
+    });
+  });
+  // Remover qualquer versão de Julho/2026 que veio do Firebase (pode estar corrompida)
+  db.avalConhecimentos=db.avalConhecimentos.filter(a=>a&&a.month!=='Julho 2026'&&a.id!=='ac_jul2026');
+  // SEMPRE reconstruir Julho/2026 dos dados embutidos no código
   const an=_AVAL_DATA.map(r=>{
     const det=(r.det||[]).map(d=>({secao:d.s==='SG'?'Suporte Geral':d.s==='PS'?'Processos Saques':'Suporte Integração',topico:d.t,acertou:d.a}));
     return{nome:r.n,caixa:r.cx,ta_g:r.g,tq_g:30,pct_g:r.pg,ta_r:r.r,tq_r:r.tr,pct_r:r.pr,
@@ -2011,18 +2398,17 @@ function initAvalConhecimento(){
       secoes:{'Suporte Geral':{pct:r.sg,dificuldade:r.dg},'Processos Saques':{pct:r.ps,dificuldade:r.ds},'Suporte Integração':{pct:r.si,dificuldade:r.di}},
       detalhes:det};
   });
-  db.avalConhecimento={data:'Julho/2026',analistas:an};
-  try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
+  db.avalConhecimentos.unshift({id:'ac_jul2026',data:'Julho/2026',month:'Julho 2026',analistas:an});
 }
 
 function viewAvalConhecimento(){
-  initAvalConhecimento();
-  const ac=db.avalConhecimento;
+  const allAC=getAvalConhecimentos();
+  const ac=allAC.find(a=>a.id===route.teamId)||allAC.find(a=>a.month===db.current);
   if(!ac||!ac.analistas||!ac.analistas.length){
     return`<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px">
       <button class="btn" onclick="route.teamId=null;render()">← Voltar</button>
       <span style="font-weight:700">📊 Avaliação de Conhecimento</span></div>
-    <div class="empty">Nenhuma avaliação disponível.</div>`;
+    <div class="empty">Nenhuma avaliação disponível. (teamId=${esc(route.teamId||'null')}, total=${allAC.length})</div>`;
   }
   const an=ac.analistas;
   const avgG=Math.round(an.reduce((s,a)=>s+a.pct_g,0)/an.length);
@@ -2132,21 +2518,147 @@ function viewAvalConhecimento(){
     <button class="btn" onclick="route.teamId=null;render()">← Voltar</button>
     <span style="font-weight:700;font-size:1.1em">📊 Avaliação de Conhecimento</span>
     <span style="font-size:.82em;color:var(--text-3)">${esc(ac.data||'Julho/2026')}</span>
-    <button class="btn sm edit-only" style="margin-left:auto;color:var(--red-text);border-color:var(--red)" onclick="clearAvalConhecimento()">🗑 Excluir</button>
+    <button class="btn sm edit-only" style="margin-left:auto" onclick="editAvalConhecimento(route.teamId)">✎ Editar</button>
+    <button class="btn sm edit-only" style="color:var(--red-text);border-color:var(--red)" onclick="deleteAvalConhecimento(route.teamId)">🗑</button>
   </div>
   ${cards}${errosAcertos}${top5HTML}
   <div class="panel-h" style="margin:20px 0 12px"><div class="pi">📁</div><h2>Melhor por frente de atendimento</h2></div>
   ${frentesHTML}`;
 }
 
+function editAvalConhecimento(id){
+  const ac=(db.avalConhecimentos||[]).find(a=>a.id===id);if(!ac)return;
+  show(`<div class="modal"><h2>✎ Editar Avaliação <button class="close" onclick="closeModal()">✕</button></h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+      <div class="fld"><label>Data</label><input type="text" id="ace_data" value="${esc(ac.data||'')}" placeholder="Julho/2026" style="margin-top:6px"></div>
+      <div class="fld"><label>Mês (filtro)</label><input type="text" id="ace_month" value="${esc(ac.month||'')}" placeholder="Julho 2026" style="margin-top:6px"></div>
+    </div>
+    <div class="fld" style="margin-bottom:16px"><label>Reimportar planilha (opcional)</label><input type="file" accept=".xlsx" id="ace_file" style="margin-top:6px"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="saveEditAC('${id}')">Salvar</button>
+    </div>
+  </div>`);
+}
+function saveEditAC(id){
+  const ac=(db.avalConhecimentos||[]).find(a=>a.id===id);if(!ac)return;
+  ac.data=((document.getElementById('ace_data')||{}).value||'').trim();
+  ac.month=((document.getElementById('ace_month')||{}).value||'').trim();
+  _lastEdit=Date.now();
+  try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
+  closeModal();render();sendToFirebase().catch(()=>{});toast('Atualizado');
+}
+function deleteAvalConhecimento(id){
+  if(!confirm('Excluir esta avaliação?'))return;
+  db.avalConhecimentos=(db.avalConhecimentos||[]).filter(a=>a.id!==id);
+  _lastEdit=Date.now();
+  try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
+  route.teamId=null;render();sendToFirebase().catch(()=>{});toast('Excluída');
+}
+function openImportAvalConhecimento(){
+  show(`<div class="modal" style="width:540px"><h2>📊 Nova Avaliação de Conhecimento <button class="close" onclick="closeModal()">✕</button></h2>
+    <p style="color:var(--text-2);font-size:.9em;margin-bottom:12px">Preencha os dados e importe a planilha corrigida (.xlsx) com as abas "Ranking Geral" e "Detalhes".</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div class="fld"><label>Nome da avaliação</label><input type="text" id="aci_nome" placeholder="Av. Conhecimento B2B" style="margin-top:6px"></div>
+      <div class="fld"><label>Data de aplicação</label><input type="text" id="aci_data" placeholder="Julho/2026" style="margin-top:6px"></div>
+    </div>
+    <div class="fld" style="margin-bottom:12px"><label>Mês (para filtro mensal)</label><input type="text" id="aci_month" placeholder="Julho 2026" value="${db.current}" style="margin-top:6px"></div>
+    <div class="fld" style="margin-bottom:16px"><label>Planilha corrigida (.xlsx)</label><input type="file" accept=".xlsx" id="aci_file" style="margin-top:6px"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal()">Cancelar</button>
+      <button class="btn primary" onclick="doImportNewAC()">Importar</button>
+    </div>
+  </div>`);
+}
+
+function doImportNewAC(){
+  const nome=((document.getElementById('aci_nome')||{}).value||'').trim()||'Avaliação de Conhecimento';
+  const data=((document.getElementById('aci_data')||{}).value||'').trim();
+  const month=((document.getElementById('aci_month')||{}).value||'').trim()||db.current;
+  const fileEl=document.getElementById('aci_file');
+  if(!fileEl||!fileEl.files[0]){toast('Selecione um arquivo');return;}
+  const rd=new FileReader();
+  rd.onload=function(){
+    closeModal();
+    try{
+      const wb=XLSX.read(rd.result,{type:'array'});
+      let analistas=[];
+
+      // FORMATO 1: Planilha FINAL com aba "Ranking Geral"
+      if(wb.Sheets['Ranking Geral']){
+        const wsR=wb.Sheets['Ranking Geral'];
+        const rRows=XLSX.utils.sheet_to_json(wsR,{header:1,defval:''});
+        analistas=rRows.slice(1).filter(rw=>String(rw[1]||'').trim()&&!isNaN(parseInt(rw[3]))).map(rw=>{
+          const nm=String(rw[1]).trim(),cx=String(rw[2]||'').trim();
+          const ta_g=parseInt(rw[3])||0,pct_g=parseInt(rw[5])||0;
+          const sg=parseInt(rw[6])||0,ps=parseInt(rw[7])||0,si=parseInt(rw[8])||0;
+          const dg=String(rw[9]||''),ds=String(rw[10]||''),di=String(rw[11]||'');
+          const c=cx.toLowerCase();
+          let rel=['Suporte Geral','Processos Saques','Suporte Integração'];
+          if(c.includes('silver'))rel=['Suporte Geral'];
+          else if(c.includes('max'))rel=['Suporte Geral','Processos Saques'];
+          else if(c.includes('integração')||c.includes('integra'))rel=['Suporte Geral','Suporte Integração'];
+          else if((c.includes('frente')||c.includes('estratég'))&&nm.toLowerCase().includes('kendra'))rel=['Suporte Geral','Processos Saques'];
+          const ta_r=rel.reduce((s,sn)=>s+(sn==='Suporte Geral'?Math.round(sg/100*20):sn==='Processos Saques'?Math.round(ps/100*5):Math.round(si/100*5)),0);
+          const tq_r=rel.reduce((s,sn)=>s+(sn==='Suporte Geral'?20:5),0);
+          return{nome:nm,caixa:cx,ta_g,tq_g:30,pct_g,ta_r,tq_r,pct_r:tq_r?Math.round(ta_r/tq_r*100):0,secoes_relevantes:rel,
+            secoes:{'Suporte Geral':{pct:sg,dificuldade:dg},'Processos Saques':{pct:ps,dificuldade:ds},'Suporte Integração':{pct:si,dificuldade:di}},detalhes:[]};
+        });
+        // Ler detalhes
+        const wsD=wb.Sheets['Detalhes'];
+        if(wsD){const dR=XLSX.utils.sheet_to_json(wsD,{header:1,defval:''});if(dR.length>1){const nC=dR[0].length;const nms=dR[0].slice(3,nC-2).map(n=>String(n||'').trim());dR.slice(1).forEach(rw=>{const sec=String(rw[1]||'').trim(),top=String(rw[2]||'').trim();nms.forEach((nd,ni)=>{const v=String(rw[3+ni]||'').trim();const an=analistas.find(a=>a.nome===nd);if(an)an.detalhes.push({secao:sec,topico:top,acertou:v==='✓'?1:0});});});}}
+      }
+      // FORMATO 2: Planilha de revisão manual (aba "Revisão de Correção")
+      else {
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        // Extrair analistas e suas correções
+        const anMap={};let curSecao='',curTopico='',inResps=false;
+        rows.forEach(rw=>{
+          const a=String(rw[0]||'').trim(),e=String(rw[4]||'').trim();
+          if(a.startsWith('═══'))curSecao=a.replace(/═/g,'').trim();
+          else if(a.startsWith('Q')&&/^Q\d+$/.test(a)){curTopico=String(rw[1]||'').trim();inResps=false;}
+          else if(a==='Analista'){inResps=true;}
+          else if(inResps&&a&&a!=='GABARITO'&&a!=='Enunciado:'&&(e==='✓'||e==='✗'||e==='V'||e==='X')){
+            if(!anMap[a])anMap[a]={nome:a,ta_g:0,tq_g:0,detalhes:[],secoes:{'Suporte Geral':{ac:0,tot:0},'Processos Saques':{ac:0,tot:0},'Suporte Integração':{ac:0,tot:0}}};
+            const acertou=(e==='✓'||e==='V')?1:0;
+            const sec=curSecao.includes('GERAL')?'Suporte Geral':curSecao.includes('SAQUES')?'Processos Saques':'Suporte Integração';
+            anMap[a].detalhes.push({secao:sec,topico:curTopico,acertou});
+            anMap[a].ta_g+=acertou;anMap[a].tq_g++;
+            anMap[a].secoes[sec].ac+=acertou;anMap[a].secoes[sec].tot++;
+          }
+        });
+        analistas=Object.values(anMap).map(a=>{
+          const sg=a.secoes['Suporte Geral'].tot?Math.round(a.secoes['Suporte Geral'].ac/a.secoes['Suporte Geral'].tot*100):0;
+          const ps=a.secoes['Processos Saques'].tot?Math.round(a.secoes['Processos Saques'].ac/a.secoes['Processos Saques'].tot*100):0;
+          const si=a.secoes['Suporte Integração'].tot?Math.round(a.secoes['Suporte Integração'].ac/a.secoes['Suporte Integração'].tot*100):0;
+          const pct_g=a.tq_g?Math.round(a.ta_g/a.tq_g*100):0;
+          return{nome:a.nome,caixa:String(a.caixa||''),ta_g:a.ta_g,tq_g:30,pct_g,ta_r:a.ta_g,tq_r:30,pct_r:pct_g,secoes_relevantes:['Suporte Geral','Processos Saques','Suporte Integração'],
+            secoes:{'Suporte Geral':{pct:sg},'Processos Saques':{pct:ps},'Suporte Integração':{pct:si}},detalhes:a.detalhes};
+        });
+      }
+
+      if(!analistas.length){toast('Nenhum analista encontrado');return;}
+      if(!db.avalConhecimentos)db.avalConhecimentos=[];
+      const id='ac'+Date.now();
+      db.avalConhecimentos.push({id,nome,data,month,analistas,importedAt:new Date().toISOString()});
+      _lastEdit=Date.now();
+      try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
+      route.teamId=id;render();
+      toast('✓ '+analistas.length+' analistas importados');
+    }catch(err){toast('Erro: '+err.message);console.error(err);}
+  };
+  rd.readAsArrayBuffer(fileEl.files[0]);
+}
+
 function clearAvalConhecimento(){
-  if(!confirm('Excluir avaliação de conhecimento?'))return;
-  db.avalConhecimento=null;
+  if(!confirm('Excluir todas as avaliações de conhecimento?'))return;
+  db.avalConhecimentos=[];
   _lastEdit=Date.now();
   try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
   route.teamId=null;render();
   sendToFirebase().catch(()=>{});
-  toast('Avaliação excluída');
+  toast('Avaliações excluídas');
 }
 
 /* ---------- TREINAMENTOS ---------- */
@@ -2171,7 +2683,7 @@ function parseDateBR(s){
 function sortByDateSolic(arr){return [...arr].sort((a,b)=>{const da=parseDateBR(a.dataSolic)||new Date(0),db2=parseDateBR(b.dataSolic)||new Date(0);return db2-da;});}
 function cardAcao(a){
   const dias=parseDateBR(a.dataSolic)&&parseDateBR(a.dateConc)?Math.round((parseDateBR(a.dateConc)-parseDateBR(a.dataSolic))/(864e5)):null;
-  return '<div class="acard '+(a.status==='Concluído'?'done':'')+'" style="border-left-color:'+PRIO[a.priority]+'">'
+  return '<div class="acard '+(a.status==='Concluído'?'done':a.status==='Pausado'?'pausado':a.status==='Migrado'?'migrado':'')+'" style="border-left-color:'+PRIO[a.priority]+'">'
     +'<div class="top"><div class="top-left"><h3>'+esc(a.title)+'</h3>'
     +'<div class="badges">'+badge(a.type)+statusSelect(a.status,'setActStatus(\''+a.id+'\',this.value)',TRAIN_STATUS)+'</div>'
     +(a.who?'<div class="dates" style="margin-top:5px">👤 '+esc(a.who)+'</div>':'')
@@ -2180,7 +2692,7 @@ function cardAcao(a){
     +(a.dateConc?'<span>✓ Conc.: <b>'+esc(a.dateConc)+'</b></span>':'')
     +(dias!==null?'<span class="timer">⏱ '+dias+'d</span>':'')
     +'</div></div>'
-    +'<div class="rt"><button class="x" title="Editar" onclick="editActionModal(\''+a.id+'\')">✎</button>'
+    +'<div class="rt"><button class="x" title="Migrar →" onclick="migrateToNextMonth(\'act\',\''+a.id+'\')">↪</button><button class="x" title="Editar" onclick="editActionModal(\''+a.id+'\')">✎</button>'
     +'<button class="x" title="Remover" onclick="delAct(\''+a.id+'\')">✕</button></div></div>'
     +(a.desc?'<div class="desc">'+esc(a.desc)+'</div>':'')
     +'</div>';
@@ -2211,7 +2723,7 @@ function cardDoc(d){
     +(d.dateConc?'<span>✓ Conc.: <b>'+esc(d.dateConc)+'</b></span>':'')
     +(dias!==null?'<span class="timer">⏱ '+dias+'d</span>':'')
     +'</div></div>'
-    +'<div class="rt"><button class="x" title="Editar" onclick="editDocModal(\''+d.id+'\')">✎</button>'
+    +'<div class="rt"><button class="x" title="Migrar →" onclick="migrateToNextMonth(\'doc\',\''+d.id+'\')">↪</button><button class="x" title="Editar" onclick="editDocModal(\''+d.id+'\')">✎</button>'
     +'<button class="x" onclick="delDoc(\''+d.id+'\')">✕</button></div></div>'
     +(d.desc?'<div class="desc">'+esc(d.desc)+'</div>':'')
     +'</div>';
@@ -2313,6 +2825,54 @@ function importActCsv(){
     persist();toast(n+' ações importadas');go('treinamentos');
   }catch(e){toast('Erro ao ler arquivo: '+e.message);}};
   r.readAsArrayBuffer(f);
+}
+
+
+function migrateToNextMonth(type, id){
+  const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const parts=db.current.split(' ');
+  const mi=meses.indexOf(parts[0]);
+  const yr=parseInt(parts[1]);
+  const nextMi=(mi+1)%12;
+  const nextYr=mi===11?yr+1:yr;
+  const nextMonth=meses[nextMi]+' '+nextYr;
+  // Garantir que o próximo mês existe
+  if(!db.months.includes(nextMonth))db.months.push(nextMonth);
+  const arr=type==='doc'?db.docs:db.actions;
+  const item=arr.find(a=>a.id===id);
+  if(!item){toast('Item não encontrado');return;}
+  // Marcar original como migrado
+  item.status='Migrado';
+  // Criar cópia no próximo mês
+  const copy=JSON.parse(JSON.stringify(item));
+  copy.id=type[0]+Date.now()+Math.random().toString(36).slice(2,5);
+  copy.month=nextMonth;
+  copy.status='Pendente';
+  arr.push(copy);
+  persist();render();
+  toast('Migrado para '+nextMonth);
+}
+
+function migrarParaProximoMes(type, id){
+  const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const [mesNome,anoStr]=db.current.split(' ');
+  const mesIdx=meses.indexOf(mesNome);
+  const nextMes=mesIdx===11?meses[0]+' '+(parseInt(anoStr)+1):meses[mesIdx+1]+' '+anoStr;
+  // Garantir que o mês seguinte existe
+  if(!db.months.includes(nextMes))db.months.push(nextMes);
+  if(type==='action'){
+    const orig=db.actions.find(a=>a.id===id);if(!orig)return;
+    const clone={...orig,id:'a'+Date.now()+Math.random().toString(36).slice(2,6),month:nextMes,status:'Pendente'};
+    db.actions.push(clone);
+    orig.status='Migrado';
+  }else if(type==='doc'){
+    const orig=db.docs.find(d=>d.id===id);if(!orig)return;
+    const clone={...orig,id:'d'+Date.now()+Math.random().toString(36).slice(2,6),month:nextMes,status:'Pendente'};
+    db.docs.push(clone);
+    orig.status='Migrado';
+  }
+  persist(true);render();
+  toast('Migrado para '+nextMes);
 }
 
 /* ===== modals ===== */
@@ -2476,7 +3036,7 @@ function openSettings(){const s=db.settings;
       <button class="btn" style="background:var(--red);color:#fff;border-color:var(--red)" onclick="forceSyncAll()">Enviar todos os dados agora</button>
       <div id="force-sync-result" style="margin-top:8px;font-size:.82em"></div>
     </div>
-    <div class="set-sec"><h3>Tema de cor</h3><div class="seg">${themeBtn('claro','Claro','linear-gradient(135deg,#f5f4fb,#6d5de0)')}${themeBtn('lilas','Lilás','linear-gradient(135deg,#f7f1fc,#a78bfa)')}${themeBtn('roxo','Roxo','linear-gradient(135deg,#efe9fb,#6d28d9)')}${themeBtn('dark','Escuro','linear-gradient(135deg,#16141f,#8b7df0)')}</div></div>
+    <div class="set-sec"><h3>Tema de cor</h3><div class="seg">${themeBtn('claro','Claro','linear-gradient(135deg,#f7f1fc,#8b5cf6)')}${themeBtn('roxo','Roxo','linear-gradient(135deg,#1a1528,#a78bfa)')}${themeBtn('dark','Escuro','linear-gradient(135deg,#0d0b14,#8b7df0)')}</div></div>
     <div class="set-sec"><h3>Fonte dos textos (barra lateral e corpo)</h3><div class="fld"><select id="set_body" onchange="setBodyFont(this.value)">${fontOpts('bodyFont')}</select></div></div>
     <div class="set-sec"><h3>Fonte dos títulos</h3><div class="fld"><select id="set_title" onchange="setTitleFont(this.value)">${fontOpts('titleFont')}</select></div></div>
     <div class="set-sec"><h3>Tamanho da letra</h3><div class="seg">${sizeBtn('sm')}${sizeBtn('md')}${sizeBtn('lg')}${sizeBtn('xl')}</div></div>
@@ -2489,7 +3049,7 @@ async function forceSyncAll(silent){
   if(!silent&&el)el.innerHTML='<span style="color:var(--amber-text)">⟳ Enviando dados...</span>';
   syncStatus='syncing';updateSyncBadge();
   const BASE=FB_URL.replace('.json','');
-  const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks','avaliacaoGrupos','acompanhamento','avalConhecimento'];
+  const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks','avaliacaoGrupos','acompanhamento'];
   let ok=true;
   for(const field of fields){
     const val=db[field];if(val===undefined)continue;
@@ -2571,6 +3131,7 @@ function toggleEditMode(){
 }
 
 applyTheme();
+initAvalConhecimento();
 render();
 initSync();
 setTimeout(()=>{const btn=document.getElementById('lockBtn');if(btn)btn.textContent='🔒';},100);
