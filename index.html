@@ -1948,7 +1948,17 @@ function viewAvaliacao(){
 
 /* ===================== AVALIAÇÕES ===================== */
 function viewAvaliacoesLista(){
-  const grupos=db.avaliacaoGrupos||[];
+  const _meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  
+  // Função para extrair mês da data
+  function avaliacaoMes(g){
+    const p=g.data||'';
+    const m=p.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if(m){return _meses[parseInt(m[2])-1]+' '+m[3];}
+    return null;
+  }
+  
+  const grupos=(db.avaliacaoGrupos||[]).filter(g=>{const m=avaliacaoMes(g);return !m||m===db.current;});
   // Detalhe de semana selecionada
   if(db._avGrupo!=null&&db._avSem!=null){
     const g=db.avaliacaoGrupos[db._avGrupo];
@@ -1956,7 +1966,8 @@ function viewAvaliacoesLista(){
     if(av&&av.responses)return viewAvaliacaoDetalhe(db._avGrupo,db._avSem);
   }
   if(!grupos.length)return`<div class="empty">Nenhuma turma criada ainda.<br><br><button class="btn primary edit-only" onclick="openNovoGrupo()">+ Nova turma</button></div>`;
-  return grupos.map((g,gi)=>{
+  return grupos.map((g)=>{
+    const gi=db.avaliacaoGrupos.indexOf(g); // Índice original, não filtrado
     const semanas=toArr(g.semanas||[null,null]);
     return `<div style="margin-bottom:20px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;justify-content:space-between">
