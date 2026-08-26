@@ -865,58 +865,64 @@ function calcularRampagem(acompanhamento, mesAtual) {
       if(!s3)return null;
       
       const meta=getMetas(a.caixa);
-      const atencoes=[];
+      let metricasOk=0, totalMetricas=0;
+      const metricaFora=null;
       
       // SLA: menos é melhor
       if(s3.sla!=null&&s3.sla!==''){
+        totalMetricas++;
         const slaVal=parseFloat(s3.sla);
-        if(slaVal>meta.sla)atencoes.push('SLA');
+        if(slaVal<=meta.sla)metricasOk++;
       }
       
       // CSAT: mais é melhor
       if(s3.csat!=null&&s3.csat!==''){
+        totalMetricas++;
         const csatVal=parseFloat(s3.csat);
-        if(csatVal<meta.csat)atencoes.push('CSAT');
+        if(csatVal>=meta.csat)metricasOk++;
       }
       
-      // TMA: menos é melhor (meta 24h)
+      // TMA: meta é 24h (quanto menor melhor)
       if(s3.tma!=null&&s3.tma!==''){
+        totalMetricas++;
         const tmaVal=parseFloat(s3.tma);
-        if(tmaVal>24)atencoes.push('TMA');
+        // Se S3 <= 24h = OK
+        if(tmaVal<=24)metricasOk++;
       }
       
-      // Recebidas: mais é melhor, se < 60% é crítico
+      // Recebidas: mais é melhor, se >= 60% é OK
       if(s3.recebidas!=null&&s3.recebidas!==''){
+        totalMetricas++;
         const recVal=parseFloat(s3.recebidas);
-        if(recVal<60)atencoes.push('Recebidas','Recebidas');// 2 atenções
+        if(recVal>=60)metricasOk++;
       }
       
-      // Fechadas: mais é melhor, se < 60% é crítico
+      // Fechadas: mais é melhor, se >= 60% é OK
       if(s3.fechadas!=null&&s3.fechadas!==''){
+        totalMetricas++;
         const fechVal=parseFloat(s3.fechadas);
-        if(fechVal<60)atencoes.push('Fechadas','Fechadas');// 2 atenções
+        if(fechVal>=60)metricasOk++;
       }
       
-      const isOk=atencoes.length===0;
+      const pctMetricas=totalMetricas?Math.round(metricasOk/totalMetricas*100):0;
       
       return {
         nome:a.nome,
         caixa:a.caixa,
-        isOk,
-        atencoes
+        pctMetricas,
+        metricasOk,
+        totalMetricas
       };
     }).filter(v=>v!==null);
     
-    const okCount=results.filter(r=>r.isOk).length;
-    const pctOk=results.length?Math.round(okCount/results.length*100):0;
+    const pctMedio=results.length?Math.round(results.reduce((s,r)=>s+r.pctMetricas,0)/results.length):0;
     
     return {
-      pct:pctOk,
+      pct:pctMedio,
       count:results.length,
-      ok:okCount,
       details:results,
-      status:pctOk>=70?'Sucesso':(pctOk>=50?'Acompanhar':'Atenção'),
-      cor:pctOk>=70?'var(--green)':(pctOk>=50?'var(--yellow-text)||#FFB800':'var(--red-text)')
+      status:pctMedio>=70?'Sucesso':(pctMedio>=50?'Acompanhar':'Atenção'),
+      cor:pctMedio>=70?'var(--green)':(pctMedio>=50?'var(--yellow-text)||#FFB800':'var(--red-text)')
     };
   };
   
@@ -1242,7 +1248,7 @@ function openMetricModal(teamId,type){const t=db.teamTrainings.find(x=>x.id===te
   <div class="fld"><label>Observação</label><textarea id="m_obs" placeholder="Adicione uma observação..." style="height:80px">${esc(obs)}</textarea></div>
   <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveMetric('${teamId}','${type}')">Salvar</button></div>
 </div>`);}
-function saveMetric(teamId,type){const t=db.teamTrainings.find(x=>x.id===teamId);if(!t)return;const data1=document.getElementById('m_data1').value;const data2=document.getElementById('m_data2').value;const num=document.getElementById('m_num').value.trim();const cor=document.getElementById('m_cor').value;const obs=document.getElementById('m_obs').value.trim();if(!num){toast('Informe o número/porcentagem');return;}if(type==='antes'){t.metricaBefore={data1,data2,numero:num,cor,obs};}else{t.metricaAfter={data1,data2,numero:num,cor,obs};}persist(true);closeModal();render();toast('✓ Métrica salva');}
+function saveMetric(teamId,type){const t=db.teamTrainings.find(x=>x.id===teamId);if(!t)return;const data1=document.getElementById('m_data1').value;const data2=document.getElementById('m_data2').value;const num=document.getElementById('m_num').value.trim();const cor=document.getElementById('m_cor').value;const obs=document.getElementById('m_obs').value.trim();if(!num){toast('Informe o número/porcentagem');return;}if(type==='antes'){t.metricaBefore={data1,data2,numero:num,cor,obs};}else{t.metricaAfter={data1,data2,numero:num,cor,obs};}persist();closeModal();route.teamId=teamId;route.page='impacto-treino';setTimeout(()=>{render();toast('✓ Métrica salva');},50);}
 function metricCard(teamId,type,t){const m=type==='antes'?t.metricaBefore:t.metricaAfter;const data1=m?.data1||'';const data2=m?.data2||'';const num=m?.numero||'';const cor=m?.cor||'green';const obs=m?.obs||'';const corMap={green:'var(--green)',amber:'var(--amber)',red:'var(--red)'};return `<div class="mcard" style="border-left:4px solid ${corMap[cor]}"><div class="lbl" style="justify-content:space-between;width:100%;padding-right:6px"><span>Métrica ${type==='antes'?'antes':'depois'}</span><button style="background:none;border:none;cursor:pointer;padding:2px;color:var(--text-3);font-size:12px" onclick="openMetricModal('${teamId}','${type}')" title="Editar">✎</button></div><div class="val" style="color:${corMap[cor]};font-size:2em;margin:12px 0 8px">${esc(num)}</div><div style="font-size:.75em;color:var(--text-3);margin-bottom:6px">${data1}${data2?` → ${data2}`:''}</div>${obs?`<div style="font-size:.8em;color:var(--text-2);font-style:italic;margin-top:4px;padding-top:4px;border-top:1px solid var(--border)">${esc(obs)}</div>`:'<div style="font-size:.75em;color:var(--text-3);font-style:italic">sem observações</div>'}</div>`;}
 function viewTeamDetail(id){
   const t=db.teamTrainings.find(x=>x.id===id);if(!t)return '<div class="empty">Não encontrado.</div>';
@@ -2433,12 +2439,8 @@ function viewAcompanhamento(){
             const s1Val=parseFloat(s1.tma);
             const s2Val=parseFloat(s2.tma);
             const s3Val=parseFloat(s3.tma);
-            const metaTma=24;
-            const dist1=Math.abs(s1Val-metaTma);
-            const dist2=Math.abs(s2Val-metaTma);
-            const dist3=Math.abs(s3Val-metaTma);
-            const mediaDist=(dist1+dist2)/2;
-            if(mediaDist>0)return((mediaDist-dist3)/mediaDist)*100;
+            const media=(s1Val+s2Val)/2;
+            if(media>0)return((media-s3Val)/media)*100;
           }
         }
         if(chave==='recebidas'){
