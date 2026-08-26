@@ -1077,7 +1077,7 @@ function viewVisao(){
   <div class="panel"><div class="panel-h"><div class="pi">↑</div><h2>Comparativo — todos os meses</h2></div><div class="mbars">${cmp}</div>
     <div class="legend" style="margin-top:6px"><span><i style="background:var(--purple-2)"></i>Total</span><span><i style="background:var(--bar-alt)"></i>Concluídos</span></div></div>
   <div class="panel"><div class="panel-h"><div class="pi">◆</div><h2>Resumo por mês</h2></div>
-    <div class="msum">${ms.map(s=>`<div class="c ${s.mn===db.current?'cur':''}"><h3 style="display:flex;align-items:center;justify-content:space-between;gap:8px">${s.mn}<span onclick="if(confirm('⚠️ Deletar TODOS os dados de ${s.mn}?\\n\\nEsta ação não pode ser desfeita.')){db.pdis=db.pdis.filter(p=>p.month!=='${s.mn}');db.actions=db.actions.filter(a=>a.month!=='${s.mn}');db.treinamentos=(db.treinamentos||[]).filter(t=>t.month!=='${s.mn}');db.docs=(db.docs||[]).filter(d=>d.month!=='${s.mn}');db.macros=(db.macros||[]).filter(m=>m.month!=='${s.mn}');db.months=db.months.filter(m=>m!=='${s.mn}');if(db.current==='${s.mn}'){db.current=db.months[db.months.length-1]||'Junho 2026';}persist();render();toast('${s.mn} deletado');}" style="cursor:pointer;opacity:.5;font-weight:700;font-size:1.1em;line-height:1;padding:0 6px;border-radius:4px;transition:.2s;user-select:none;color:#ef4444" onmouseover="this.style.opacity='1';this.style.background='rgba(239,68,68,.15)'" onmouseout="this.style.opacity='.5';this.style.background='transparent'">×</span></h3><p>${s.mn===db.current?'Treinamentos e PDIs — dados reais':'Registro do mês'}</p><div class="st">${s.total} ações · ${s.pdiCount} PDIs · ${s.done} conc.${s.mac?` · ${s.mac} macros`:''}</div></div>`).join('')}</div></div>`;
+    <div class="msum">${ms.map(s=>`<div class="c ${s.mn===db.current?'cur':''}"><h3 style="display:flex;align-items:center;justify-content:space-between;gap:8px">${s.mn}<span onclick="if(confirm('⚠️ Deletar TODOS os dados de ${s.mn}?\\n\\nEsta ação não pode ser desfeita.')){const pwd=prompt('🔒 Senha para deletar mês:');if(!pwd)return;if(simpleHash(pwd)!=='5666a050'){alert('Senha incorreta');return;}db.pdis=db.pdis.filter(p=>p.month!=='${s.mn}');db.actions=db.actions.filter(a=>a.month!=='${s.mn}');db.treinamentos=(db.treinamentos||[]).filter(t=>t.month!=='${s.mn}');db.docs=(db.docs||[]).filter(d=>d.month!=='${s.mn}');db.macros=(db.macros||[]).filter(m=>m.month!=='${s.mn}');db.months=db.months.filter(m=>m!=='${s.mn}');if(db.current==='${s.mn}'){db.current=db.months[db.months.length-1]||'Junho 2026';}persist();render();toast('${s.mn} deletado');}" style="cursor:pointer;opacity:.5;font-weight:700;font-size:1.1em;line-height:1;padding:0 6px;border-radius:4px;transition:.2s;user-select:none;color:#ef4444" onmouseover="this.style.opacity='1';this.style.background='rgba(239,68,68,.15)'" onmouseout="this.style.opacity='.5';this.style.background='transparent'">×</span></h3><p>${s.mn===db.current?'Treinamentos e PDIs — dados reais':'Registro do mês'}</p><div class="st">${s.total} ações · ${s.pdiCount} PDIs · ${s.done} conc.${s.mac?` · ${s.mac} macros`:''}</div></div>`).join('')}</div></div>`;
 }
 
 /* ---------- PDIs ---------- */
@@ -2252,6 +2252,9 @@ function viewAcompanhamento(){
     const tend=csats.length>=2?(csats[csats.length-1]>=csats[0]?'↑':'↓'):'';
     const tendC=csats.length>=2?(csats[csats.length-1]>=csats[0]?'var(--green)':'var(--red-text)'):'';
     const metas=getMetas(a.caixa);
+    const acompId=a.id||`acomp_${Date.now()}_${ai}`;
+    // Atualizar no banco se não tem ID
+    if(!a.id){a.id=acompId;}
 
     return `<div class="panel" style="padding:18px 20px;margin-bottom:12px">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px">
@@ -2265,7 +2268,7 @@ function viewAcompanhamento(){
         <div style="display:flex;align-items:center;gap:8px">
           ${spark}
           ${tend?`<span style="font-size:1.2em;color:${tendC};font-weight:700">${tend}</span>`:''}
-          <button class="btn sm edit-only" style="color:var(--red-text);border-color:var(--red)" onclick="deletarAnalista(${ai})">✕</button>
+          <button class="btn sm edit-only" style="color:var(--red-text);border-color:var(--red)" onclick="deletarAnalistaById('${acompId}')">✕</button>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
@@ -2290,7 +2293,7 @@ function viewAcompanhamento(){
                 <div style="font-weight:700;font-size:.85em">Semana ${si+1}</div>
                 ${sem.periodo?`<div style="font-size:.72em;color:var(--purple);margin-top:1px">${esc(sem.periodo)}</div>`:`<div style="font-size:.72em;color:var(--text-3);margin-top:1px">sem período</div>`}
               </div>
-              <button class="btn sm" style="padding:3px 8px;font-size:.78em" onclick="openEditSemana(${ai},${si})" title="Registrar semana ${si+1}">✎</button>
+              <button class="btn sm" style="padding:3px 8px;font-size:.78em" onclick="openEditSemanaById('${acompId}',${si})" title="Registrar semana ${si+1}">✎</button>
             </div>
             <div style="padding:10px 12px">
               ${filled?`
@@ -2498,7 +2501,7 @@ function saveAddAnalista(){
   const email=((document.getElementById('an_email')||{}).value||'').trim();
   const caixa=((document.getElementById('an_caixa')||{}).value||'').trim();
   if(!nome){toast('Informe o nome');return;}
-  const analista={nome,email,caixa,semanas:[null,null,null],month:db.current};
+  const analista={id:'acomp_'+Date.now(),nome,email,caixa,semanas:[null,null,null],month:db.current};
   [1,2,3].forEach(n=>{const v=((document.getElementById('an_p'+n)||{}).value||'').trim();if(v)analista['periodo'+n]=v;});
   analista.month=db.current;
   if(!db.acompanhamento)db.acompanhamento=[];
@@ -2514,6 +2517,19 @@ function handleEditSemana(btn){
   openEditSemana(ai,si);
 }
 
+function openEditSemanaById(acompId,si){
+  const ai=db.acompanhamento.findIndex(x=>x.id===acompId);
+  if(ai<0){toast('Analista não encontrada');return;}
+  openEditSemana(ai,si);
+}
+function deletarAnalistaById(acompId){
+  if(!confirm('Remover esta analista?'))return;
+  const ai=db.acompanhamento.findIndex(x=>x.id===acompId);
+  if(ai<0)return;
+  db.acompanhamento.splice(ai,1);_lastEdit=Date.now();
+  try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
+  render();sendToFirebase().catch(()=>{});toast('Analista removida');
+}
 function openEditSemana(ai,si){
   const a=db.acompanhamento[ai];
   if(!a){toast('Analista não encontrada');return;}
@@ -2578,13 +2594,6 @@ function clearSemana(ai,si){
   _lastEdit=Date.now();
   try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
   closeModal();render();sendToFirebase().catch(()=>{});
-}
-
-function deletarAnalista(ai){
-  if(!confirm('Remover esta analista?'))return;
-  db.acompanhamento.splice(ai,1);_lastEdit=Date.now();
-  try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
-  render();sendToFirebase().catch(()=>{});toast('Analista removida');
 }
 
 
@@ -3317,7 +3326,7 @@ function resetSettings(){db.settings=defaultSettings();savePrefs();applyTheme();
 
 /* ===== misc ===== */
 document.getElementById('monthSel').addEventListener('change',e=>{db.current=e.target.value;persist();render();});
-function addMonth(){const m=prompt('Nome do novo mês (ex: Julho 2026):');if(m&&m.trim()&&!db.months.includes(m.trim())){db.months.push(m.trim());db.current=m.trim();persist();render();}}
+function addMonth(){const pwd=prompt('🔒 Senha para adicionar mês:');if(!pwd)return;if(simpleHash(pwd)!==EDIT_HASH){toast('Senha incorreta');return;}const m=prompt('Nome do novo mês (ex: Julho 2026):');if(m&&m.trim()&&!db.months.includes(m.trim())){db.months.push(m.trim());db.current=m.trim();persist();render();toast('✓ Mês adicionado');}}
 function dl(csv,name){const blob=new Blob(["\ufeff"+csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);}
 function exportCSV(){const rows=[['Tipo','Titulo','Analista/Time','Data','Prioridade','Status','Mes']];inMonth(db.pdis).forEach(p=>rows.push(['PDI',p.title,p.analyst,p.date,p.priority,p.status,p.month]));inMonth(db.actions).forEach(a=>rows.push([a.type,a.title,a.who,a.date,a.priority,a.status,a.month]));inMonth(db.docs).forEach(d=>rows.push(['Documentação',d.title,'',d.month,d.priority,d.status,d.month]));dl(rows.map(r=>r.map(c=>`"${(c==null?'':String(c)).replace(/"/g,'""')}"`).join(',')).join('\n'),`painel-${db.current.replace(' ','-')}.csv`);toast('CSV exportado');}
 
