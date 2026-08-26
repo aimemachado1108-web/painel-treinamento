@@ -477,7 +477,8 @@ function persist(skipRender){
   savePrefs();
   if(!skipRender&&document.getElementById('content'))render();
   if(syncTimer)clearTimeout(syncTimer);
-  syncTimer=setTimeout(sendToFirebase,1500);
+  // DESABILITADO: Auto-sync estava sobrescrevendo dados
+  // syncTimer=setTimeout(sendToFirebase,1500);
   updateSyncBadge();
 }
 
@@ -523,8 +524,8 @@ async function sendToFirebase(){
     syncStatus='ok';lastSyncTime=new Date();
   } else {
     syncStatus='error';
-    // Tenta de novo em 5s
-    setTimeout(sendToFirebase,5000);
+    // DESABILITADO: Auto-retry estava causando problemas
+    // setTimeout(sendToFirebase,5000);
   }
   _syncing=false;
   updateSyncBadge();
