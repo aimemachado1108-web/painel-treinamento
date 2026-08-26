@@ -658,6 +658,8 @@ function updateSyncBadge(){
 // Auto-pull a cada 10s — sem bloqueio
 let _lastEdit=0;
 setInterval(()=>{
+  // NÃO sincroniza se está visualizando detalhes de um treinamento
+  if(route.teamId)return;
   // Só puxa do Firebase se não editou nos últimos 120s (2 minutos)
   if(!_syncing&&(Date.now()-_lastEdit)>120000)pullFromFirebase();
 },30000);
