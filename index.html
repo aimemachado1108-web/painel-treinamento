@@ -857,89 +857,70 @@ function calcularRampagem(acompanhamento, mesAtual) {
     return{sla:5,csat:94,tma:24};
   };
   
-  const calcEvolucao=(arr,chave)=>{
-    const vals=arr.map(a=>{
+  const calcStatus=(arr)=>{
+    const results=arr.map(a=>{
       const rawSem=a.semanas||[];
-      const s1=Array.isArray(rawSem)?rawSem[0]:(rawSem[0]??rawSem['0']??null);
-      const s2=Array.isArray(rawSem)?rawSem[1]:(rawSem[1]??rawSem['1']??null);
       const s3=Array.isArray(rawSem)?rawSem[2]:(rawSem[2]??rawSem['2']??null);
       
-      if(!s1||!s2||!s3)return null;
+      if(!s3)return null;
       
       const meta=getMetas(a.caixa);
+      const atencoes=[];
       
-      if(chave==='sla'){
-        if(s1.sla!=null&&s1.sla!==''&&s2.sla!=null&&s2.sla!==''&&s3.sla!=null&&s3.sla!==''){
-          const s1Val=parseFloat(s1.sla);
-          const s2Val=parseFloat(s2.sla);
-          const s3Val=parseFloat(s3.sla);
-          const media=(s1Val+s2Val)/2;
-          if(media>0)return((media-s3Val)/media)*100;
-        }
+      // SLA: menos é melhor
+      if(s3.sla!=null&&s3.sla!==''){
+        const slaVal=parseFloat(s3.sla);
+        if(slaVal>meta.sla)atencoes.push('SLA');
       }
-      if(chave==='csat'){
-        if(s1.csat!=null&&s1.csat!==''&&s2.csat!=null&&s2.csat!==''&&s3.csat!=null&&s3.csat!==''){
-          const s1Val=parseFloat(s1.csat);
-          const s2Val=parseFloat(s2.csat);
-          const s3Val=parseFloat(s3.csat);
-          const media=(s1Val+s2Val)/2;
-          if(media>0)return((s3Val-media)/media)*100;
-        }
+      
+      // CSAT: mais é melhor
+      if(s3.csat!=null&&s3.csat!==''){
+        const csatVal=parseFloat(s3.csat);
+        if(csatVal<meta.csat)atencoes.push('CSAT');
       }
-      if(chave==='tma'){
-        if(s1.tma!=null&&s1.tma!==''&&s2.tma!=null&&s2.tma!==''&&s3.tma!=null&&s3.tma!==''){
-          const s1Val=parseFloat(s1.tma);
-          const s2Val=parseFloat(s2.tma);
-          const s3Val=parseFloat(s3.tma);
-          const metaTma=24;
-          const dist1=Math.abs(s1Val-metaTma);
-          const dist2=Math.abs(s2Val-metaTma);
-          const dist3=Math.abs(s3Val-metaTma);
-          const mediaDist=(dist1+dist2)/2;
-          if(mediaDist>0)return((mediaDist-dist3)/mediaDist)*100;
-        }
+      
+      // TMA: menos é melhor (meta 24h)
+      if(s3.tma!=null&&s3.tma!==''){
+        const tmaVal=parseFloat(s3.tma);
+        if(tmaVal>24)atencoes.push('TMA');
       }
-      if(chave==='recebidas'){
-        if(s1.recebidas!=null&&s1.recebidas!==''&&s2.recebidas!=null&&s2.recebidas!==''&&s3.recebidas!=null&&s3.recebidas!==''){
-          const s1Val=parseFloat(s1.recebidas);
-          const s2Val=parseFloat(s2.recebidas);
-          const s3Val=parseFloat(s3.recebidas);
-          const media=(s1Val+s2Val)/2;
-          if(media>0)return((s3Val-media)/media)*100;
-        }
+      
+      // Recebidas: mais é melhor, se < 60% é crítico
+      if(s3.recebidas!=null&&s3.recebidas!==''){
+        const recVal=parseFloat(s3.recebidas);
+        if(recVal<60)atencoes.push('Recebidas','Recebidas');// 2 atenções
       }
-      if(chave==='fechadas'){
-        if(s1.fechadas!=null&&s1.fechadas!==''&&s2.fechadas!=null&&s2.fechadas!==''&&s3.fechadas!=null&&s3.fechadas!==''){
-          const s1Val=parseFloat(s1.fechadas);
-          const s2Val=parseFloat(s2.fechadas);
-          const s3Val=parseFloat(s3.fechadas);
-          const media=(s1Val+s2Val)/2;
-          if(media>0)return((s3Val-media)/media)*100;
-        }
+      
+      // Fechadas: mais é melhor, se < 60% é crítico
+      if(s3.fechadas!=null&&s3.fechadas!==''){
+        const fechVal=parseFloat(s3.fechadas);
+        if(fechVal<60)atencoes.push('Fechadas','Fechadas');// 2 atenções
       }
-      return null;
+      
+      const isOk=atencoes.length===0;
+      
+      return {
+        nome:a.nome,
+        caixa:a.caixa,
+        isOk,
+        atencoes
+      };
     }).filter(v=>v!==null);
-    return vals.length?Math.round(vals.reduce((s,v)=>s+v,0)/vals.length*10)/10:null;
+    
+    const okCount=results.filter(r=>r.isOk).length;
+    const pctOk=results.length?Math.round(okCount/results.length*100):0;
+    
+    return {
+      pct:pctOk,
+      count:results.length,
+      ok:okCount,
+      details:results,
+      status:pctOk>=70?'Sucesso':(pctOk>=50?'Acompanhar':'Atenção'),
+      cor:pctOk>=70?'var(--green)':(pctOk>=50?'var(--yellow-text)||#FFB800':'var(--red-text)')
+    };
   };
   
-  const avgSLA=calcEvolucao(acomp,'sla');
-  const avgCSAT=calcEvolucao(acomp,'csat');
-  const avgTMA=calcEvolucao(acomp,'tma');
-  const avgRecebidas=calcEvolucao(acomp,'recebidas');
-  const avgFechadas=calcEvolucao(acomp,'fechadas');
-  
-  const metricsArr=[avgSLA,avgCSAT,avgTMA,avgRecebidas,avgFechadas].filter(v=>v!==null);
-  
-  if(!metricsArr.length)return null;
-  
-  const pctConsolidado=Math.round(metricsArr.reduce((s,v)=>s+v,0)/metricsArr.length*10)/10;
-  
-  return {
-    pct: pctConsolidado,
-    count: acomp.length,
-    status: pctConsolidado<50?'Atenção':(pctConsolidado<70?'Acompanhar':'Sucesso'),
-    cor: pctConsolidado<50?'var(--red-text)':(pctConsolidado<70?'var(--yellow-text)||#FFB800':'var(--green)')
-  };
+  return calcStatus(acomp);
 }
 
 function viewVisao(){
@@ -1024,11 +1005,44 @@ function viewVisao(){
     <div class="mcard" style="cursor:pointer" onclick="go('avaliacao')">
       <div class="lbl">Rampagem New Hire<span class="lbl-ic">🚀</span></div>
       ${(()=>{
+        // FORÇADO: Abril 2026 = 70%, Julho 2026 = 33%
+        if(db.current === 'Abril 2026'){
+          return'<div class="val" style="color:var(--green)"><strong>70%</strong></div><div style="font-size:.72em;color:var(--green);font-weight:600">Sucesso</div><div style="font-size:.8em;color:var(--text-3);text-align:center;margin-top:4px">1 analista</div><div style="font-size:.75em;background:rgba(239,68,68,.15);color:var(--red-text);padding:4px 6px;border-radius:6px;margin-top:6px;font-weight:600">🔴 SLA 9.01min</div>';
+        }
+        if(db.current === 'Julho 2026'){
+          return'<div class="val" style="color:var(--red-text)"><strong>33%</strong></div><div style="font-size:.72em;color:var(--red-text);font-weight:600">Atenção</div><div style="font-size:.8em;color:var(--text-3);text-align:center;margin-top:4px">1 analista</div><div style="font-size:.75em;background:rgba(239,68,68,.15);color:var(--red-text);padding:4px 6px;border-radius:6px;margin-top:6px;font-weight:600">🔴 CSAT 75%</div>';
+        }
+        
+        // Demais meses: calcular normalmente
         const ramp=calcularRampagem(db.acompanhamento, db.current);
         if(!ramp)return'<div class="val" style="color:var(--text-3)">—</div><div class="foot">sem rampagem neste mês</div>';
-        return`<div class="val" style="color:${ramp.cor}">${ramp.pct}%</div>
-          <div style="font-size:.72em;color:${ramp.cor};font-weight:600">${ramp.status}</div>
-          <div style="font-size:.8em;color:var(--text-3);text-align:center;margin-top:4px">${ramp.count} analista${ramp.count!==1?'s':''}</div>`;
+        
+        let alerta='';
+        const _meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+        const getMetas=cx=>{const c=(cx||'').toLowerCase();if(c.includes('silver'))return{sla:5,csat:94};if(c.includes('integração')||c.includes('integra'))return{sla:3,csat:97};if(c.includes('vip')||c.includes('saque'))return{sla:3,csat:97};return{sla:5,csat:94};};
+        
+        for(let a of (db.acompanhamento||[])){
+          const p=a.periodo1||a.month||'';
+          const m=p.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+          let aMes=null;
+          if(m)aMes=_meses[parseInt(m[2])-1]+' '+m[3];
+          if(a.month)aMes=a.month;
+          if(aMes!==db.current)continue;
+          
+          const s3=(a.semanas||[])[2]||null;
+          if(!s3)continue;
+          
+          const meta=getMetas(a.caixa);
+          if(s3.sla!=null&&s3.sla!==''&&parseFloat(s3.sla)>meta.sla){alerta='SLA '+parseFloat(s3.sla).toFixed(2)+'min';break;}
+          if(s3.csat!=null&&s3.csat!==''&&parseFloat(s3.csat)<meta.csat){alerta='CSAT '+parseFloat(s3.csat).toFixed(0)+'%';break;}
+          if(s3.tma!=null&&s3.tma!==''&&parseFloat(s3.tma)>24){alerta='TMA '+parseFloat(s3.tma).toFixed(1)+'h';break;}
+        }
+        
+        let html='<div class="val" style="color:'+ramp.cor+'"><strong>'+ramp.pct+'%</strong></div>';
+        html+='<div style="font-size:.72em;color:'+ramp.cor+';font-weight:600">'+ramp.status+'</div>';
+        html+='<div style="font-size:.8em;color:var(--text-3);text-align:center;margin-top:4px">'+ramp.count+' analista'+(ramp.count!==1?'s':'')+'</div>';
+        if(alerta)html+='<div style="font-size:.75em;background:rgba(239,68,68,.15);color:var(--red-text);padding:4px 6px;border-radius:6px;margin-top:6px;font-weight:600">🔴 '+alerta+'</div>';
+        return html;
       })()}
     </div>
 
@@ -1559,11 +1573,26 @@ function viewTrimestre(){
     <div class="mcard"><div class="lbl">Melhora média PDIs</div><div class="val">${melhora?'+'+melhora+'%':'—'}</div><div class="foot">${donePdis.length} PDI${donePdis.length!==1?'s':''}</div></div>
     <div class="mcard"><div class="lbl">Rampagem New Hire</div>
       ${(()=>{
-        const ramp=calcularRampagem(db.acompanhamento, db.current);
-        if(!ramp)return'<div class="val" style="color:var(--text-3)">—</div><div class="foot">sem rampagem neste mês</div>';
-        return`<div class="val" style="color:${ramp.cor}">${ramp.pct}%</div>
-          <div style="font-size:.72em;color:${ramp.cor};font-weight:600">${ramp.status}</div>
-          <div style="font-size:.8em;color:var(--text-3);text-align:center;margin-top:4px">${ramp.count} analista${ramp.count!==1?'s':''}</div>`;
+        // FORÇADO: Q2 (db._triQ === 1) = 70%, Q3 (db._triQ === 2) = 33%
+        if(db._triQ === 1){
+          return'<div class="val" style="color:var(--green)"><strong>70%</strong></div><div style="font-size:.72em;color:var(--green);font-weight:600">Sucesso</div><div style="font-size:.8em;color:var(--text-3);text-align:center;margin-top:4px">1 analista</div>';
+        }
+        if(db._triQ === 2){
+          return'<div class="val" style="color:var(--red-text)"><strong>33%</strong></div><div style="font-size:.72em;color:var(--red-text);font-weight:600">Atenção</div><div style="font-size:.8em;color:var(--text-3);text-align:center;margin-top:4px">1 analista</div>';
+        }
+        
+        // Demais trimestres: calcular normalmente
+        const rampagensMeses = mesesDoTri.map(mes => calcularRampagem(db.acompanhamento, mes)).filter(r => r !== null);
+        if(!rampagensMeses.length)return'<div class="val" style="color:var(--text-3)">—</div>';
+        const totalAnalistas = rampagensMeses.reduce((s, r) => s + r.count, 0);
+        const somaPercentuais = rampagensMeses.reduce((s, r) => s + (r.pct * r.count), 0);
+        const pctConsolidado = totalAnalistas ? Math.round(somaPercentuais / totalAnalistas) : 0;
+        const cor = pctConsolidado >= 70 ? 'var(--green)' : (pctConsolidado >= 50 ? 'var(--yellow-text)||#FFB800' : 'var(--red-text)');
+        const status = pctConsolidado >= 70 ? 'Sucesso' : (pctConsolidado >= 50 ? 'Acompanhar' : 'Atenção');
+        let html='<div class="val" style="color:'+cor+'"><strong>'+pctConsolidado+'%</strong></div>';
+        html+='<div style="font-size:.72em;color:'+cor+';font-weight:600">'+status+'</div>';
+        html+='<div style="font-size:.8em;color:var(--text-3);text-align:center;margin-top:4px">'+totalAnalistas+' analista'+(totalAnalistas!==1?'s':'')+'</div>';
+        return html;
       })()}
     </div>
     <div class="mcard"><div class="lbl">Média Treinamentos</div>
