@@ -1859,7 +1859,11 @@ function parseAnswerSheet(rows){
         qIdx.forEach(i=>{const v=norm(cell(i));const ok=v===modes[i]&&v!=='';answers[raw[i]]=ok;if(ok)ac++;else er++;});
       }
     }
-    if(scoreI>=0){
+    // A coluna "Pontuação" do Google Forms só é usada quando NÃO há gabarito por questão —
+    // quando já sabemos acerto/erro pergunta a pergunta (coluna "Resposta certa ou errada?"),
+    // esse dado é mais confiável e não deve ser sobrescrito por um número solto de pontuação
+    // (que, sem saber o total de pontos possível, não permite calcular quantos erros houve).
+    if(scoreI>=0 && !(intercalado&&pares.length)){
       const sv=cell(scoreI).replace(',','.');
       const mm=sv.match(/([\d.]+)\s*\/\s*([\d.]+)/);
       if(mm){ac=parseFloat(mm[1]);er=Math.max(0,parseFloat(mm[2])-ac);}
