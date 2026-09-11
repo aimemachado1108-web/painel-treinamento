@@ -3752,6 +3752,25 @@ function openSettings(){const s=db.settings;
     <div class="modal-foot"><button class="btn" onclick="resetSettings()">Restaurar padrão</button><button class="btn primary" onclick="saveSettings()">Salvar</button></div>
   </div>`);}
 
+/* Rede de segurança final: o Firebase proíbe chaves de objeto contendo . $ # [ ] / ou vazias.
+   Isso varre QUALQUER estrutura antes de enviar e, se achar uma chave inválida em qualquer
+   lugar (mesmo em campos que a gente não previu), converte só aquele objeto numa lista de
+   pares {k,v} — o dado não se perde, e o envio nunca mais trava por causa disso. */
+function sanitizeFirebaseKeys(value){
+  if(Array.isArray(value))return value.map(sanitizeFirebaseKeys);
+  if(value&&typeof value==='object'){
+    const keys=Object.keys(value);
+    const isBad=k=>!k||/[.$#\[\]\/]/.test(k);
+    if(keys.some(isBad)){
+      console.warn('sanitizeFirebaseKeys: chave inválida encontrada e convertida:',keys.filter(isBad));
+      return keys.map(k=>({k,v:sanitizeFirebaseKeys(value[k])}));
+    }
+    const out={};
+    keys.forEach(k=>{out[k]=sanitizeFirebaseKeys(value[k]);});
+    return out;
+  }
+  return value;
+}
 async function forceSyncAll(silent){
   const el=document.getElementById('force-sync-result');
   if(!silent&&el)el.innerHTML='<span style="color:var(--amber-text)">⟳ Enviando dados...</span>';
@@ -3766,7 +3785,7 @@ async function forceSyncAll(silent){
   for(const field of fields){
     const val=db[field];if(val===undefined)continue;
     try{
-      const r=await fetch(`${BASE}/${field}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
+      const r=await fetch(`${BASE}/${field}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(sanitizeFirebaseKeys(val))});
       if(!r.ok){
         ok=false;
         let bodyText='';try{bodyText=await r.text();}catch(e2){}
@@ -3787,7 +3806,7 @@ async function forceSyncAll(silent){
         answersArr:(Array.isArray(t.questions)?t.questions:[]).map(q=>r.answers?!!r.answers[q]:null)
       }))
     }));
-    const r=await fetch(`${BASE}/teamTrainings.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(cleaned)});
+    const r=await fetch(`${BASE}/teamTrainings.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(sanitizeFirebaseKeys(cleaned))});
     if(!r.ok){
       ok=false;
       let bodyText='';try{bodyText=await r.text();}catch(e2){}
@@ -3809,7 +3828,7 @@ async function forceSyncAll(silent){
         periodo1:r.periodo1||'',periodo2:r.periodo2||''
       }))
     }));
-    const r=await fetch(`${BASE}/individualTrainings.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(cleanedIndiv)});
+    const r=await fetch(`${BASE}/individualTrainings.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(sanitizeFirebaseKeys(cleanedIndiv))});
     if(!r.ok){
       ok=false;
       let bodyText='';try{bodyText=await r.text();}catch(e2){}
@@ -3827,7 +3846,7 @@ async function forceSyncAll(silent){
       }
       return out;
     });
-    const r=await fetch(`${BASE}/acompanhamento.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(cleanedAcomp)});
+    const r=await fetch(`${BASE}/acompanhamento.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(sanitizeFirebaseKeys(cleanedAcomp))});
     if(!r.ok){
       ok=false;
       let bodyText='';try{bodyText=await r.text();}catch(e2){}
