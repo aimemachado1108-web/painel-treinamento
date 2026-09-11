@@ -651,7 +651,19 @@ async function pullFromFirebase(){
     });
     db.individualTrainings.forEach(it=>{
       it.results=toArr(it.results);it.questions=toArr(it.questions);
-      it.results.forEach(r=>{if(!r.answers)r.answers={};if(!r.semanas)r.semanas=[null,null];});
+      it.results.forEach(r=>{
+        if(r.answersArr&&it.questions.length){r.answers={};it.questions.forEach((q,i)=>{r.answers[q]=r.answersArr[i];});}
+        if(!r.answers)r.answers={};
+        if(!r.semanas)r.semanas=[null,null];
+      });
+    });
+    db.acompanhamento=toArr(db.acompanhamento);
+    db.acompanhamento.forEach(a=>{
+      if(!a)return;
+      if(a.prova&&a.prova.answersArr&&Array.isArray(a.provaQuestions)&&a.provaQuestions.length){
+        a.prova.answers={};a.provaQuestions.forEach((q,i)=>{a.prova.answers[q]=a.prova.answersArr[i];});
+      }
+      if(a.prova&&!a.prova.answers)a.prova.answers={};
     });
     try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
     // Reconstruir avaliação de conhecimento (dados embutidos, não vêm do Firebase)
@@ -756,7 +768,19 @@ db.individualTrainings=toArr(db.individualTrainings);
 db.individualTrainings.forEach(it=>{
   it.results=toArr(it.results);
   it.questions=toArr(it.questions);
-  it.results.forEach(r=>{if(!r.answers)r.answers={};if(!r.semanas)r.semanas=[null,null];});
+  it.results.forEach(r=>{
+    if(r.answersArr&&it.questions.length){r.answers={};it.questions.forEach((q,i)=>{r.answers[q]=r.answersArr[i];});}
+    if(!r.answers)r.answers={};
+    if(!r.semanas)r.semanas=[null,null];
+  });
+});
+db.acompanhamento=toArr(db.acompanhamento);
+db.acompanhamento.forEach(a=>{
+  if(!a)return;
+  if(a.prova&&a.prova.answersArr&&Array.isArray(a.provaQuestions)&&a.provaQuestions.length){
+    a.prova.answers={};a.provaQuestions.forEach((q,i)=>{a.prova.answers[q]=a.prova.answersArr[i];});
+  }
+  if(a.prova&&!a.prova.answers)a.prova.answers={};
 });
 db.macros=toArr(db.macros);
 db.roster=toArr(db.roster);
@@ -2903,6 +2927,7 @@ function importOnboardingAvaliacao(){
         const ex=(db.acompanhamento||[]).find(a=>(res.email&&a.email&&a.email.toLowerCase().trim()===res.email.toLowerCase().trim())||nkey(a.nome)===nkey(res.analista));
         if(ex){
           ex.prova={ac:res.ac,er:res.er,answers:res.answers,stars:res.stars,feedback:res.feedback,importedAt:new Date().toISOString()};
+          ex.provaQuestions=parsed.questions;
           matched++;
         } else {
           naoEncontrados.push(res.analista);
@@ -3732,7 +3757,10 @@ async function forceSyncAll(silent){
   if(!silent&&el)el.innerHTML='<span style="color:var(--amber-text)">⟳ Enviando dados...</span>';
   syncStatus='syncing';updateSyncBadge();
   const BASE=FB_URL.replace('.json','');
-  const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks','avaliacaoGrupos','acompanhamento','individualTrainings'];
+  // individualTrainings e acompanhamento saem da lista genérica: eles guardam respostas de prova
+  // indexadas pelo TEXTO da pergunta, e o Firebase proíbe chaves com . $ # [ ] / — por isso
+  // esses dois campos são "limpos" (convertidos pra array) antes de enviar, mais abaixo.
+  const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks','avaliacaoGrupos'];
   let ok=true;
   const errorDetails=[];
   for(const field of fields){
@@ -3767,6 +3795,46 @@ async function forceSyncAll(silent){
       console.warn('forceSyncAll fail: teamTrainings',r.status,bodyText);
     }
   }catch(e){ok=false;errorDetails.push(`teamTrainings: ${e.message||e}`);console.warn('forceSyncAll error: teamTrainings',e);}
+  try{
+    const cleanedIndiv=(db.individualTrainings||[]).map(it=>({
+      id:it.id||'',title:it.title||'',date:it.date||'',month:it.month||'',
+      errMode:it.errMode||'',
+      caixas:Array.isArray(it.caixas)?it.caixas:[],
+      questions:Array.isArray(it.questions)?it.questions:[],
+      results:(Array.isArray(it.results)?it.results:[]).map(r=>({
+        id:r.id||'',analista:r.analista||'',email:r.email||'',caixa:r.caixa||'',
+        stars:r.stars||0,ac:r.ac==null?null:r.ac,er:r.er==null?null:r.er,feedback:r.feedback||'',obs:r.obs||'',
+        answersArr:(Array.isArray(it.questions)?it.questions:[]).map(q=>r.answers?(r.answers[q]===true?true:(r.answers[q]===false?false:null)):null),
+        semanas:Array.isArray(r.semanas)?r.semanas:[null,null],
+        periodo1:r.periodo1||'',periodo2:r.periodo2||''
+      }))
+    }));
+    const r=await fetch(`${BASE}/individualTrainings.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(cleanedIndiv)});
+    if(!r.ok){
+      ok=false;
+      let bodyText='';try{bodyText=await r.text();}catch(e2){}
+      errorDetails.push(`individualTrainings: HTTP ${r.status} ${r.statusText||''}${bodyText?' — '+bodyText.slice(0,200):''}`);
+      console.warn('forceSyncAll fail: individualTrainings',r.status,bodyText);
+    }
+  }catch(e){ok=false;errorDetails.push(`individualTrainings: ${e.message||e}`);console.warn('forceSyncAll error: individualTrainings',e);}
+  try{
+    const cleanedAcomp=(db.acompanhamento||[]).map(a=>{
+      const pq=Array.isArray(a.provaQuestions)?a.provaQuestions:[];
+      const out={...a};
+      if(a.prova){
+        out.prova={...a.prova,answersArr:pq.map(q=>a.prova.answers?(a.prova.answers[q]===true?true:(a.prova.answers[q]===false?false:null)):null)};
+        delete out.prova.answers;
+      }
+      return out;
+    });
+    const r=await fetch(`${BASE}/acompanhamento.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(cleanedAcomp)});
+    if(!r.ok){
+      ok=false;
+      let bodyText='';try{bodyText=await r.text();}catch(e2){}
+      errorDetails.push(`acompanhamento: HTTP ${r.status} ${r.statusText||''}${bodyText?' — '+bodyText.slice(0,200):''}`);
+      console.warn('forceSyncAll fail: acompanhamento',r.status,bodyText);
+    }
+  }catch(e){ok=false;errorDetails.push(`acompanhamento: ${e.message||e}`);console.warn('forceSyncAll error: acompanhamento',e);}
   pendingSync=!ok;
   if(ok){
     syncStatus='ok';lastSyncTime=new Date();
