@@ -1224,7 +1224,7 @@ function teamCompute(t){
   const qErr=qs.map(q=>({q,er:res.filter(r=>(r.answers||{})[q]===false).length})).sort((a,b)=>b.er-a.er);
   return{analysts,caixaArr,qErr,res,qs};
 }
-function worstCaixa(arr){return [...arr].filter(c=>c.name!=='Não atribuído'&&c.er>0).sort((a,b)=>b.errRate-a.errRate)[0];}
+function worstCaixa(arr){return [...arr].filter(c=>c.name!=='Não atribuído'&&c.er>0).sort((a,b)=>b.er-a.er||b.errRate-a.errRate)[0];}
 function viewImpactoTreino(){
   if(route.teamId&&(db.individualTrainings||[]).some(x=>x.id===route.teamId))return viewIndividualDetail(route.teamId);
   if(route.teamId&&getAvalConhecimentos().some(a=>a.id===route.teamId))return viewAvalConhecimento();
