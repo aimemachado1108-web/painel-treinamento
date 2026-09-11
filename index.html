@@ -460,6 +460,7 @@ body.editmode .edit-only-block{display:block!important}
 /* ===== Firebase Realtime Database sync ===== */
 const KEY='painel_treino_suporte_v2';
 const KEY_PREFS='painel_prefs_local'; // aparência — só local, não sincroniza
+const KEY_PENDING='painel_pending_sync_v1'; // marca se há alterações locais ainda não enviadas ao Firebase
 const FB_BASE='https://painel-aime-default-rtdb.firebaseio.com/painel';
 const FB_URL=FB_BASE+'.json';
 let mem=null;
@@ -467,7 +468,16 @@ let syncTimer=null;
 let syncStatus='ok';
 let lastSyncTime=null;
 let _syncing=false;
-let pendingSync=false;
+// pendingSync precisa sobreviver a um F5 — por isso é espelhado no localStorage
+// a cada leitura/escrita, em vez de ser só uma variável solta em memória.
+let _pendingSyncVal=(function(){try{return localStorage.getItem(KEY_PENDING)==='1';}catch(e){return false;}})();
+Object.defineProperty(window,'pendingSync',{
+  get(){return _pendingSyncVal;},
+  set(v){
+    _pendingSyncVal=!!v;
+    try{if(_pendingSyncVal)localStorage.setItem(KEY_PENDING,'1');else localStorage.removeItem(KEY_PENDING);}catch(e){}
+  }
+});
 
 function loadPrefs(){try{const r=localStorage.getItem(KEY_PREFS);if(r)return JSON.parse(r);}catch(e){}return null;}
 function savePrefs(){try{localStorage.setItem(KEY_PREFS,JSON.stringify(db.settings));}catch(e){}}
