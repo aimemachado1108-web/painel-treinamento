@@ -1485,7 +1485,6 @@ function viewIndividualOverview(it){
   const totA=c.analysts.length;
   const totAc=c.analysts.reduce((s,a)=>s+a.ac,0),tot=c.analysts.reduce((s,a)=>s+a.total,0);
   const accRate=tot?round(totAc/tot*100,1):0;
-  const worst=worstCaixa(c.caixaArr);
   const top=c.qErr.filter(q=>q.er>0).slice(0,5);
   const maxQ=Math.max(...c.qErr.map(q=>q.er),1);
   const topHtml=top.length?top.map((q,i)=>`<div class="qrow" style="align-items:flex-start"><div class="rk" style="margin-top:2px">${i+1}</div><div class="nm" style="width:auto;flex:1;white-space:normal;line-height:1.45">${esc(q.q)}</div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;min-width:70px"><div class="track" style="width:70px"><div class="fill" style="width:${q.er/maxQ*100}%"></div></div><div class="vl">${q.er} erro${q.er!==1?'s':''}</div></div></div>`).join(''):'<div class="empty" style="padding:20px">Sem erros registrados 🎉</div>';
@@ -1508,7 +1507,16 @@ function viewIndividualOverview(it){
   const importPanel=`<div class="panel"><div class="panel-h"><div class="pi">↥</div><h2>Importar respostas do teste (CSV ou XLSX)</h2></div>
     <p style="color:var(--text-2);font-size:.92em;margin-bottom:8px">Aceita a planilha exportada direto do <b>Google Forms</b> (CSV ou XLSX). Detecta nome, caixa, pontuação e o gabarito por questão — assim dá pra ver exatamente quais perguntas cada analista errou. Pode importar de novo depois para adicionar mais gente: quem já existe é atualizado, sem perder o acompanhamento semanal já registrado.</p>
     <input type="file" accept=".csv,.xlsx,.xls" id="indivCsv" class="fld"><div style="margin-top:10px"><button class="btn primary" onclick="importIndividualResults('${it.id}')">Importar e calcular</button></div></div>`;
-  const stat=(l,v,clr)=>`<div class="mcard"><div class="lbl">${l}</div><div class="val" style="${clr?`color:${clr}`:''}">${v}</div></div>`;
+  const stat=(l,v,clr,sub)=>`<div class="mcard"><div class="lbl">${l}</div><div class="val" style="${clr?`color:${clr}`:''}">${v}</div>${sub?`<div class="foot">${sub}</div>`:''}</div>`;
+  // Evolução do analista — média de CSAT entre Semana 1 e Semana 2, considerando quem já preencheu as duas
+  const comEvolucao=(it.results||[]).filter(r=>{
+    const s1=(r.semanas||[])[0],s2=(r.semanas||[])[1];
+    return s1&&s2&&s1.csat!=null&&s2.csat!=null;
+  });
+  const evolMedia=comEvolucao.length?round(comEvolucao.reduce((s,r)=>s+(r.semanas[1].csat-r.semanas[0].csat),0)/comEvolucao.length,1):null;
+  const evolCard=evolMedia!=null
+    ?stat('Evolução do analista',(evolMedia>=0?'+':'')+evolMedia+'% CSAT',evolMedia>=0?'var(--green)':'var(--red-text)',comEvolucao.length+' de '+totA+' com 2 semanas')
+    :stat('Evolução do analista','—',null,totA?'aguardando 2ª semana':undefined);
   return `<button class="btn sm" style="margin-bottom:16px" onclick="route.teamId=null;route.itaId=null;render()">← Voltar</button>
   <div class="page-h" style="margin-bottom:16px"><h1 style="font-size:1.7em">🎯 ${esc(it.title)}</h1><p>${it.date?esc(it.date)+' · ':''}${totA} analista${totA!==1?'s':''}</p></div>
   <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:14px">
@@ -1517,7 +1525,7 @@ function viewIndividualOverview(it){
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px">
     ${stat('Analistas',totA)}
     ${stat('Taxa de acerto média',totA?accRate+'%':'—','var(--green)')}
-    ${worst?stat('Caixa com mais erros',esc(worst.name),'var(--red-text)'):stat('Caixa com mais erros','—')}
+    ${evolCard}
   </div>
   <div class="grid2">
     <div class="panel"><div class="panel-h"><div class="pi">◉</div><h2>Analistas <span style="font-weight:400;color:var(--text-3);font-size:.75em">(clique para ver prova e acompanhamento)</span></h2></div>${rankHtml}</div>
@@ -3716,12 +3724,18 @@ async function forceSyncAll(silent){
   const BASE=FB_URL.replace('.json','');
   const fields=['pdis','actions','docs','macros','roster','months','caixas','current','onboardingFeedbacks','avaliacaoGrupos','acompanhamento','individualTrainings'];
   let ok=true;
+  const errorDetails=[];
   for(const field of fields){
     const val=db[field];if(val===undefined)continue;
     try{
       const r=await fetch(`${BASE}/${field}.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(val)});
-      if(!r.ok){ok=false;console.warn('forceSyncAll fail:',field,r.status);}
-    }catch(e){ok=false;}
+      if(!r.ok){
+        ok=false;
+        let bodyText='';try{bodyText=await r.text();}catch(e2){}
+        errorDetails.push(`${field}: HTTP ${r.status} ${r.statusText||''}${bodyText?' — '+bodyText.slice(0,200):''}`);
+        console.warn('forceSyncAll fail:',field,r.status,bodyText);
+      }
+    }catch(e){ok=false;errorDetails.push(`${field}: ${e.message||e}`);console.warn('forceSyncAll error:',field,e);}
   }
   try{
     const cleaned=(db.teamTrainings||[]).map(t=>({
@@ -3736,8 +3750,13 @@ async function forceSyncAll(silent){
       }))
     }));
     const r=await fetch(`${BASE}/teamTrainings.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(cleaned)});
-    if(!r.ok)ok=false;
-  }catch(e){ok=false;}
+    if(!r.ok){
+      ok=false;
+      let bodyText='';try{bodyText=await r.text();}catch(e2){}
+      errorDetails.push(`teamTrainings: HTTP ${r.status} ${r.statusText||''}${bodyText?' — '+bodyText.slice(0,200):''}`);
+      console.warn('forceSyncAll fail: teamTrainings',r.status,bodyText);
+    }
+  }catch(e){ok=false;errorDetails.push(`teamTrainings: ${e.message||e}`);console.warn('forceSyncAll error: teamTrainings',e);}
   pendingSync=!ok;
   if(ok){
     syncStatus='ok';lastSyncTime=new Date();
@@ -3745,7 +3764,10 @@ async function forceSyncAll(silent){
     if(!silent)toast('✓ Sincronizado!');
   } else {
     syncStatus='error';
-    if(!silent&&el)el.innerHTML='<span style="color:var(--red-text)">⚠ Erro. Tente novamente.</span>';
+    if(!silent&&el){
+      const detailsHtml=errorDetails.slice(0,6).map(d=>esc(d)).join('<br>');
+      el.innerHTML=`<span style="color:var(--red-text)">⚠ Erro ao enviar. Detalhes:</span><div style="margin-top:6px;font-family:monospace;font-size:.8em;color:var(--red-text);background:rgba(239,68,68,.08);border-radius:6px;padding:8px 10px;white-space:pre-wrap;word-break:break-word;max-height:160px;overflow-y:auto">${detailsHtml}</div>`;
+    }
   }
   updateSyncBadge();
   return ok;
