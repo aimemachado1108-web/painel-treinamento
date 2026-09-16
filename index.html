@@ -619,6 +619,7 @@ async function pullFromFirebase(){
       }
       if(a.prova&&!a.prova.answers)a.prova.answers={};
     });
+    db.regrasScore=restoreRegrasScoreFromSync(data.regrasScore);
     try{localStorage.setItem(KEY,JSON.stringify(db));}catch(e){}
     // Reconstruir avaliação de conhecimento (dados embutidos, não vêm do Firebase)
     initAvalConhecimento();
@@ -2611,6 +2612,412 @@ function corSLA(v,cx){if(v===null||v===undefined)return'var(--text)';return v<=g
 function corCSAT(v,cx){if(v===null||v===undefined)return'var(--text)';return v>=getMetas(cx).csat?'var(--green)':'var(--red-text)';}
 function corTMA(v){if(v===null||v===undefined)return'var(--text)';return v<=24?'var(--green)':'var(--red-text)';}
 
+/* ===== CAMADA OPERACIONAL — rampagem por meta (peso/real/meta), usada nas Semanas e nos Meses ===== */
+/* ===== CONFIG: pesos por caixa, metas por caixa e regras de classificação — editável em "Regras e Metas" ===== */
+function defaultRegrasScore(){
+  return {
+    pesosCamada:{
+      'Silver':{operacional:40,iqa:30,lider:30},
+      'Vip/Saques':{operacional:30,iqa:40,lider:30},
+      'Integração':{operacional:35,iqa:35,lider:30}
+    },
+    pesosOperacional:{
+      'Silver':{produtividade:30,csat:15,ttr:25,sla1:20,avaliadas:10},
+      'Vip/Saques':{produtividade:25,csat:15,ttr:25,sla1:30,avaliadas:5},
+      'Integração':{produtividade:20,csat:20,ttr:30,sla1:20,avaliadas:10}
+    },
+    metasCaixa:{
+      'Silver':{sla1:5,ttr:24,csat:92,avaliadas:15},
+      'Vip/Saques':{sla1:3,ttr:24,csat:94,avaliadas:15},
+      'Integração':{sla1:3,ttr:24,csat:97,avaliadas:15}
+    },
+    classificacaoFaixas:[
+      {min:9.0,v:'Acima do esperado'},
+      {min:7.9,v:'Ascensão'},
+      {min:6.9,v:'Constante'},
+      {min:5.0,v:'Estacionado'},
+      {min:-Infinity,v:'Abaixo do esperado'}
+    ],
+    travaCsatPct:94,
+    iqaAlertaAbaixo:2.75
+  };
+}
+function getRegrasScore(){
+  if(!db.regrasScore)db.regrasScore=defaultRegrasScore();
+  // Migração: TTR passou a ser guardado em horas (era minutos). Valor >100 só faz sentido como minutos.
+  const mc=db.regrasScore.metasCaixa||{};
+  Object.keys(mc).forEach(cx=>{if(mc[cx]&&mc[cx].ttr!=null&&mc[cx].ttr>100)mc[cx].ttr=round(mc[cx].ttr/60,1);});
+  return db.regrasScore;
+}
+// Nomes de caixa (ex.: "Vip/Saques") têm "/", proibido como CHAVE no Firebase — por isso essas
+// estruturas viram lista de objetos {caixa,...} antes de enviar, e voltam a ser um objeto
+// indexado por nome de caixa quando chegam de volta.
+function cleanRegrasScoreForSync(r){
+  const toList=obj=>Object.keys(obj||{}).map(k=>({caixa:k,...obj[k]}));
+  return {
+    pesosCamada:toList(r.pesosCamada),
+    pesosOperacional:toList(r.pesosOperacional),
+    metasCaixa:toList(r.metasCaixa),
+    classificacaoFaixas:r.classificacaoFaixas||[],
+    travaCsatPct:r.travaCsatPct,
+    iqaAlertaAbaixo:r.iqaAlertaAbaixo
+  };
+}
+function restoreRegrasScoreFromSync(cleaned){
+  if(!cleaned)return defaultRegrasScore();
+  const fromList=arr=>{const o={};(Array.isArray(arr)?arr:[]).forEach(item=>{if(!item||!item.caixa)return;const{caixa,...rest}=item;o[caixa]=rest;});return o;};
+  const def=defaultRegrasScore();
+  return {
+    pesosCamada:Object.keys(fromList(cleaned.pesosCamada)).length?fromList(cleaned.pesosCamada):def.pesosCamada,
+    pesosOperacional:Object.keys(fromList(cleaned.pesosOperacional)).length?fromList(cleaned.pesosOperacional):def.pesosOperacional,
+    metasCaixa:Object.keys(fromList(cleaned.metasCaixa)).length?fromList(cleaned.metasCaixa):def.metasCaixa,
+    classificacaoFaixas:(cleaned.classificacaoFaixas&&cleaned.classificacaoFaixas.length)?cleaned.classificacaoFaixas:def.classificacaoFaixas,
+    travaCsatPct:cleaned.travaCsatPct!=null?cleaned.travaCsatPct:def.travaCsatPct,
+    iqaAlertaAbaixo:cleaned.iqaAlertaAbaixo!=null?cleaned.iqaAlertaAbaixo:def.iqaAlertaAbaixo
+  };
+}
+function pesosCamadaCaixa(caixa){const r=getRegrasScore();return r.pesosCamada[caixa]||r.pesosCamada['Silver'];}
+function pesosOperacionalCaixa(caixa){const r=getRegrasScore();return r.pesosOperacional[caixa]||r.pesosOperacional['Silver'];}
+function metasCaixaOf(caixa){const r=getRegrasScore();return r.metasCaixa[caixa]||r.metasCaixa['Silver'];}
+const CLASSIFICACOES_INFO={
+  'Acima do esperado':{cor:'#065f46',bg:'#d1fae5'},
+  'Ascensão':{cor:'#15803d',bg:'#dcfce7'},
+  'Constante':{cor:'#16a34a',bg:'#f0fdf4'},
+  'Estacionado':{cor:'var(--amber-text)',bg:'var(--amber-soft)'},
+  'Abaixo do esperado':{cor:'var(--red-text)',bg:'var(--red-soft)'}
+};
+function classifCor(v){return CLASSIFICACOES_INFO[v]||{cor:'var(--text-3)',bg:'var(--input-bg)'};}
+const OPERACIONAL_METRICS=[
+  {key:'produtividade',label:'Produtividade',invert:false,unitLabel:'tickets'},
+  {key:'csat',label:'CSAT',invert:false,unitLabel:'%'},
+  {key:'ttr',label:'TTR',invert:true,unitLabel:'h'},
+  {key:'sla1',label:'SLA 1ª resposta',invert:true,unitLabel:'min'},
+  {key:'avaliadas',label:'% avaliadas por fechados',invert:false,unitLabel:'%'}
+];
+function fmtMinutos(mins){
+  if(mins==null||mins==='')return'—';
+  const n=parseFloat(mins);if(isNaN(n))return'—';
+  if(n>=60){const h=Math.floor(n/60);const m=Math.round(n%60);return h+'h'+(m?' '+m+'min':'');}
+  const m=Math.floor(n);const s=Math.round((n-m)*60);
+  return m+'min'+(s?' '+s+'s':'');
+}
+function fmtUnidade(m,v){
+  if(v==null||v==='')return'—';
+  const n=parseFloat(v);if(isNaN(n))return'—';
+  if(m.unitLabel==='min')return fmtMinutos(n);
+  if(m.unitLabel==='h')return round(n,1)+'h';
+  if(m.unitLabel==='%')return round(n,1)+'%';
+  return Math.round(n)+'';
+}
+// Meta "efetiva": usa o que foi digitado manualmente; se vazio, cai no padrão da caixa (exceto Produtividade, que é sempre manual)
+function metaEfetiva(caixa,m,metaManual){
+  if(metaManual!=null&&metaManual!=='')return parseFloat(metaManual);
+  if(m.key==='produtividade')return null;
+  const mc=metasCaixaOf(caixa);
+  return mc[m.key]!=null?mc[m.key]:null;
+}
+function metricaPct(m,real,metaEfetivaVal){
+  if(real==null||real===''||metaEfetivaVal==null)return null;
+  const r=parseFloat(real),mt=metaEfetivaVal;
+  if(isNaN(r)||isNaN(mt)||mt===0)return null;
+  return m.invert?(mt/r*100):(r/mt*100);
+}
+function operacionalResumoCaixa(caixa,op){
+  if(!op)return{pct:null,any:false};
+  const pesos=pesosOperacionalCaixa(caixa);
+  let sumW=0,sumWP=0,any=false;
+  OPERACIONAL_METRICS.forEach(m=>{
+    const d=op[m.key]||{};
+    const metaVal=metaEfetiva(caixa,m,d.meta);
+    const pct=metricaPct(m,d.real,metaVal);
+    const peso=pesos[m.key]??0;
+    if(pct!=null){sumWP+=pct*peso;sumW+=peso;any=true;}
+  });
+  return{pct:sumW?sumWP/sumW:null,any};
+}
+function interpolarPts(pts,x){
+  x=Math.max(pts[0][0],Math.min(pts[pts.length-1][0],x));
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[i],p1=pts[i+1];
+    if(x>=p0[0]&&x<=p1[0])return p1[0]===p0[0]?p0[1]:p0[1]+(p1[1]-p0[1])*(x-p0[0])/(p1[0]-p0[0]);
+  }
+  return pts[pts.length-1][1];
+}
+function liderPctFromNota(nota){
+  if(nota==null||nota==='')return 100; // sem nota lançada = neutro
+  return interpolarPts([[0,0],[1,20],[2,40],[3,70],[4,80],[5,100]],parseFloat(nota));
+}
+function iqaPctFromNota(nota){
+  if(nota==null||nota==='')return null; // sem nota lançada = camada excluída, peso redistribuído
+  return interpolarPts([[0,0],[2.9,70],[4.0,85],[5.0,100]],parseFloat(nota));
+}
+function classificacaoFromNota(nota){
+  if(nota==null)return null;
+  const r=getRegrasScore();
+  const faixa=r.classificacaoFaixas.find(f=>nota>=f.min);
+  return faixa?faixa.v:null;
+}
+function aplicarTravas(caixa,operacional,classifBase){
+  const ORDER=['Abaixo do esperado','Estacionado','Constante','Ascensão','Acima do esperado'];
+  let idx=ORDER.indexOf(classifBase);
+  let travaRegua=false,travaCsat=false;
+  if(idx>=0){
+    OPERACIONAL_METRICS.forEach(m=>{
+      if(m.key==='avaliadas')return; // exceção: não entra na régua mínima
+      const d=(operacional||{})[m.key]||{};
+      const metaVal=metaEfetiva(caixa,m,d.meta);
+      if(d.real==null||d.real===''||metaVal==null)return; // sem dado no período, não trava
+      const pct=metricaPct(m,d.real,metaVal);
+      if(pct!=null&&pct<100)travaRegua=true;
+    });
+    if(travaRegua){const maxIdx=ORDER.indexOf('Constante');if(idx>maxIdx)idx=maxIdx;}
+    const metaCaixa=metasCaixaOf(caixa);
+    const csatD=(operacional||{}).csat||{};
+    if(csatD.real!=null&&csatD.real!==''&&metaCaixa.csat!=null){
+      const csatReal=parseFloat(csatD.real);
+      const cutoff=metaCaixa.csat*(getRegrasScore().travaCsatPct/100);
+      if(!isNaN(csatReal)&&csatReal<cutoff){travaCsat=true;const maxIdx2=ORDER.indexOf('Estacionado');if(idx>maxIdx2)idx=maxIdx2;}
+    }
+  }
+  return{classificacao:idx>=0?ORDER[idx]:classifBase,travaRegua,travaCsat};
+}
+function computeMesResultado(caixa,mesObj){
+  if(!mesObj)return{notaBruta:null,classificacao:null,operacionalPct:null,iqaPct:null,liderPct:100,travaRegua:false,travaCsat:false,iqaAlerta:false,any:false};
+  const op=operacionalResumoCaixa(caixa,mesObj.operacional);
+  const pesos=pesosCamadaCaixa(caixa);
+  const liderPct=liderPctFromNota(mesObj.liderNota);
+  const iqaPct=iqaPctFromNota(mesObj.iqaNota);
+  const camadas=[{pct:op.pct,peso:pesos.operacional}];
+  if(iqaPct!=null)camadas.push({pct:iqaPct,peso:pesos.iqa});
+  camadas.push({pct:liderPct,peso:pesos.lider});
+  let totalPeso=0,somaPond=0;
+  camadas.forEach(c=>{if(c.pct!=null){totalPeso+=c.peso;somaPond+=c.pct*c.peso;}});
+  const any=op.any||mesObj.liderNota!=null||mesObj.iqaNota!=null;
+  const notaBrutaRaw=(totalPeso&&any)?(somaPond/totalPeso)/10:null;
+  const notaBruta=notaBrutaRaw!=null?Math.min(10,notaBrutaRaw):null;
+  const classifBase=classificacaoFromNota(notaBruta);
+  const travas=aplicarTravas(caixa,mesObj.operacional,classifBase);
+  const iqaAlerta=mesObj.iqaNota!=null&&mesObj.iqaNota!==''&&parseFloat(mesObj.iqaNota)<getRegrasScore().iqaAlertaAbaixo;
+  return{notaBruta,classificacao:travas.classificacao,classificacaoBase:classifBase,operacionalPct:op.pct,iqaPct,liderPct,travaRegua:travas.travaRegua,travaCsat:travas.travaCsat,iqaAlerta,any};
+}
+function rampagemPanelHTML(acompId,a){
+  if(!Array.isArray(a.meses))a.meses=[null,null,null];
+  while(a.meses.length<3)a.meses.push(null);
+  const caixa=a.caixa||'Silver';
+  const mesCards=[0,1,2].map(mi=>{
+    const m=a.meses[mi]||{};
+    const res=computeMesResultado(caixa,m);
+    const classif=classifCor(res.classificacao);
+    const badges=[res.travaRegua?'<span title="Régua mínima operacional: pelo menos um indicador abaixo de 100% da meta">🔒⚠️</span>':'',res.travaCsat?'<span title="Trava de CSAT: CSAT abaixo do corte da caixa">🔒</span>':'',res.iqaAlerta?'<span title="IQA abaixo de 2,75 (apenas sinaliza)">👁️</span>':''].filter(Boolean).join(' ');
+    return `<div class="mcard" style="cursor:pointer" onclick="openEditOperacional('${acompId}','mes',${mi})" title="Editar rampagem do mês ${mi+1}">
+      <div class="lbl">Mês ${mi+1} ${badges}</div>
+      <div class="val" style="color:${res.notaBruta!=null?classif.cor:'var(--text-3)'}">${res.notaBruta!=null?res.notaBruta.toFixed(1):'—'}</div>
+      ${res.classificacao?`<span class="tag" style="background:${classif.bg};color:${classif.cor};margin-top:2px">${esc(res.classificacao)}</span>`:`<div class="foot">${res.any?'ver / editar':'preencher dados'}</div>`}
+    </div>`;
+  }).join('');
+  return `<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+    <details>
+      <summary style="cursor:pointer;font-weight:700;font-size:.82em;color:var(--text-2)">🏆 Rampagem — Meses <span style="font-weight:400;color:var(--text-3)">(nota bruta 0-10, classificação automática)</span></summary>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px">${mesCards}</div>
+    </details>
+  </div>`;
+}
+function openEditOperacional(acompId,kind,idx){
+  const a=(db.acompanhamento||[]).find(x=>x.id===acompId);if(!a)return;
+  const caixa=a.caixa||'Silver';
+  let obj;
+  if(kind==='semana'){
+    if(!Array.isArray(a.semanas))a.semanas=[null,null,null];
+    while(a.semanas.length<3)a.semanas.push(null);
+    if(!a.semanas[idx])a.semanas[idx]={sla:null,csat:null,tma:null,recebidas:null,fechadas:null,obs:''};
+    if(!a.semanas[idx].operacional)a.semanas[idx].operacional={};
+    obj=a.semanas[idx];
+  } else {
+    if(!Array.isArray(a.meses))a.meses=[null,null,null];
+    while(a.meses.length<3)a.meses.push(null);
+    if(!a.meses[idx])a.meses[idx]={};
+    if(!a.meses[idx].operacional)a.meses[idx].operacional={};
+    obj=a.meses[idx];
+  }
+  const op=obj.operacional;
+  const pesos=pesosOperacionalCaixa(caixa);
+  const metasCx=metasCaixaOf(caixa);
+  const rows=OPERACIONAL_METRICS.map(m=>{
+    const d=op[m.key]||{};
+    const metaPadrao=m.key==='produtividade'?null:metasCx[m.key];
+    if(m.key==='avaliadas'){
+      const pctAtual=(d.fechados&&d.avaliacoes!=null&&d.fechados>0)?round(d.avaliacoes/d.fechados*100,1):null;
+      return `<div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.8fr) minmax(0,.9fr);gap:8px;align-items:end;margin-bottom:4px">
+        <div><label style="font-size:.78em;color:var(--text-3)">${esc(m.label)}<br><span style="color:var(--text-3);font-size:.9em">peso ${pesos[m.key]??0}% da camada</span></label></div>
+        <div><label style="font-size:.7em;color:var(--text-3)">Avaliações</label><input type="number" step="any" id="op_avaliadas_aval" value="${d.avaliacoes??''}" oninput="atualizaAvaliadasPreview()" style="margin-top:2px"></div>
+        <div><label style="font-size:.7em;color:var(--text-3)">Chats fechados</label><input type="number" step="any" id="op_avaliadas_fech" value="${d.fechados??''}" oninput="atualizaAvaliadasPreview()" style="margin-top:2px"></div>
+        <div><label style="font-size:.7em;color:var(--text-3)">Meta (%)${metaPadrao!=null?` <span title="Padrão da caixa">ℹ️</span>`:''}</label><input type="number" step="any" id="op_avaliadas_meta" value="${d.meta??''}" placeholder="${metaPadrao!=null?metaPadrao:''}" style="margin-top:2px"></div>
+      </div>
+      <div id="op_avaliadas_preview" style="font-size:.72em;color:var(--text-3);margin:0 0 10px 0">${pctAtual!=null?`= ${pctAtual}% avaliadas`:'preencha as duas quantidades'}</div>`;
+    }
+    return `<div style="display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:8px;align-items:end;margin-bottom:10px">
+      <div><label style="font-size:.78em;color:var(--text-3)">${esc(m.label)}<br><span style="color:var(--text-3);font-size:.9em">peso ${pesos[m.key]??0}% da camada</span></label></div>
+      <div><label style="font-size:.7em;color:var(--text-3)">Real (${m.unitLabel})</label><input type="number" step="any" id="op_${m.key}_real" value="${d.real??''}" style="margin-top:2px"></div>
+      <div><label style="font-size:.7em;color:var(--text-3)">Meta (${m.unitLabel})${metaPadrao!=null?` <span title="Padrão da caixa">ℹ️ ${m.unitLabel==='min'?fmtMinutos(metaPadrao):m.unitLabel==='h'?metaPadrao+'h':''}</span>`:''}</label><input type="number" step="any" id="op_${m.key}_meta" value="${d.meta??''}" placeholder="${metaPadrao!=null?metaPadrao:''}" style="margin-top:2px"></div>
+    </div>`;
+  }).join('');
+  const isMes=kind==='mes';
+  const mesFields=isMes?`
+    <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:14px">
+      <p style="font-weight:700;font-size:.85em;margin-bottom:4px">Avaliação mensal</p>
+      <p class="hint" style="margin-bottom:10px">IQA e Líder são notas de 0 a 5 — a % de cada camada e o Score Final (nota bruta 0-10) são calculados automaticamente pelas regras da Appmax.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div><label style="font-size:.78em;color:var(--text-3)">IQA — nota (0 a 5)</label><input type="number" step="0.01" min="0" max="5" id="op_iqa_nota" value="${obj.iqaNota??''}" placeholder="sem nota = camada excluída" style="margin-top:4px"></div>
+        <div><label style="font-size:.78em;color:var(--text-3)">Líder — nota (0 a 5)</label><input type="number" step="0.01" min="0" max="5" id="op_lider_nota" value="${obj.liderNota??''}" placeholder="sem nota = 100% (neutro)" style="margin-top:4px"></div>
+      </div>
+      <label style="font-size:.78em;color:var(--text-3)">Observação</label>
+      <textarea id="op_obs" style="height:70px;margin-top:4px;width:100%">${esc(obj.observacao||'')}</textarea>
+    </div>
+  `:'';
+  const periodoLabel=kind==='semana'?'Semana '+(idx+1):'Mês '+(idx+1);
+  show(`<div class="modal" style="width:620px;max-height:82vh;overflow-y:auto"><h2>🏆 ${periodoLabel} — ${esc(a.nome)} <button class="close" onclick="closeModal()">✕</button></h2>
+    <p class="hint" style="margin-bottom:14px">Preencha o real de cada métrica. A meta usa o padrão da caixa "${esc(caixa)}" automaticamente (você pode sobrescrever) — só Produtividade precisa de meta manual.</p>
+    ${rows}
+    ${mesFields}
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveOperacional('${acompId}','${kind}',${idx})">Salvar</button></div>
+  </div>`);
+}
+function atualizaAvaliadasPreview(){
+  const el=document.getElementById('op_avaliadas_preview');if(!el)return;
+  const a=parseFloat((document.getElementById('op_avaliadas_aval')||{}).value);
+  const f=parseFloat((document.getElementById('op_avaliadas_fech')||{}).value);
+  if(!isNaN(a)&&!isNaN(f)&&f>0)el.textContent='= '+round(a/f*100,1)+'% avaliadas';
+  else el.textContent='preencha as duas quantidades';
+}
+function saveOperacional(acompId,kind,idx){
+  const a=(db.acompanhamento||[]).find(x=>x.id===acompId);if(!a)return;
+  const obj=kind==='semana'?a.semanas[idx]:a.meses[idx];
+  if(!obj)return;
+  const op={};
+  OPERACIONAL_METRICS.forEach(m=>{
+    if(m.key==='avaliadas'){
+      const av=(document.getElementById('op_avaliadas_aval')||{}).value;
+      const fe=(document.getElementById('op_avaliadas_fech')||{}).value;
+      const mv=(document.getElementById('op_avaliadas_meta')||{}).value;
+      const avN=av!==''?parseFloat(av):null;
+      const feN=fe!==''?parseFloat(fe):null;
+      const real=(avN!=null&&feN!=null&&feN>0)?round(avN/feN*100,2):null;
+      op[m.key]={avaliacoes:avN,fechados:feN,real,meta:mv!==''?parseFloat(mv):null};
+      return;
+    }
+    const rv=(document.getElementById('op_'+m.key+'_real')||{}).value;
+    const mv=(document.getElementById('op_'+m.key+'_meta')||{}).value;
+    op[m.key]={real:rv!==''?parseFloat(rv):null,meta:mv!==''?parseFloat(mv):null};
+  });
+  obj.operacional=op;
+  if(kind==='mes'){
+    const g=id=>((document.getElementById(id)||{}).value||'').trim();
+    const iqaNota=g('op_iqa_nota'),liderNota=g('op_lider_nota'),obs=g('op_obs');
+    obj.iqaNota=iqaNota!==''?parseFloat(iqaNota):null;
+    obj.liderNota=liderNota!==''?parseFloat(liderNota):null;
+    obj.observacao=obs;
+  }
+  persist();closeModal();setTimeout(()=>{render();toast('✓ Salvo');},50);
+}
+function openRegrasMetas(tab){
+  const r=getRegrasScore();
+  const caixasScore=['Silver','Vip/Saques','Integração'];
+  const tabBtn=(t,label)=>`<button class="btn sm ${tab===t?'primary':''}" onclick="openRegrasMetas('${t}')">${label}</button>`;
+  let body='';
+  if(tab==='metas'){
+    body=`<p class="hint" style="margin-bottom:12px">Metas por caixa de atendimento — usadas como padrão sempre que a meta de um analista não for preenchida manualmente (exceto Produtividade, sempre manual).</p>
+    <table style="width:100%;border-collapse:collapse">
+      <tr style="text-align:left;font-size:.75em;color:var(--text-3);text-transform:uppercase"><th style="padding:6px 8px">Caixa</th><th>SLA 1ª resposta (min)</th><th>TTR (h)</th><th>CSAT (%)</th><th>% avaliadas/fechados</th></tr>
+      ${caixasScore.map(cx=>{const m=r.metasCaixa[cx]||{};return `<tr style="border-top:1px solid var(--border)">
+        <td style="padding:8px;font-weight:600">${esc(cx)}</td>
+        <td style="padding:8px"><input type="number" step="any" id="rm_meta_${cx}_sla1" value="${m.sla1??''}" style="width:90px"></td>
+        <td style="padding:8px"><input type="number" step="any" id="rm_meta_${cx}_ttr" value="${m.ttr??''}" style="width:90px"> <span style="font-size:.72em;color:var(--text-3)">h</span></td>
+        <td style="padding:8px"><input type="number" step="any" id="rm_meta_${cx}_csat" value="${m.csat??''}" style="width:90px"></td>
+        <td style="padding:8px"><input type="number" step="any" id="rm_meta_${cx}_avaliadas" value="${m.avaliadas??''}" style="width:90px"></td>
+      </tr>`;}).join('')}
+    </table>
+    <p class="hint" style="margin-top:12px">Retenção está temporariamente fora do modelo. Caixas fora desta lista (ex.: Max, Suporte Ativo) não entram neste cálculo.</p>`;
+  } else if(tab==='score'){
+    body=`<p class="hint" style="margin-bottom:10px">Pesos das camadas — Operacional + IQA + Líder devem somar 100% em cada caixa.</p>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:18px">
+      <tr style="text-align:left;font-size:.75em;color:var(--text-3);text-transform:uppercase"><th style="padding:6px 8px">Caixa</th><th>Operacional</th><th>IQA</th><th>Líder</th></tr>
+      ${caixasScore.map(cx=>{const p=r.pesosCamada[cx]||{};return `<tr style="border-top:1px solid var(--border)">
+        <td style="padding:8px;font-weight:600">${esc(cx)}</td>
+        <td style="padding:8px"><input type="number" id="rm_pc_${cx}_operacional" value="${p.operacional??''}" style="width:70px">%</td>
+        <td style="padding:8px"><input type="number" id="rm_pc_${cx}_iqa" value="${p.iqa??''}" style="width:70px">%</td>
+        <td style="padding:8px"><input type="number" id="rm_pc_${cx}_lider" value="${p.lider??''}" style="width:70px">%</td>
+      </tr>`;}).join('')}
+    </table>
+    <p class="hint" style="margin-bottom:10px">Pesos dentro da camada operacional — devem somar 100% em cada caixa.</p>
+    <table style="width:100%;border-collapse:collapse">
+      <tr style="text-align:left;font-size:.75em;color:var(--text-3);text-transform:uppercase"><th style="padding:6px 8px">Caixa</th><th>Produtiv.</th><th>CSAT</th><th>TTR</th><th>SLA 1ª</th><th>% aval.</th></tr>
+      ${caixasScore.map(cx=>{const p=r.pesosOperacional[cx]||{};return `<tr style="border-top:1px solid var(--border)">
+        <td style="padding:8px;font-weight:600">${esc(cx)}</td>
+        <td style="padding:8px"><input type="number" id="rm_po_${cx}_produtividade" value="${p.produtividade??''}" style="width:58px">%</td>
+        <td style="padding:8px"><input type="number" id="rm_po_${cx}_csat" value="${p.csat??''}" style="width:58px">%</td>
+        <td style="padding:8px"><input type="number" id="rm_po_${cx}_ttr" value="${p.ttr??''}" style="width:58px">%</td>
+        <td style="padding:8px"><input type="number" id="rm_po_${cx}_sla1" value="${p.sla1??''}" style="width:58px">%</td>
+        <td style="padding:8px"><input type="number" id="rm_po_${cx}_avaliadas" value="${p.avaliadas??''}" style="width:58px">%</td>
+      </tr>`;}).join('')}
+    </table>
+    <div style="margin-top:16px;padding:12px;background:var(--input-bg);border-radius:8px;font-size:.82em;color:var(--text-2);line-height:1.6">
+      <b>Conversão das notas manuais (0 a 5):</b><br>
+      Líder: 0→0% · 1→20% · 2→40% · 3→70% · 4→80% · 5→100% (interpolação linear). Sem nota lançada = 100% (neutro).<br>
+      IQA: 0–2,9 → 0–70% · 2,9–4,0 → 70–85% · 4,0–5,0 → 85–100% (curva mais exigente na faixa baixa). Sem nota lançada = camada excluída, peso redistribuído.<br>
+      A soma ponderada das camadas é dividida por 10, virando a nota bruta (0 a 10, limitada em 10). Essa nota passa pela curva de classificação.
+    </div>`;
+  } else {
+    body=`<p class="hint" style="margin-bottom:12px">Faixas de nota bruta → classificação.</p>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:18px">
+      <tr style="text-align:left;font-size:.75em;color:var(--text-3);text-transform:uppercase"><th style="padding:6px 8px">Nota mínima</th><th>Classificação</th></tr>
+      ${r.classificacaoFaixas.filter(f=>f.min>-Infinity).map(f=>{const idx=r.classificacaoFaixas.indexOf(f);return `<tr style="border-top:1px solid var(--border)">
+        <td style="padding:8px"><input type="number" step="0.1" id="rm_faixa_${idx}" value="${f.min}" style="width:80px"></td>
+        <td style="padding:8px;font-weight:600">${esc(f.v)}</td>
+      </tr>`;}).join('')}
+      <tr style="border-top:1px solid var(--border)"><td style="padding:8px;color:var(--text-3)">abaixo disso</td><td style="padding:8px;font-weight:600">Abaixo do esperado</td></tr>
+    </table>
+    <div style="padding:12px;background:var(--input-bg);border-radius:8px;font-size:.82em;color:var(--text-2);line-height:1.7">
+      <b>Travas de segurança (só rebaixam, nunca sobem a nota):</b><br>
+      1. <b>Régua mínima operacional</b> — para passar de Constante, todos os indicadores operacionais com dado no período precisam de atingimento ≥100% da meta, exceto % avaliadas por fechados (continua pesando no score, mas não entra nessa checagem).<br>
+      2. <b>Trava de CSAT</b> — se o CSAT real ficar abaixo de <input type="number" id="rm_trava_csat" value="${r.travaCsatPct}" style="width:55px;display:inline-block"> % da meta da caixa, a classificação é limitada a Estacionado.<br>
+      IQA abaixo de <input type="number" step="0.01" id="rm_iqa_alerta" value="${r.iqaAlertaAbaixo}" style="width:55px;display:inline-block"> apenas sinaliza 👁️ (não trava a classificação).
+    </div>`;
+  }
+  show(`<div class="modal" style="width:700px;max-height:85vh;overflow-y:auto"><h2>⚙ Regras e Metas <button class="close" onclick="closeModal()">✕</button></h2>
+    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">${tabBtn('metas','🎯 Metas por caixa')}${tabBtn('score','🏆 Como o score é formado')}${tabBtn('classificacao','🎖️ Regras de classificação')}</div>
+    ${body}
+    <div class="modal-foot" style="margin-top:18px"><button class="btn" onclick="closeModal()">Fechar</button><button class="btn primary" onclick="saveRegrasMetas('${tab}')">Salvar</button></div>
+  </div>`);
+}
+function saveRegrasMetas(tab){
+  const r=getRegrasScore();
+  const g=id=>{const el=document.getElementById(id);return el?el.value:'';};
+  const caixasScore=['Silver','Vip/Saques','Integração'];
+  if(tab==='metas'){
+    caixasScore.forEach(cx=>{
+      r.metasCaixa[cx]=r.metasCaixa[cx]||{};
+      ['sla1','ttr','csat','avaliadas'].forEach(k=>{const v=g('rm_meta_'+cx+'_'+k);if(v!=='')r.metasCaixa[cx][k]=parseFloat(v);});
+    });
+  } else if(tab==='score'){
+    caixasScore.forEach(cx=>{
+      r.pesosCamada[cx]=r.pesosCamada[cx]||{};
+      ['operacional','iqa','lider'].forEach(k=>{const v=g('rm_pc_'+cx+'_'+k);if(v!=='')r.pesosCamada[cx][k]=parseFloat(v);});
+      r.pesosOperacional[cx]=r.pesosOperacional[cx]||{};
+      ['produtividade','csat','ttr','sla1','avaliadas'].forEach(k=>{const v=g('rm_po_'+cx+'_'+k);if(v!=='')r.pesosOperacional[cx][k]=parseFloat(v);});
+    });
+  } else {
+    r.classificacaoFaixas.forEach((f,idx)=>{
+      if(f.min===-Infinity)return;
+      const v=g('rm_faixa_'+idx);
+      if(v!=='')f.min=parseFloat(v);
+    });
+    const csatV=g('rm_trava_csat');if(csatV!=='')r.travaCsatPct=parseFloat(csatV);
+    const iqaV=g('rm_iqa_alerta');if(iqaV!=='')r.iqaAlertaAbaixo=parseFloat(iqaV);
+  }
+  persist();closeModal();setTimeout(()=>{render();toast('✓ Regras salvas');},50);
+}
+
+
 function viewAcompanhamento(){
   const _mesesFiltro=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   
@@ -2631,7 +3038,7 @@ function viewAcompanhamento(){
     return false;
   });
   
-  const addBtn=`<div class="edit-only-block" style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary sm" onclick="openAddAnalista()">+ Adicionar analista</button><button class="btn primary sm" onclick="openImportAvaliacaoOnboarding()">+ Importar avaliação</button></div>`;
+  const addBtn=`<div class="edit-only-block" style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary sm" onclick="openAddAnalista()">+ Adicionar analista</button><button class="btn primary sm" onclick="openImportAvaliacaoOnboarding()">+ Importar avaliação</button><button class="btn sm" onclick="openRegrasMetas('metas')">⚙ Regras e Metas</button></div>`;
   if(!lista.length)return addBtn+`<div class="empty">Nenhuma analista cadastrada.<br>Adicione para registrar a evolução semanal de atendimento.</div>`;
 
   const cards=lista.map((a,ai)=>{
@@ -2694,7 +3101,10 @@ function viewAcompanhamento(){
                 <div style="font-weight:700;font-size:.85em">Semana ${si+1}</div>
                 ${sem.periodo?`<div style="font-size:.72em;color:var(--purple);margin-top:1px">${esc(sem.periodo)}</div>`:`<div style="font-size:.72em;color:var(--text-3);margin-top:1px">sem período</div>`}
               </div>
-              <button class="btn sm" style="padding:3px 8px;font-size:.78em" onclick="openEditSemanaById('${acompId}',${si})" title="Registrar semana ${si+1}">✎</button>
+              <div style="display:flex;gap:6px;align-items:center">
+                ${(()=>{const r=operacionalResumoCaixa(a.caixa||'Silver',s?.operacional);const cor=r.pct==null?'var(--text-3)':(r.pct>=100?'var(--green)':r.pct>=70?'var(--amber)':'var(--red-text)');return `<button class="btn sm" style="padding:3px 8px;font-size:.78em;color:${cor};border-color:${cor}" onclick="openEditOperacional('${acompId}','semana',${si})" title="Camada operacional (real vs. meta)">🏆 ${r.pct!=null?Math.round(r.pct)+'%':'meta'}</button>`;})()}
+                <button class="btn sm" style="padding:3px 8px;font-size:.78em" onclick="openEditSemanaById('${acompId}',${si})" title="Registrar semana ${si+1}">✎</button>
+              </div>
             </div>
             <div style="padding:10px 12px">
               ${filled?`
@@ -2734,6 +3144,7 @@ function viewAcompanhamento(){
           </div>`;
         }).join('')}
       </div>
+      ${rampagemPanelHTML(acompId,a)}
     </div>`;
   }).join('');
   
@@ -2865,6 +3276,60 @@ function viewAcompanhamento(){
           ${cards.join('')}
         </div>
       </div>`;
+    }
+
+    // ===== Evolução vs Meta (camada operacional) — mesma comparação, mas em % de atingimento da meta =====
+    const baseIdxs=compareMode==='s1s3'?[0,1]:[0];
+    const targetIdx=compareToIdx;
+    const metaResumo={};
+    OPERACIONAL_METRICS.forEach(m=>{
+      const deltas=[],atuais=[];
+      analListaFiltrada.forEach(a=>{
+        const caixa=a.caixa||'Silver';
+        const rawSem=a.semanas||[];
+        const sAt=Array.isArray(rawSem)?rawSem[targetIdx]:null;
+        if(!sAt||!sAt.operacional)return;
+        const dAt=sAt.operacional[m.key]||{};
+        const metaAt=metaEfetiva(caixa,m,dAt.meta);
+        const pctAt=metricaPct(m,dAt.real,metaAt);
+        if(pctAt==null)return;
+        const base=[];
+        baseIdxs.forEach(bi=>{
+          const sB=Array.isArray(rawSem)?rawSem[bi]:null;
+          if(!sB||!sB.operacional)return;
+          const dB=sB.operacional[m.key]||{};
+          const metaB=metaEfetiva(caixa,m,dB.meta);
+          const pctB=metricaPct(m,dB.real,metaB);
+          if(pctB!=null)base.push(pctB);
+        });
+        if(!base.length)return;
+        const baseMedia=base.reduce((s,v)=>s+v,0)/base.length;
+        deltas.push(pctAt-baseMedia);
+        atuais.push(pctAt);
+      });
+      if(deltas.length)metaResumo[m.key]={delta:deltas.reduce((s,v)=>s+v,0)/deltas.length,atual:atuais.reduce((s,v)=>s+v,0)/atuais.length};
+    });
+    const mkMetaCard=(m)=>{
+      const r=metaResumo[m.key];if(!r)return'';
+      const melhorou=r.delta>0;const sinal=r.delta>0?'+':'';
+      return `<div style="background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:14px 16px">
+        <div style="font-size:10px;letter-spacing:.05em;text-transform:uppercase;opacity:.85;color:#fff">${esc(m.label)}</div>
+        <div style="font-family:'Inter',sans-serif;font-size:1.9em;font-weight:700;margin-top:6px;letter-spacing:-.5px;color:#fff">${Math.round(r.atual)}%</div>
+        <div style="font-size:.78em;opacity:.85;margin-top:2px;color:#fff">${sinal}${round(r.delta,1)}p.p. ${melhorou?'↑ melhora':'↓ queda'} vs meta</div>
+      </div>`;
+    };
+    const metaCards=OPERACIONAL_METRICS.map(mkMetaCard).filter(Boolean);
+    if(metaCards.length>0){
+      const semLabel=compareMode==='s1s3'?'S1 → S3':'S1 → S2';
+      evolCard+=`<div style="background:linear-gradient(120deg,#0d9488,#0f766e);color:#fff;border-radius:var(--radius);padding:20px 22px;margin-bottom:18px">
+        <div style="font-family:'Inter',sans-serif;font-size:1.25em;font-weight:700;color:#fff;margin-bottom:2px">🎯 Evolução vs Meta ${semLabel} — ${db.current}</div>
+        <p style="font-size:.8em;opacity:.85;margin-bottom:14px">% de atingimento da meta (camada operacional) em ${compareMode==='s1s3'?'S3':'S2'}, e quanto mudou frente à ${compareMode==='s1s3'?'média de S1+S2':'S1'}.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+          ${metaCards.join('')}
+        </div>
+      </div>`;
+    } else if(cards.length>0){
+      evolCard+=`<div class="empty" style="margin-bottom:18px">Ainda sem dados na camada operacional (Rampagem — Semanas) para calcular a evolução vs meta.</div>`;
     }
   }
   
@@ -3821,6 +4286,16 @@ async function forceSyncAll(silent){
       console.warn('forceSyncAll fail: acompanhamento',r.status,bodyText);
     }
   }catch(e){ok=false;errorDetails.push(`acompanhamento: ${e.message||e}`);console.warn('forceSyncAll error: acompanhamento',e);}
+  try{
+    const cleanedRegras=cleanRegrasScoreForSync(getRegrasScore());
+    const r=await fetch(`${BASE}/regrasScore.json`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(sanitizeFirebaseKeys(cleanedRegras))});
+    if(!r.ok){
+      ok=false;
+      let bodyText='';try{bodyText=await r.text();}catch(e2){}
+      errorDetails.push(`regrasScore: HTTP ${r.status} ${r.statusText||''}${bodyText?' — '+bodyText.slice(0,200):''}`);
+      console.warn('forceSyncAll fail: regrasScore',r.status,bodyText);
+    }
+  }catch(e){ok=false;errorDetails.push(`regrasScore: ${e.message||e}`);console.warn('forceSyncAll error: regrasScore',e);}
   pendingSync=!ok;
   if(ok){
     syncStatus='ok';lastSyncTime=new Date();
