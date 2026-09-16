@@ -650,6 +650,8 @@ function updateSyncBadge(){
 }
 
 let _lastEdit=0;
+let _onbExpand={}; // controla quais analistas do Onboarding estão expandidos — só UI, não sincroniza
+function toggleAnalystExpand(id){_onbExpand[id]=!_onbExpand[id];render();}
 // Sincronização automática em segundo plano foi desativada de propósito: puxar dados do Firebase
 // enquanto alguém está digitando podia sobrescrever o que a pessoa acabou de preencher.
 // Use o botão "↻ Atualizar" para buscar dados novos, e "Enviar todos os dados agora" (Configurações)
@@ -847,9 +849,9 @@ function renderNav(){document.getElementById('nav').innerHTML=NAV.map(g=>`<div c
 /* ---------- VISÃO GERAL ---------- */
 // ===== CARD PADRÃO DE RAMPAGEM (visual coeso com os demais mcards) =====
 function rampCardHTML(pct,status,count,alerta){
-  const cores = pct>=70
+  const cores = pct>=100
     ? {val:'var(--green)',bg:'var(--green-soft)',text:'var(--green-text)'}
-    : pct>=50
+    : pct>=70
       ? {val:'var(--amber)',bg:'var(--amber-soft)',text:'var(--amber-text)'}
       : {val:'var(--red-text)',bg:'var(--red-soft)',text:'var(--red-text)'};
   let html=`<div class="val" style="color:${cores.val}">${pct}%</div>`;
@@ -858,10 +860,9 @@ function rampCardHTML(pct,status,count,alerta){
   return html;
 }
 // ===== FUNÇÃO GLOBAL: CALCULAR RAMPAGEM =====
+// ===== FUNÇÃO GLOBAL: CALCULAR RAMPAGEM (regras 2026 — camada operacional, pesos por caixa) =====
 function calcularRampagem(acompanhamento, mesAtual) {
   const _meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  
-  // Filtrar por mês atual
   const acompMes=a=>{
     const p=a.periodo1||a.month||'';
     const m=p.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
@@ -870,87 +871,26 @@ function calcularRampagem(acompanhamento, mesAtual) {
     return null;
   };
   const acomp=(acompanhamento||[]).filter(a=>{const m=acompMes(a);return !m||m===mesAtual;});
-  
   if(!acomp.length)return null;
-  
-  const getMetas=cx=>{
-    const c=(cx||'').toLowerCase();
-    if(c.includes('silver'))return{sla:5,csat:94,tma:24};
-    if(c.includes('integração')||c.includes('integra'))return{sla:3,csat:97,tma:24};
-    if(c.includes('vip')||c.includes('saque'))return{sla:3,csat:97,tma:24};
-    return{sla:5,csat:94,tma:24};
-  };
-  
-  const calcStatus=(arr)=>{
-    const results=arr.map(a=>{
-      const rawSem=a.semanas||[];
-      const s3=Array.isArray(rawSem)?rawSem[2]:(rawSem[2]??rawSem['2']??null);
-      
-      if(!s3)return null;
-      
-      const meta=getMetas(a.caixa);
-      let metricasOk=0, totalMetricas=0;
-      const metricaFora=null;
-      
-      // SLA: menos é melhor
-      if(s3.sla!=null&&s3.sla!==''){
-        totalMetricas++;
-        const slaVal=parseFloat(s3.sla);
-        if(slaVal<=meta.sla)metricasOk++;
-      }
-      
-      // CSAT: mais é melhor
-      if(s3.csat!=null&&s3.csat!==''){
-        totalMetricas++;
-        const csatVal=parseFloat(s3.csat);
-        if(csatVal>=meta.csat)metricasOk++;
-      }
-      
-      // TMA: meta é 24h (quanto menor melhor)
-      if(s3.tma!=null&&s3.tma!==''){
-        totalMetricas++;
-        const tmaVal=parseFloat(s3.tma);
-        // Se S3 <= 24h = OK
-        if(tmaVal<=24)metricasOk++;
-      }
-      
-      // Recebidas: mais é melhor, se >= 60% é OK
-      if(s3.recebidas!=null&&s3.recebidas!==''){
-        totalMetricas++;
-        const recVal=parseFloat(s3.recebidas);
-        if(recVal>=60)metricasOk++;
-      }
-      
-      // Fechadas: mais é melhor, se >= 60% é OK
-      if(s3.fechadas!=null&&s3.fechadas!==''){
-        totalMetricas++;
-        const fechVal=parseFloat(s3.fechadas);
-        if(fechVal>=60)metricasOk++;
-      }
-      
-      const pctMetricas=totalMetricas?Math.round(metricasOk/totalMetricas*100):0;
-      
-      return {
-        nome:a.nome,
-        caixa:a.caixa,
-        pctMetricas,
-        metricasOk,
-        totalMetricas
-      };
-    }).filter(v=>v!==null);
-    
-    const pctMedio=results.length?Math.round(results.reduce((s,r)=>s+r.pctMetricas,0)/results.length):0;
-    
-    return {
-      pct:pctMedio,
-      count:results.length,
-      details:results,
-      status:pctMedio>=70?'Sucesso':(pctMedio>=50?'Acompanhar':'Atenção'),
-      cor:pctMedio>=70?'var(--green)':(pctMedio>=50?'var(--yellow-text)||#FFB800':'var(--red-text)')
-    };
-  };
-  
-  return calcStatus(acomp);
+
+  // Para cada analista, usa a última semana já preenchida com a camada operacional
+  // (assim quem ainda está em S1/S2 também entra na conta, não só quem já chegou em S3)
+  const results=acomp.map(a=>{
+    const caixa=a.caixa||'Silver';
+    const rawSem=a.semanas||[];
+    const semanasArr=[0,1,2].map(i=>Array.isArray(rawSem)?rawSem[i]:(rawSem[i]??rawSem[String(i)]??null));
+    const ultima=[...semanasArr].reverse().find(s=>s&&s.operacional);
+    if(!ultima)return null;
+    const r=operacionalResumoCaixa(caixa,ultima.operacional);
+    if(r.pct==null)return null;
+    return{nome:a.nome,caixa:a.caixa,pct:r.pct};
+  }).filter(v=>v!==null);
+
+  if(!results.length)return null;
+
+  const pctMedio=Math.round(results.reduce((s,r)=>s+r.pct,0)/results.length);
+  const info=weeklyStatusInfo(pctMedio);
+  return{pct:pctMedio,count:results.length,details:results,status:info.label,cor:info.cor};
 }
 
 function viewVisao(){
@@ -1035,39 +975,34 @@ function viewVisao(){
     <div class="mcard" style="cursor:pointer" onclick="go('avaliacao')">
       <div class="lbl">Rampagem New Hire<span class="lbl-ic">🚀</span></div>
       ${(()=>{
-        // FORÇADO: Abril 2026 = 70%, Julho 2026 = 33%
-        if(db.current === 'Abril 2026'){
-          return rampCardHTML(70,'Sucesso',1,'SLA 9.01min');
-        }
-        if(db.current === 'Julho 2026'){
-          return rampCardHTML(33,'Atenção',1,'CSAT 75%');
-        }
-        
-        // Demais meses: calcular normalmente
         const ramp=calcularRampagem(db.acompanhamento, db.current);
         if(!ramp)return'<div class="val" style="color:var(--text-3)">—</div><div class="foot">sem rampagem neste mês</div>';
-        
-        let alerta='';
+
+        // Alerta: pior indicador (mais abaixo da meta) entre quem está sendo contabilizado
         const _meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-        const getMetas=cx=>{const c=(cx||'').toLowerCase();if(c.includes('silver'))return{sla:5,csat:94};if(c.includes('integração')||c.includes('integra'))return{sla:3,csat:97};if(c.includes('vip')||c.includes('saque'))return{sla:3,csat:97};return{sla:5,csat:94};};
-        
-        for(let a of (db.acompanhamento||[])){
+        let pior=null;
+        for(const a of (db.acompanhamento||[])){
           const p=a.periodo1||a.month||'';
           const m=p.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
           let aMes=null;
           if(m)aMes=_meses[parseInt(m[2])-1]+' '+m[3];
           if(a.month)aMes=a.month;
           if(aMes!==db.current)continue;
-          
-          const s3=(a.semanas||[])[2]||null;
-          if(!s3)continue;
-          
-          const meta=getMetas(a.caixa);
-          if(s3.sla!=null&&s3.sla!==''&&parseFloat(s3.sla)>meta.sla){alerta='SLA '+parseFloat(s3.sla).toFixed(2)+'min';break;}
-          if(s3.csat!=null&&s3.csat!==''&&parseFloat(s3.csat)<meta.csat){alerta='CSAT '+parseFloat(s3.csat).toFixed(0)+'%';break;}
-          if(s3.tma!=null&&s3.tma!==''&&parseFloat(s3.tma)>24){alerta='TMA '+parseFloat(s3.tma).toFixed(1)+'h';break;}
+          const caixa=a.caixa||'Silver';
+          const rawSem=a.semanas||[];
+          const semanasArr=[0,1,2].map(i=>Array.isArray(rawSem)?rawSem[i]:null);
+          const ultima=[...semanasArr].reverse().find(s=>s&&s.operacional);
+          if(!ultima)continue;
+          OPERACIONAL_METRICS.forEach(mt=>{
+            if(mt.key==='avaliadas')return; // não é uma das métricas de peso na rampagem (SLA, Produtividade, TTR, CSAT)
+            const d=ultima.operacional[mt.key]||{};
+            const metaVal=metaEfetiva(caixa,mt,d.meta);
+            const pct=metricaPct(mt,d.real,metaVal);
+            if(pct!=null&&pct<100&&(!pior||pct<pior.pct))pior={pct,label:mt.label};
+          });
         }
-        
+        const alerta=pior?`${pior.label} ${Math.round(pior.pct)}% da meta`:'';
+
         return rampCardHTML(ramp.pct,ramp.status,ramp.count,alerta);
       })()}
     </div>
@@ -1554,7 +1489,7 @@ function viewIndivAnalystDetail(it,a){
           <div><div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px">Recebidas</div><div style="font-size:1.05em;font-weight:600">${s.recebidas??'—'}</div></div>
           <div><div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px">Fechadas</div><div style="font-size:1.05em;font-weight:600">${s.fechadas??'—'}</div></div>
           <div><div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px">TMA ≤24h</div><div style="font-size:1.05em;font-weight:700;font-family:'Inter',sans-serif;color:${corTMA(s.tma)}">${s.tma!=null?s.tma+'h':'—'}</div>${prev?delta(s.tma,prev.tma,false):''}</div>
-          <div><div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px">Produtividade</div><div style="font-size:1.05em;font-weight:700;font-family:'Inter',sans-serif;color:var(--blue)">${s.recebidas&&s.fechadas!=null?Math.round(s.fechadas/s.recebidas*100)+'%':'—'}</div></div>
+          <div><div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px">Taxa de fechamento</div><div style="font-size:1.05em;font-weight:700;font-family:'Inter',sans-serif;color:var(--blue)">${s.recebidas&&s.fechadas!=null?Math.round(s.fechadas/s.recebidas*100)+'%':'—'}</div></div>
           ${s.obs?`<div style="grid-column:span 2;border-top:1px solid var(--border);padding-top:6px;margin-top:2px;font-size:.75em;color:var(--text-3);line-height:1.4">${esc(s.obs)}</div>`:''}
         </div>`:`<div style="font-size:.82em;color:var(--text-3);padding:4px 0 6px">Sem registros</div>`}
       </div>
@@ -2631,12 +2566,14 @@ function defaultRegrasScore(){
       'Vip/Saques':{sla1:3,ttr:24,csat:94,avaliadas:15},
       'Integração':{sla1:3,ttr:24,csat:97,avaliadas:15}
     },
+    // "Abaixo do esperado" não entra aqui — é implícito (quem não bate nenhuma faixa cai nela).
+    // -Infinity não existe em JSON, então guardar essa faixa como dado salvo corrompia ao
+    // sincronizar/recarregar (virava null, e null > -Infinity é true, duplicando a linha).
     classificacaoFaixas:[
       {min:9.0,v:'Acima do esperado'},
       {min:7.9,v:'Ascensão'},
       {min:6.9,v:'Constante'},
-      {min:5.0,v:'Estacionado'},
-      {min:-Infinity,v:'Abaixo do esperado'}
+      {min:5.0,v:'Estacionado'}
     ],
     travaCsatPct:94,
     iqaAlertaAbaixo:2.75
@@ -2647,6 +2584,11 @@ function getRegrasScore(){
   // Migração: TTR passou a ser guardado em horas (era minutos). Valor >100 só faz sentido como minutos.
   const mc=db.regrasScore.metasCaixa||{};
   Object.keys(mc).forEach(cx=>{if(mc[cx]&&mc[cx].ttr!=null&&mc[cx].ttr>100)mc[cx].ttr=round(mc[cx].ttr/60,1);});
+  // Migração: "Abaixo do esperado" não deve mais estar na lista (era guardado com min:-Infinity,
+  // que não existe em JSON e virava null/0 ao salvar — duplicava a linha na tela de Regras).
+  if(Array.isArray(db.regrasScore.classificacaoFaixas)){
+    db.regrasScore.classificacaoFaixas=db.regrasScore.classificacaoFaixas.filter(f=>f&&f.v!=='Abaixo do esperado'&&f.min!=null&&isFinite(f.min));
+  }
   return db.regrasScore;
 }
 // Nomes de caixa (ex.: "Vip/Saques") têm "/", proibido como CHAVE no Firebase — por isso essas
@@ -2680,13 +2622,42 @@ function pesosCamadaCaixa(caixa){const r=getRegrasScore();return r.pesosCamada[c
 function pesosOperacionalCaixa(caixa){const r=getRegrasScore();return r.pesosOperacional[caixa]||r.pesosOperacional['Silver'];}
 function metasCaixaOf(caixa){const r=getRegrasScore();return r.metasCaixa[caixa]||r.metasCaixa['Silver'];}
 const CLASSIFICACOES_INFO={
-  'Acima do esperado':{cor:'#065f46',bg:'#d1fae5'},
-  'Ascensão':{cor:'#15803d',bg:'#dcfce7'},
-  'Constante':{cor:'#16a34a',bg:'#f0fdf4'},
-  'Estacionado':{cor:'var(--amber-text)',bg:'var(--amber-soft)'},
-  'Abaixo do esperado':{cor:'var(--red-text)',bg:'var(--red-soft)'}
+  'Acima do esperado':{emoji:'🏆',cor:'#065f46',bg:'#d1fae5',barra:'#059669'},
+  'Ascensão':{emoji:'📈',cor:'#15803d',bg:'#dcfce7',barra:'#22c55e'},
+  'Constante':{emoji:'➡️',cor:'#0369a1',bg:'#e0f2fe',barra:'#38bdf8'},
+  'Estacionado':{emoji:'⚠️',cor:'var(--amber-text)',bg:'var(--amber-soft)',barra:'var(--amber)'},
+  'Abaixo do esperado':{emoji:'🔻',cor:'var(--red-text)',bg:'var(--red-soft)',barra:'var(--red)'}
 };
+// Selo semanal = média ponderada pelos pesos da caixa (sem régua adicional — isso é só pro mensal)
+function weeklyStatusInfoCaixa(caixa,operacional){
+  const r=operacionalResumoCaixa(caixa,operacional);
+  const info=weeklyStatusInfo(r.pct);
+  return{...info,pct:r.pct};
+}
+function weeklyStatusInfo(pct){
+  if(pct==null)return{label:'Sem dados',emoji:'⚪',cor:'var(--text-3)',bg:'var(--input-bg)',barra:'var(--border-2)'};
+  if(pct>=100)return{label:'Green Flag',emoji:'🟢',cor:'var(--green-text)',bg:'var(--green-soft)',barra:'var(--green)'};
+  if(pct>=70)return{label:'Yellow Flag',emoji:'🟡',cor:'var(--amber-text)',bg:'var(--amber-soft)',barra:'var(--amber)'};
+  return{label:'Red Flag',emoji:'🔴',cor:'var(--red-text)',bg:'var(--red-soft)',barra:'var(--red)'};
+}
+function trendDotsHTML(pcts){
+  const corDe=p=>p==null?'var(--border-2)':(p>=100?'var(--green)':p>=70?'var(--amber)':'var(--red-text)');
+  const cores=pcts.map(corDe);
+  const w=56,h=18,step=(w-10)/2;
+  const pts=[0,1,2].map(i=>({x:5+i*step,y:h/2}));
+  const line=pts.map(p=>`${p.x},${p.y}`).join(' ');
+  const circles=pts.map((p,i)=>`<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="${cores[i]}"/>`).join('');
+  return `<svg width="${w}" height="${h}" style="flex-shrink:0"><polyline points="${line}" fill="none" stroke="var(--border-2)" stroke-width="1.5"/>${circles}</svg>`;
+}
 function classifCor(v){return CLASSIFICACOES_INFO[v]||{cor:'var(--text-3)',bg:'var(--input-bg)'};}
+// Mapeia a classificação detalhada (5 faixas) pro selo Green/Yellow/Red Flag — mesma linguagem visual do semanal.
+// Constante pra cima = Green · Estacionado = Yellow · Abaixo do esperado = Red
+function flagInfoFromClassificacao(classificacao){
+  if(!classificacao)return weeklyStatusInfo(null);
+  if(classificacao==='Abaixo do esperado')return weeklyStatusInfo(0);
+  if(classificacao==='Estacionado')return weeklyStatusInfo(70);
+  return weeklyStatusInfo(100); // Constante, Ascensão, Acima do esperado
+}
 const OPERACIONAL_METRICS=[
   {key:'produtividade',label:'Produtividade',invert:false,unitLabel:'tickets'},
   {key:'csat',label:'CSAT',invert:false,unitLabel:'%'},
@@ -2755,12 +2726,14 @@ function classificacaoFromNota(nota){
   if(nota==null)return null;
   const r=getRegrasScore();
   const faixa=r.classificacaoFaixas.find(f=>nota>=f.min);
-  return faixa?faixa.v:null;
+  return faixa?faixa.v:'Abaixo do esperado';
 }
 function aplicarTravas(caixa,operacional,classifBase){
   const ORDER=['Abaixo do esperado','Estacionado','Constante','Ascensão','Acima do esperado'];
   let idx=ORDER.indexOf(classifBase);
   let travaRegua=false,travaCsat=false;
+  const indicadoresAbaixo=[];
+  let csatInfo=null;
   if(idx>=0){
     OPERACIONAL_METRICS.forEach(m=>{
       if(m.key==='avaliadas')return; // exceção: não entra na régua mínima
@@ -2768,7 +2741,7 @@ function aplicarTravas(caixa,operacional,classifBase){
       const metaVal=metaEfetiva(caixa,m,d.meta);
       if(d.real==null||d.real===''||metaVal==null)return; // sem dado no período, não trava
       const pct=metricaPct(m,d.real,metaVal);
-      if(pct!=null&&pct<100)travaRegua=true;
+      if(pct!=null&&pct<100){travaRegua=true;indicadoresAbaixo.push({label:m.label,pct:round(pct,1)});}
     });
     if(travaRegua){const maxIdx=ORDER.indexOf('Constante');if(idx>maxIdx)idx=maxIdx;}
     const metaCaixa=metasCaixaOf(caixa);
@@ -2776,13 +2749,16 @@ function aplicarTravas(caixa,operacional,classifBase){
     if(csatD.real!=null&&csatD.real!==''&&metaCaixa.csat!=null){
       const csatReal=parseFloat(csatD.real);
       const cutoff=metaCaixa.csat*(getRegrasScore().travaCsatPct/100);
-      if(!isNaN(csatReal)&&csatReal<cutoff){travaCsat=true;const maxIdx2=ORDER.indexOf('Estacionado');if(idx>maxIdx2)idx=maxIdx2;}
+      if(!isNaN(csatReal)&&csatReal<cutoff){
+        travaCsat=true;csatInfo={real:csatReal,cutoff:round(cutoff,1)};
+        const maxIdx2=ORDER.indexOf('Estacionado');if(idx>maxIdx2)idx=maxIdx2;
+      }
     }
   }
-  return{classificacao:idx>=0?ORDER[idx]:classifBase,travaRegua,travaCsat};
+  return{classificacao:idx>=0?ORDER[idx]:classifBase,travaRegua,travaCsat,indicadoresAbaixo,csatInfo};
 }
 function computeMesResultado(caixa,mesObj){
-  if(!mesObj)return{notaBruta:null,classificacao:null,operacionalPct:null,iqaPct:null,liderPct:100,travaRegua:false,travaCsat:false,iqaAlerta:false,any:false};
+  if(!mesObj)return{notaBruta:null,classificacao:null,operacionalPct:null,iqaPct:null,liderPct:100,travaRegua:false,travaCsat:false,iqaAlerta:false,alertaMultiplo:false,any:false,indicadoresAbaixo:[],csatInfo:null};
   const op=operacionalResumoCaixa(caixa,mesObj.operacional);
   const pesos=pesosCamadaCaixa(caixa);
   const liderPct=liderPctFromNota(mesObj.liderNota);
@@ -2797,29 +2773,86 @@ function computeMesResultado(caixa,mesObj){
   const notaBruta=notaBrutaRaw!=null?Math.min(10,notaBrutaRaw):null;
   const classifBase=classificacaoFromNota(notaBruta);
   const travas=aplicarTravas(caixa,mesObj.operacional,classifBase);
+  // Nota (Score Final) e Classificação são independentes na calculadora oficial: a trava só rebaixa
+  // a classificação, não mexe no número. Por isso dá pra ver, por exemplo, nota 10.0 com "Estacionado".
   const iqaAlerta=mesObj.iqaNota!=null&&mesObj.iqaNota!==''&&parseFloat(mesObj.iqaNota)<getRegrasScore().iqaAlertaAbaixo;
-  return{notaBruta,classificacao:travas.classificacao,classificacaoBase:classifBase,operacionalPct:op.pct,iqaPct,liderPct,travaRegua:travas.travaRegua,travaCsat:travas.travaCsat,iqaAlerta,any};
+  const alertaMultiplo=travas.indicadoresAbaixo.length>2;
+  return{notaBruta,classificacao:travas.classificacao,classificacaoBase:classifBase,operacionalPct:op.pct,iqaPct,liderPct,travaRegua:travas.travaRegua,travaCsat:travas.travaCsat,iqaAlerta,alertaMultiplo,any,indicadoresAbaixo:travas.indicadoresAbaixo,csatInfo:travas.csatInfo};
 }
-function rampagemPanelHTML(acompId,a){
+/* ===== Grade de métricas unificada — usada nas Semanas e nos Meses (mesmo layout nas duas abas) ===== */
+function metricBoxHTML(m,real,metaVal,extraSub){
+  const pct=metricaPct(m,real,metaVal);
+  const cor=pct==null?'var(--text)':(pct>=100?'var(--green)':pct>=70?'var(--amber)':'var(--red-text)');
+  const valorTxt=fmtUnidade(m,real);
+  const metaTxt=metaVal==null?'':(m.unitLabel==='min'?fmtMinutos(metaVal):m.unitLabel==='h'?round(metaVal,1)+'h':m.unitLabel==='%'?round(metaVal,1)+'%':Math.round(metaVal));
+  return `<div>
+    <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">${esc(m.label)}</div>
+    <div style="font-size:1.05em;font-weight:700;font-family:'Inter',sans-serif;color:${cor}">${valorTxt}</div>
+    ${metaVal!=null?`<div style="font-size:.68em;color:var(--text-3)">meta: ${metaTxt}</div>`:''}
+    ${pct!=null?`<div style="font-size:.7em;font-weight:700;color:${cor}">${Math.round(pct)}% da meta</div>`:''}
+    ${extraSub||''}
+  </div>`;
+}
+function unifiedMetricsGridHTML(caixa,op,classic){
+  op=op||{};
+  const boxes=OPERACIONAL_METRICS.map(m=>{
+    const d=op[m.key]||{};
+    const metaVal=metaEfetiva(caixa,m,d.meta);
+    let extraSub='';
+    if(m.key==='avaliadas'&&(d.avaliacoes!=null||d.fechados!=null)){
+      extraSub=`<div style="font-size:.65em;color:var(--text-3)">${d.avaliacoes??'—'}/${d.fechados??'—'}</div>`;
+    }
+    return metricBoxHTML(m,d.real,metaVal,extraSub);
+  });
+  if(classic){
+    // "Chats recebidos" some daqui de propósito: é o mesmo número da Produtividade (tickets/chats
+    // atendidos), então mostrar os dois seria duplicar a mesma informação no card.
+    boxes.push(`<div>
+      <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">Chats fechados</div>
+      <div style="font-size:1.05em;font-weight:700">${classic.fechadas??'—'}</div>
+    </div>`);
+  }
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 14px">${boxes.join('')}</div>`;
+}
+function statusBadgeHTML(info,valorTxt){
+  return `<span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:${info.bg};color:${info.cor};font-weight:700;font-size:.82em;white-space:nowrap">
+    <span>${info.emoji}</span><span>${esc(info.label)}</span>${valorTxt?`<span style="opacity:.7;font-weight:600">· ${valorTxt}</span>`:''}
+  </span>`;
+}
+function monthGridHTML(acompId,a){
   if(!Array.isArray(a.meses))a.meses=[null,null,null];
   while(a.meses.length<3)a.meses.push(null);
   const caixa=a.caixa||'Silver';
-  const mesCards=[0,1,2].map(mi=>{
-    const m=a.meses[mi]||{};
-    const res=computeMesResultado(caixa,m);
-    const classif=classifCor(res.classificacao);
-    const badges=[res.travaRegua?'<span title="Régua mínima operacional: pelo menos um indicador abaixo de 100% da meta">🔒⚠️</span>':'',res.travaCsat?'<span title="Trava de CSAT: CSAT abaixo do corte da caixa">🔒</span>':'',res.iqaAlerta?'<span title="IQA abaixo de 2,75 (apenas sinaliza)">👁️</span>':''].filter(Boolean).join(' ');
-    return `<div class="mcard" style="cursor:pointer" onclick="openEditOperacional('${acompId}','mes',${mi})" title="Editar rampagem do mês ${mi+1}">
-      <div class="lbl">Mês ${mi+1} ${badges}</div>
-      <div class="val" style="color:${res.notaBruta!=null?classif.cor:'var(--text-3)'}">${res.notaBruta!=null?res.notaBruta.toFixed(1):'—'}</div>
-      ${res.classificacao?`<span class="tag" style="background:${classif.bg};color:${classif.cor};margin-top:2px">${esc(res.classificacao)}</span>`:`<div class="foot">${res.any?'ver / editar':'preencher dados'}</div>`}
-    </div>`;
-  }).join('');
-  return `<div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
-    <details>
-      <summary style="cursor:pointer;font-weight:700;font-size:.82em;color:var(--text-2)">🏆 Rampagem — Meses <span style="font-weight:400;color:var(--text-3)">(nota bruta 0-10, classificação automática)</span></summary>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px">${mesCards}</div>
-    </details>
+  return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+    ${[0,1,2].map(mi=>{
+      const m=a.meses[mi]||{};
+      const op=m.operacional||{};
+      const res=computeMesResultado(caixa,m);
+      const flag=res.classificacao?flagInfoFromClassificacao(res.classificacao):null;
+      const alerta=res.alertaMultiplo?'<span title="Mais de 2 indicadores abaixo da meta">🚩</span>':'';
+      const filled=res.any;
+      return `<div style="background:var(--input-bg);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+        <div style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--border);flex-wrap:wrap">
+          <div><div style="font-weight:700;font-size:.85em">Mês ${mi+1}</div>
+          <div style="font-size:.72em;color:var(--purple);margin-top:1px">${m.periodo?esc(m.periodo):'<span style="color:var(--text-3)">sem período — clique em ✎ para definir</span>'}</div></div>
+          <div style="display:flex;align-items:center;gap:6px">
+            ${alerta}
+            ${flag?`<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">${statusBadgeHTML(flag,'')}<span style="font-size:.68em;color:var(--text-3)">${esc(res.classificacao)}</span></div>`:''}
+            <button class="btn sm" style="padding:3px 8px;font-size:.78em" onclick="openEditOperacional('${acompId}','mes',${mi})" title="Registrar mês ${mi+1}">✎</button>
+          </div>
+        </div>
+        <div style="padding:10px 12px">
+          ${filled?`
+          ${unifiedMetricsGridHTML(caixa,op,null)}
+          <div style="font-size:.72em;color:var(--text-3);display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+            <span>IQA: ${m.iqaNota!=null?m.iqaNota:'—'}</span>
+            <span>Líder: ${m.liderNota!=null?m.liderNota:'—'}</span>
+          </div>
+          ${m.observacao?`<div style="border-top:1px solid var(--border);padding-top:6px;margin-top:6px;font-size:.72em;color:var(--text-3);line-height:1.4">${esc(m.observacao)}</div>`:''}
+          `:`<div style="font-size:.82em;color:var(--text-3);padding:4px 0 6px">Sem registros</div>`}
+        </div>
+      </div>`;
+    }).join('')}
   </div>`;
 }
 function openEditOperacional(acompId,kind,idx){
@@ -2863,6 +2896,7 @@ function openEditOperacional(acompId,kind,idx){
   }).join('');
   const isMes=kind==='mes';
   const mesFields=isMes?`
+    <div class="fld" style="margin-bottom:10px"><label style="font-size:.78em;color:var(--text-3)">Período do mês</label><input type="text" id="mes_periodo" value="${esc(obj.periodo||'')}" placeholder="Ex: Julho/2026 ou 01/07/2026 - 31/07/2026" style="margin-top:4px"></div>
     <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:14px">
       <p style="font-weight:700;font-size:.85em;margin-bottom:4px">Avaliação mensal</p>
       <p class="hint" style="margin-bottom:10px">IQA e Líder são notas de 0 a 5 — a % de cada camada e o Score Final (nota bruta 0-10) são calculados automaticamente pelas regras da Appmax.</p>
@@ -2912,81 +2946,106 @@ function saveOperacional(acompId,kind,idx){
   obj.operacional=op;
   if(kind==='mes'){
     const g=id=>((document.getElementById(id)||{}).value||'').trim();
-    const iqaNota=g('op_iqa_nota'),liderNota=g('op_lider_nota'),obs=g('op_obs');
+    const iqaNota=g('op_iqa_nota'),liderNota=g('op_lider_nota'),obs=g('op_obs'),periodo=g('mes_periodo');
     obj.iqaNota=iqaNota!==''?parseFloat(iqaNota):null;
     obj.liderNota=liderNota!==''?parseFloat(liderNota):null;
     obj.observacao=obs;
+    obj.periodo=periodo;
   }
   persist();closeModal();setTimeout(()=>{render();toast('✓ Salvo');},50);
 }
 function openRegrasMetas(tab){
   const r=getRegrasScore();
   const caixasScore=['Silver','Vip/Saques','Integração'];
-  const tabBtn=(t,label)=>`<button class="btn sm ${tab===t?'primary':''}" onclick="openRegrasMetas('${t}')">${label}</button>`;
+  const tabBtn=(t,label)=>`<button onclick="openRegrasMetas('${t}')" style="border:none;cursor:pointer;padding:9px 16px;border-radius:8px;font-size:.85em;font-weight:600;white-space:nowrap;transition:all .15s;${tab===t?'background:var(--surface);color:var(--purple);box-shadow:0 1px 3px rgba(0,0,0,.12)':'background:transparent;color:var(--text-3)'}">${label}</button>`;
+  const th=(txt,align)=>`<th style="text-align:${align||'left'};padding:10px 14px;font-size:.7em;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;font-weight:700;border-bottom:2px solid var(--border)">${txt}</th>`;
+  const td=(html,align)=>`<td style="text-align:${align||'left'};padding:13px 14px;border-bottom:1px solid var(--border)">${html}</td>`;
+  const inputSm=(id,val,w)=>`<input type="number" step="any" id="${id}" value="${val}" style="width:${w||70}px;text-align:right;font-weight:600">`;
   let body='';
   if(tab==='metas'){
-    body=`<p class="hint" style="margin-bottom:12px">Metas por caixa de atendimento — usadas como padrão sempre que a meta de um analista não for preenchida manualmente (exceto Produtividade, sempre manual).</p>
+    body=`<p class="hint" style="margin-bottom:16px">Metas por caixa de atendimento — usadas como padrão sempre que a meta de um analista não for preenchida manualmente (exceto Produtividade, sempre manual).</p>
+    <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden">
     <table style="width:100%;border-collapse:collapse">
-      <tr style="text-align:left;font-size:.75em;color:var(--text-3);text-transform:uppercase"><th style="padding:6px 8px">Caixa</th><th>SLA 1ª resposta (min)</th><th>TTR (h)</th><th>CSAT (%)</th><th>% avaliadas/fechados</th></tr>
-      ${caixasScore.map(cx=>{const m=r.metasCaixa[cx]||{};return `<tr style="border-top:1px solid var(--border)">
-        <td style="padding:8px;font-weight:600">${esc(cx)}</td>
-        <td style="padding:8px"><input type="number" step="any" id="rm_meta_${cx}_sla1" value="${m.sla1??''}" style="width:90px"></td>
-        <td style="padding:8px"><input type="number" step="any" id="rm_meta_${cx}_ttr" value="${m.ttr??''}" style="width:90px"> <span style="font-size:.72em;color:var(--text-3)">h</span></td>
-        <td style="padding:8px"><input type="number" step="any" id="rm_meta_${cx}_csat" value="${m.csat??''}" style="width:90px"></td>
-        <td style="padding:8px"><input type="number" step="any" id="rm_meta_${cx}_avaliadas" value="${m.avaliadas??''}" style="width:90px"></td>
+      <tr>${th('Caixa')}${th('SLA 1ª resposta','right')}${th('TTR','right')}${th('CSAT','right')}${th('% avaliadas/fechados','right')}</tr>
+      ${caixasScore.map((cx,i)=>{const m=r.metasCaixa[cx]||{};return `<tr style="background:${i%2?'var(--input-bg)':'transparent'}">
+        <td style="padding:13px 14px;font-weight:700;border-bottom:1px solid var(--border)">${esc(cx)}</td>
+        ${td(inputSm(`rm_meta_${cx}_sla1`,m.sla1??'')+' <span style="font-size:.72em;color:var(--text-3)">min</span>','right')}
+        ${td(inputSm(`rm_meta_${cx}_ttr`,m.ttr??'')+' <span style="font-size:.72em;color:var(--text-3)">h</span>','right')}
+        ${td(inputSm(`rm_meta_${cx}_csat`,m.csat??'')+' <span style="font-size:.72em;color:var(--text-3)">%</span>','right')}
+        ${td(inputSm(`rm_meta_${cx}_avaliadas`,m.avaliadas??'')+' <span style="font-size:.72em;color:var(--text-3)">%</span>','right')}
       </tr>`;}).join('')}
     </table>
-    <p class="hint" style="margin-top:12px">Retenção está temporariamente fora do modelo. Caixas fora desta lista (ex.: Max, Suporte Ativo) não entram neste cálculo.</p>`;
+    </div>
+    <p class="hint" style="margin-top:14px">🔸 Retenção está temporariamente fora do modelo. Caixas fora desta lista (ex.: Max, Suporte Ativo) não entram neste cálculo.</p>`;
   } else if(tab==='score'){
     body=`<p class="hint" style="margin-bottom:10px">Pesos das camadas — Operacional + IQA + Líder devem somar 100% em cada caixa.</p>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:18px">
-      <tr style="text-align:left;font-size:.75em;color:var(--text-3);text-transform:uppercase"><th style="padding:6px 8px">Caixa</th><th>Operacional</th><th>IQA</th><th>Líder</th></tr>
-      ${caixasScore.map(cx=>{const p=r.pesosCamada[cx]||{};return `<tr style="border-top:1px solid var(--border)">
-        <td style="padding:8px;font-weight:600">${esc(cx)}</td>
-        <td style="padding:8px"><input type="number" id="rm_pc_${cx}_operacional" value="${p.operacional??''}" style="width:70px">%</td>
-        <td style="padding:8px"><input type="number" id="rm_pc_${cx}_iqa" value="${p.iqa??''}" style="width:70px">%</td>
-        <td style="padding:8px"><input type="number" id="rm_pc_${cx}_lider" value="${p.lider??''}" style="width:70px">%</td>
-      </tr>`;}).join('')}
-    </table>
-    <p class="hint" style="margin-bottom:10px">Pesos dentro da camada operacional — devem somar 100% em cada caixa.</p>
+    <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:22px">
     <table style="width:100%;border-collapse:collapse">
-      <tr style="text-align:left;font-size:.75em;color:var(--text-3);text-transform:uppercase"><th style="padding:6px 8px">Caixa</th><th>Produtiv.</th><th>CSAT</th><th>TTR</th><th>SLA 1ª</th><th>% aval.</th></tr>
-      ${caixasScore.map(cx=>{const p=r.pesosOperacional[cx]||{};return `<tr style="border-top:1px solid var(--border)">
-        <td style="padding:8px;font-weight:600">${esc(cx)}</td>
-        <td style="padding:8px"><input type="number" id="rm_po_${cx}_produtividade" value="${p.produtividade??''}" style="width:58px">%</td>
-        <td style="padding:8px"><input type="number" id="rm_po_${cx}_csat" value="${p.csat??''}" style="width:58px">%</td>
-        <td style="padding:8px"><input type="number" id="rm_po_${cx}_ttr" value="${p.ttr??''}" style="width:58px">%</td>
-        <td style="padding:8px"><input type="number" id="rm_po_${cx}_sla1" value="${p.sla1??''}" style="width:58px">%</td>
-        <td style="padding:8px"><input type="number" id="rm_po_${cx}_avaliadas" value="${p.avaliadas??''}" style="width:58px">%</td>
+      <tr>${th('Caixa')}${th('Operacional','right')}${th('IQA','right')}${th('Líder','right')}</tr>
+      ${caixasScore.map((cx,i)=>{const p=r.pesosCamada[cx]||{};return `<tr style="background:${i%2?'var(--input-bg)':'transparent'}">
+        <td style="padding:13px 14px;font-weight:700;border-bottom:1px solid var(--border)">${esc(cx)}</td>
+        ${td(inputSm(`rm_pc_${cx}_operacional`,p.operacional??'',60)+'%','right')}
+        ${td(inputSm(`rm_pc_${cx}_iqa`,p.iqa??'',60)+'%','right')}
+        ${td(inputSm(`rm_pc_${cx}_lider`,p.lider??'',60)+'%','right')}
       </tr>`;}).join('')}
     </table>
-    <div style="margin-top:16px;padding:12px;background:var(--input-bg);border-radius:8px;font-size:.82em;color:var(--text-2);line-height:1.6">
-      <b>Conversão das notas manuais (0 a 5):</b><br>
-      Líder: 0→0% · 1→20% · 2→40% · 3→70% · 4→80% · 5→100% (interpolação linear). Sem nota lançada = 100% (neutro).<br>
-      IQA: 0–2,9 → 0–70% · 2,9–4,0 → 70–85% · 4,0–5,0 → 85–100% (curva mais exigente na faixa baixa). Sem nota lançada = camada excluída, peso redistribuído.<br>
-      A soma ponderada das camadas é dividida por 10, virando a nota bruta (0 a 10, limitada em 10). Essa nota passa pela curva de classificação.
+    </div>
+    <p class="hint" style="margin-bottom:10px">Pesos dentro da camada operacional — devem somar 100% em cada caixa.</p>
+    <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse">
+      <tr>${th('Caixa')}${th('Produtiv.','right')}${th('CSAT','right')}${th('TTR','right')}${th('SLA 1ª','right')}${th('% aval.','right')}</tr>
+      ${caixasScore.map((cx,i)=>{const p=r.pesosOperacional[cx]||{};return `<tr style="background:${i%2?'var(--input-bg)':'transparent'}">
+        <td style="padding:13px 14px;font-weight:700;border-bottom:1px solid var(--border)">${esc(cx)}</td>
+        ${td(inputSm(`rm_po_${cx}_produtividade`,p.produtividade??'',50)+'%','right')}
+        ${td(inputSm(`rm_po_${cx}_csat`,p.csat??'',50)+'%','right')}
+        ${td(inputSm(`rm_po_${cx}_ttr`,p.ttr??'',50)+'%','right')}
+        ${td(inputSm(`rm_po_${cx}_sla1`,p.sla1??'',50)+'%','right')}
+        ${td(inputSm(`rm_po_${cx}_avaliadas`,p.avaliadas??'',50)+'%','right')}
+      </tr>`;}).join('')}
+    </table>
+    </div>
+    <div style="margin-top:18px;padding:14px 16px;background:var(--purple-soft);border-radius:10px;font-size:.82em;color:var(--text-2);line-height:1.7">
+      <b style="color:var(--purple)">🧮 Conversão das notas manuais (0 a 5):</b><br>
+      <b>Líder:</b> 0→0% · 1→20% · 2→40% · 3→70% · 4→80% · 5→100% (interpolação linear). Sem nota lançada = 100% (neutro).<br>
+      <b>IQA:</b> 0–2,9 → 0–70% · 2,9–4,0 → 70–85% · 4,0–5,0 → 85–100% (curva mais exigente na faixa baixa). Sem nota lançada = camada excluída, peso redistribuído.<br>
+      A soma ponderada das camadas é dividida por 10, virando a nota bruta (0 a 10, limitada em 10).
     </div>`;
   } else {
-    body=`<p class="hint" style="margin-bottom:12px">Faixas de nota bruta → classificação.</p>
-    <table style="width:100%;border-collapse:collapse;margin-bottom:18px">
-      <tr style="text-align:left;font-size:.75em;color:var(--text-3);text-transform:uppercase"><th style="padding:6px 8px">Nota mínima</th><th>Classificação</th></tr>
-      ${r.classificacaoFaixas.filter(f=>f.min>-Infinity).map(f=>{const idx=r.classificacaoFaixas.indexOf(f);return `<tr style="border-top:1px solid var(--border)">
-        <td style="padding:8px"><input type="number" step="0.1" id="rm_faixa_${idx}" value="${f.min}" style="width:80px"></td>
-        <td style="padding:8px;font-weight:600">${esc(f.v)}</td>
+    body=`<div style="padding:16px 18px;background:linear-gradient(120deg,var(--purple-soft),var(--input-bg));border:1px solid var(--border);border-radius:12px;font-size:.85em;color:var(--text-2);line-height:1.75;margin-bottom:18px">
+      <b style="color:var(--purple)">💡 Score Final e Classificação são coisas diferentes, de propósito.</b><br>
+      O <b>Score Final</b> é só a matemática pura (quanto foi entregue, ponderado pelos pesos) — pode passar de 100% fácil se algum indicador estourar bem acima da meta.<br>
+      A <b>Classificação</b> não é sobre "quanto", é sobre "está tudo dentro da meta ao mesmo tempo?". As travas abaixo existem justamente pra impedir que um indicador excelente disfarce outro ruim.<br>
+      Por isso é normal ver alguém com Score Final mais baixo numa classificação melhor que outra pessoa com Score mais alto: quem está mais equilibrado (sem nenhum indicador abaixo da meta) passa livre, mesmo com números absolutos menores.
+    </div>
+    <p class="hint" style="margin-bottom:10px">Faixas de nota bruta → classificação <b>de partida</b>. As travas de segurança logo abaixo podem rebaixar esse resultado — por isso a classificação final de alguém pode ficar mais baixa do que a nota sozinha sugeriria.</p>
+    <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px">
+    <table style="width:100%;border-collapse:collapse">
+      <tr>${th('Nota mínima','right')}${th('Classificação')}${th('')}</tr>
+      ${r.classificacaoFaixas.map((f,i)=>{const idx=r.classificacaoFaixas.indexOf(f);const info=classifCor(f.v);return `<tr style="background:${i%2?'var(--input-bg)':'transparent'}">
+        ${td(inputSm(`rm_faixa_${idx}`,f.min,70),'right')}
+        <td style="padding:10px 14px;border-bottom:1px solid var(--border)"><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;background:${info.bg};color:${info.cor};font-weight:700;font-size:.85em">${info.emoji||''} ${esc(f.v)}</span></td>
+        <td style="border-bottom:1px solid var(--border)"></td>
       </tr>`;}).join('')}
-      <tr style="border-top:1px solid var(--border)"><td style="padding:8px;color:var(--text-3)">abaixo disso</td><td style="padding:8px;font-weight:600">Abaixo do esperado</td></tr>
+      <tr><td style="padding:13px 14px;color:var(--text-3);font-size:.85em">abaixo disso</td><td style="padding:10px 14px"><span style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;background:${classifCor('Abaixo do esperado').bg};color:${classifCor('Abaixo do esperado').cor};font-weight:700;font-size:.85em">${classifCor('Abaixo do esperado').emoji} Abaixo do esperado</span></td><td></td></tr>
     </table>
-    <div style="padding:12px;background:var(--input-bg);border-radius:8px;font-size:.82em;color:var(--text-2);line-height:1.7">
-      <b>Travas de segurança (só rebaixam, nunca sobem a nota):</b><br>
-      1. <b>Régua mínima operacional</b> — para passar de Constante, todos os indicadores operacionais com dado no período precisam de atingimento ≥100% da meta, exceto % avaliadas por fechados (continua pesando no score, mas não entra nessa checagem).<br>
-      2. <b>Trava de CSAT</b> — se o CSAT real ficar abaixo de <input type="number" id="rm_trava_csat" value="${r.travaCsatPct}" style="width:55px;display:inline-block"> % da meta da caixa, a classificação é limitada a Estacionado.<br>
-      IQA abaixo de <input type="number" step="0.01" id="rm_iqa_alerta" value="${r.iqaAlertaAbaixo}" style="width:55px;display:inline-block"> apenas sinaliza 👁️ (não trava a classificação).
+    </div>
+    <div style="padding:14px 16px;background:var(--input-bg);border-radius:10px;font-size:.82em;color:var(--text-2);line-height:1.8">
+      <b>🔒 Travas de segurança</b> <span style="color:var(--text-3)">(só rebaixam a classificação — o Score Final numérico não muda)</span><br>
+      <b>1. Régua mínima operacional</b> — para passar de Constante, todos os indicadores operacionais com dado no período precisam de atingimento ≥100% da meta, exceto % avaliadas por fechados (continua pesando no score, mas não entra nessa checagem).<br>
+      <b>2. Trava de CSAT</b> — se o CSAT real ficar abaixo de ${inputSm('rm_trava_csat',r.travaCsatPct,55)}% da meta da caixa, a classificação é limitada a Estacionado.<br>
+      IQA abaixo de ${inputSm('rm_iqa_alerta',r.iqaAlertaAbaixo,55)} apenas sinaliza 👁️ (não trava a classificação).
     </div>`;
   }
-  show(`<div class="modal" style="width:700px;max-height:85vh;overflow-y:auto"><h2>⚙ Regras e Metas <button class="close" onclick="closeModal()">✕</button></h2>
-    <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">${tabBtn('metas','🎯 Metas por caixa')}${tabBtn('score','🏆 Como o score é formado')}${tabBtn('classificacao','🎖️ Regras de classificação')}</div>
+  show(`<div class="modal" style="width:740px;max-height:85vh;overflow-y:auto;padding:0">
+    <div style="padding:24px 28px 0">
+      <h2 style="margin-bottom:4px">⚙ Regras e Metas <button class="close" onclick="closeModal()">✕</button></h2>
+      <p class="hint" style="margin-bottom:16px">Pesos das camadas no modelo 2026 — mesmas regras usadas na calculadora de Performance por Caixa.</p>
+      <div style="display:inline-flex;gap:4px;padding:4px;background:var(--input-bg);border-radius:10px;margin-bottom:20px">${tabBtn('metas','🎯 Metas por caixa')}${tabBtn('score','🏆 Como o score é formado')}${tabBtn('classificacao','🎖️ Regras de classificação')}</div>
+    </div>
+    <div style="padding:0 28px 24px">
     ${body}
-    <div class="modal-foot" style="margin-top:18px"><button class="btn" onclick="closeModal()">Fechar</button><button class="btn primary" onclick="saveRegrasMetas('${tab}')">Salvar</button></div>
+    </div>
+    <div class="modal-foot" style="margin:0;padding:16px 28px;border-top:1px solid var(--border)"><button class="btn" onclick="closeModal()">Fechar</button><button class="btn primary" onclick="saveRegrasMetas('${tab}')">Salvar</button></div>
   </div>`);
 }
 function saveRegrasMetas(tab){
@@ -3007,7 +3066,6 @@ function saveRegrasMetas(tab){
     });
   } else {
     r.classificacaoFaixas.forEach((f,idx)=>{
-      if(f.min===-Infinity)return;
       const v=g('rm_faixa_'+idx);
       if(v!=='')f.min=parseFloat(v);
     });
@@ -3018,6 +3076,36 @@ function saveRegrasMetas(tab){
 }
 
 
+function teamSummaryHTML(lista,mainTab){
+  const buckets={};
+  const order=[];
+  function addBucket(info){
+    if(!buckets[info.label]){buckets[info.label]={count:0,info};order.push(info.label);}
+    buckets[info.label].count++;
+  }
+  lista.forEach(a=>{
+    let info;
+    if(mainTab==='semanal'){
+      const rawSem=a.semanas||[];
+      const semanasArr=[0,1,2].map(si=>Array.isArray(rawSem)?rawSem[si]:null);
+      const ultima=[...semanasArr].reverse().find(s=>s&&s.operacional);
+      info=weeklyStatusInfoCaixa(a.caixa||'Silver',ultima?ultima.operacional:null);
+    } else {
+      const resultadosMeses=[0,1,2].map(mi=>computeMesResultado(a.caixa||'Silver',(a.meses||[])[mi]));
+      const ultimo=[...resultadosMeses].reverse().find(r=>r.notaBruta!=null)||null;
+      info=ultimo?flagInfoFromClassificacao(ultimo.classificacao):{emoji:'⚪',cor:'var(--text-3)',bg:'var(--input-bg)',label:'Sem dados'};
+    }
+    addBucket(info);
+  });
+  const pillsHTML=order.map(label=>{
+    const{count,info}=buckets[label];
+    return `<span style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:${info.bg};color:${info.cor};font-weight:700;font-size:.85em">${info.emoji} ${count} ${esc(label)}</span>`;
+  }).join('');
+  return `<div class="panel" style="display:flex;align-items:center;gap:10px;padding:14px 18px;margin-bottom:16px;flex-wrap:wrap">
+    <span style="font-weight:700;color:var(--text-2);font-size:.9em">📊 Turma · ${lista.length} analista${lista.length!==1?'s':''}</span>
+    ${pillsHTML}
+  </div>`;
+}
 function viewAcompanhamento(){
   const _mesesFiltro=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   
@@ -3039,7 +3127,12 @@ function viewAcompanhamento(){
   });
   
   const addBtn=`<div class="edit-only-block" style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary sm" onclick="openAddAnalista()">+ Adicionar analista</button><button class="btn primary sm" onclick="openImportAvaliacaoOnboarding()">+ Importar avaliação</button><button class="btn sm" onclick="openRegrasMetas('metas')">⚙ Regras e Metas</button></div>`;
-  if(!lista.length)return addBtn+`<div class="empty">Nenhuma analista cadastrada.<br>Adicione para registrar a evolução semanal de atendimento.</div>`;
+  const mainTab=db._onbMainTab==='mensal'?'mensal':'semanal';
+  const mainTabBar=`<div style="display:flex;gap:6px;margin-bottom:16px">
+    <button class="btn sm ${mainTab==='semanal'?'primary':''}" onclick="db._onbMainTab='semanal';render()">📅 Semanal <span style="font-weight:400;opacity:.85">(3 semanas)</span></button>
+    <button class="btn sm ${mainTab==='mensal'?'primary':''}" onclick="db._onbMainTab='mensal';render()">🗓️ Mensal <span style="font-weight:400;opacity:.85">(3 meses)</span></button>
+  </div>`;
+  if(!lista.length)return addBtn+mainTabBar+`<div class="empty">Nenhuma analista cadastrada.<br>Adicione para registrar a evolução semanal de atendimento.</div>`;
 
   const cards=lista.map((a,ai)=>{
     // Garantir array mesmo se Firebase retornou objeto
@@ -3062,24 +3155,53 @@ function viewAcompanhamento(){
     const provaTotal=(prova&&prova.ac!=null&&prova.er!=null)?prova.ac+prova.er:null;
     const provaPct=provaTotal?Math.round(prova.ac/provaTotal*100):null;
     const provaBadge=prova?`<span class="tag" style="cursor:pointer;background:${provaPct!=null&&provaPct>=60?'rgba(16,185,129,.15)':'rgba(239,68,68,.15)'};color:${provaPct!=null&&provaPct>=60?'var(--green-text)':'var(--red-text)'}" onclick="openProvaDetalheOnboarding('${acompId}')" title="Ver questões erradas">📊 prova ${provaPct!=null?provaPct+'%':'—'}</span>`:'';
+    const expanded=_onbExpand.hasOwnProperty(acompId)?!!_onbExpand[acompId]:lista.length===1;
 
-    return `<div class="panel" style="padding:18px 20px;margin-bottom:12px">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px">
-        <div>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
-            <span style="font-weight:700;font-size:1em">${esc(a.nome)}</span>
-            ${a.caixa?`<span class="tag" style="background:rgba(139,92,246,.15);color:var(--purple)">${esc(a.caixa)}</span>`:''}
+    // Status "de relance" — um selo só, calculado a partir do período mais recente preenchido
+    let statusInfo,statusExtra,trendPcts;
+    let classifDetalhe='',classifBaseDetalhe='';
+    if(mainTab==='semanal'){
+      trendPcts=semanas.map(sem=>operacionalResumoCaixa(a.caixa||'Silver',sem.d?.operacional).pct);
+      const ultimaSemana=[...semanas].reverse().find(sem=>sem.d&&sem.d.operacional);
+      statusInfo=weeklyStatusInfoCaixa(a.caixa||'Silver',ultimaSemana?ultimaSemana.d.operacional:null);
+      statusExtra=statusInfo.pct!=null?Math.round(statusInfo.pct)+'%':'';
+    } else {
+      const resultadosMeses=[0,1,2].map(mi=>computeMesResultado(a.caixa||'Silver',(a.meses||[])[mi]));
+      trendPcts=resultadosMeses.map(r=>r.notaBruta!=null?r.notaBruta*10:null);
+      const ultimo=[...resultadosMeses].reverse().find(r=>r.notaBruta!=null)||null;
+      statusInfo=ultimo?flagInfoFromClassificacao(ultimo.classificacao):{emoji:'⚪',label:'Sem dados',cor:'var(--text-3)',bg:'var(--input-bg)',barra:'var(--border-2)'};
+      statusExtra=''; // nota escondida por enquanto — só a classificação aparece
+      classifDetalhe=ultimo?ultimo.classificacao:'';
+      classifBaseDetalhe=(ultimo&&ultimo.classificacaoBase!==ultimo.classificacao)?ultimo.classificacaoBase:'';
+    }
+    const trendHTML=trendDotsHTML(trendPcts);
+
+    return `<div class="panel" style="padding:0;overflow:hidden;border-left:4px solid ${statusInfo.barra||statusInfo.cor};margin-bottom:10px">
+      <div style="padding:14px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;flex-wrap:wrap" onclick="toggleAnalystExpand('${acompId}')">
+        <span style="color:var(--text-3);font-size:.8em;flex-shrink:0">${expanded?'▾':'▸'}</span>
+        <div class="av" style="width:36px;height:36px;font-size:12px;border-radius:50%;background:var(--purple-soft);color:var(--purple-dark);display:flex;align-items:center;justify-content:center;font-weight:600;flex-shrink:0">${esc(ini(a.nome))}</div>
+        <div style="min-width:0;flex:1 1 160px">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="font-weight:700;font-size:.95em">${esc(a.nome)}</span>
+            ${a.caixa?`<span style="color:var(--purple);font-size:.82em;font-weight:600">${esc(a.caixa)}</span>`:''}
             ${provaBadge}
           </div>
-          <div style="font-size:.8em;color:var(--text-3)">${esc(a.email||'')}</div>
+          ${!expanded?`<div style="font-size:.76em;color:var(--text-3)">${esc(a.email||'')}</div>`:''}
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          ${spark}
-          ${tend?`<span style="font-size:1.2em;color:${tendC};font-weight:700">${tend}</span>`:''}
-          <button class="btn sm edit-only" style="color:var(--red-text);border-color:var(--red)" onclick="deletarAnalistaById('${acompId}')">✕</button>
+        <div title="${mainTab==='semanal'?'Tendência S1 → S3':'Tendência Mês 1 → Mês 3'}">${trendHTML}</div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0">
+          <div style="display:flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;background:${statusInfo.bg};color:${statusInfo.cor};font-weight:700;font-size:.85em;white-space:nowrap">
+            <span>${statusInfo.emoji}</span><span>${esc(statusInfo.label)}</span>
+            ${statusExtra?`<span style="opacity:.7;font-weight:600">· ${statusExtra}</span>`:''}
+          </div>
+          ${classifDetalhe?`<span style="font-size:.72em;color:var(--text-3);padding-right:4px">${esc(classifDetalhe)}</span>`:''}
         </div>
+        <button class="btn sm edit-only" style="color:var(--red-text);border-color:var(--red);flex-shrink:0" onclick="event.stopPropagation();deletarAnalistaById('${acompId}')">✕</button>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      ${expanded?`
+      <div style="padding:0 18px 16px 18px">
+      <div style="font-size:.8em;color:var(--text-3);margin:0 0 10px">${esc(a.email||'')}</div>
+      ${mainTab==='semanal'?`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
         ${semanas.map((sem,si)=>{
           const s=sem.d;
           const prev=si>0?semanas[si-1].d:null;
@@ -3096,244 +3218,31 @@ function viewAcompanhamento(){
           }
 
           return `<div style="background:var(--input-bg);border:1px solid var(--border);border-radius:10px;overflow:hidden">
-            <div style="padding:10px 12px 6px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)">
+            <div style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--border);flex-wrap:wrap">
               <div>
                 <div style="font-weight:700;font-size:.85em">Semana ${si+1}</div>
                 ${sem.periodo?`<div style="font-size:.72em;color:var(--purple);margin-top:1px">${esc(sem.periodo)}</div>`:`<div style="font-size:.72em;color:var(--text-3);margin-top:1px">sem período</div>`}
               </div>
               <div style="display:flex;gap:6px;align-items:center">
-                ${(()=>{const r=operacionalResumoCaixa(a.caixa||'Silver',s?.operacional);const cor=r.pct==null?'var(--text-3)':(r.pct>=100?'var(--green)':r.pct>=70?'var(--amber)':'var(--red-text)');return `<button class="btn sm" style="padding:3px 8px;font-size:.78em;color:${cor};border-color:${cor}" onclick="openEditOperacional('${acompId}','semana',${si})" title="Camada operacional (real vs. meta)">🏆 ${r.pct!=null?Math.round(r.pct)+'%':'meta'}</button>`;})()}
+                ${(()=>{const info=weeklyStatusInfoCaixa(a.caixa||'Silver',s?.operacional);return info.pct!=null?statusBadgeHTML(info,Math.round(info.pct)+'%'):`<button class="btn sm" style="padding:3px 8px;font-size:.78em" onclick="openEditOperacional('${acompId}','semana',${si})" title="Regras 2026: % de atingimento da meta (peso por caixa)">🎯 Meta 2026</button>`;})()}
                 <button class="btn sm" style="padding:3px 8px;font-size:.78em" onclick="openEditSemanaById('${acompId}',${si})" title="Registrar semana ${si+1}">✎</button>
               </div>
             </div>
             <div style="padding:10px 12px">
               ${filled?`
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px">
-                <div>
-                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px">SLA ≤${metas.sla}min</div>
-                  <div style="font-size:1.05em;font-weight:700;font-family:'Inter',sans-serif;color:${corSLA(s.sla,a.caixa)}">${s.sla!=null?s.sla+'min':'—'}</div>
-                  ${prev?delta(s.sla,prev.sla,false):''}
-                </div>
-                <div>
-                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px">CSAT ≥${metas.csat}%</div>
-                  <div style="font-size:1.05em;font-weight:700;font-family:'Inter',sans-serif;color:${corCSAT(s.csat,a.caixa)}">${s.csat!=null?s.csat+'%':'—'}</div>
-                  ${prev?delta(s.csat,prev.csat,true):''}
-                </div>
-                <div>
-                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px">Recebidas</div>
-                  <div style="font-size:1.05em;font-weight:600">${s.recebidas??'—'}</div>
-                </div>
-                <div>
-                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px">Fechadas</div>
-                  <div style="font-size:1.05em;font-weight:600">${s.fechadas??'—'}</div>
-                </div>
-                <div>
-                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px">TMA ≤24h</div>
-                  <div style="font-size:1.05em;font-weight:700;font-family:'Inter',sans-serif;color:${corTMA(s.tma)}">${s.tma!=null?s.tma+'h':'—'}</div>
-                  ${prev?delta(s.tma,prev.tma,false):''}
-                </div>
-                <div>
-                  <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:1px">Produtividade</div>
-                  <div style="font-size:1.05em;font-weight:700;font-family:'Inter',sans-serif;color:var(--blue)">${s.recebidas&&s.fechadas!=null?Math.round(s.fechadas/s.recebidas*100)+'%':'—'}</div>
-                  <div style="font-size:.75em;color:var(--text-3)">${s.fechadas??'—'}/${s.recebidas??'—'}</div>
-                </div>
-                ${s.obs?`<div style="grid-column:span 2;border-top:1px solid var(--border);padding-top:6px;margin-top:2px;font-size:.75em;color:var(--text-3);line-height:1.4">${esc(s.obs)}</div>`:''}
-              </div>`
-              :`<div style="font-size:.82em;color:var(--text-3);padding:4px 0 6px">Sem registros</div>`}
+              ${unifiedMetricsGridHTML(a.caixa||'Silver',s?.operacional,{recebidas:s.recebidas,fechadas:s.fechadas})}
+              ${s.obs?`<div style="border-top:1px solid var(--border);padding-top:6px;margin-top:8px;font-size:.75em;color:var(--text-3);line-height:1.4">${esc(s.obs)}</div>`:''}
+              `:`<div style="font-size:.82em;color:var(--text-3);padding:4px 0 6px">Sem registros</div>`}
             </div>
           </div>`;
         }).join('')}
-      </div>
-      ${rampagemPanelHTML(acompId,a)}
+      </div>`:monthGridHTML(acompId,a)}
+      </div>`:''}
     </div>`;
   }).join('');
   
-  // ========== CARD DE EVOLUÇÃO (após S2 preenchida) ==========
-  let evolCard='';
-  
-  // Filtro por analista
-  const todosAnalistas=lista.map(a=>a.nome);
-  let filterAnalista=db._onbEvolFilter||'Consolidado';
-  let analListaFiltrada=filterAnalista==='Consolidado'?lista:lista.filter(a=>a.nome===filterAnalista);
-  
-  const filterHTML=todosAnalistas.length>1?`<div class="filters" style="margin-bottom:14px"><span style="font-size:.85em;color:var(--text-3);align-self:center">Analista:</span>${['Consolidado',...todosAnalistas].map(n=>`<button class="ft ${filterAnalista===n?'on':''}" onclick="db._onbEvolFilter='${n}';render()">${esc(n)}</button>`).join('')}</div>`:'';
-  
-  // Selecionar semanas para comparação
-  const semUpTo2=analListaFiltrada.some(a=>{
-    const rawSem=a.semanas||[];
-    const s2=Array.isArray(rawSem)?rawSem[1]:(rawSem[1]??rawSem['1']??null);
-    return s2&&(s2.sla!==null||s2.csat!==null||s2.tma!==null||s2.recebidas!==null||s2.fechadas!==null);
-  });
-  const semUpTo3=analListaFiltrada.some(a=>{
-    const rawSem=a.semanas||[];
-    const s3=Array.isArray(rawSem)?rawSem[2]:(rawSem[2]??rawSem['2']??null);
-    return s3&&(s3.sla!==null||s3.csat!==null||s3.tma!==null||s3.recebidas!==null||s3.fechadas!==null);
-  });
-  
-  // Determinar qual semana mostrar (prioridade: S3 > S2)
-  let showMode='none';
-  if(semUpTo3){
-    showMode='s1s3';
-  }else if(semUpTo2){
-    showMode='s1s2';
-  }
-  
-  const compareMode=showMode;
-  const s1Idx=0, s2Idx=1, s3Idx=2;
-  const compareToIdx=compareMode==='s1s3'?s3Idx:s2Idx;
-  
-  if(analListaFiltrada.length>0){
-    // Cálculo: Média (S1+S2) vs S3
-    const calcEvol=(arr,chave)=>{
-      const vals=arr.map(a=>{
-        const rawSem=a.semanas||[];
-        const s1=Array.isArray(rawSem)?rawSem[0]:(rawSem[0]??rawSem['0']??null);
-        const s2=Array.isArray(rawSem)?rawSem[1]:(rawSem[1]??rawSem['1']??null);
-        const s3=Array.isArray(rawSem)?rawSem[2]:(rawSem[2]??rawSem['2']??null);
-        
-        if(!s1||!s2||!s3)return null;
-        
-        if(chave==='sla'){
-          if(s1.sla!=null&&s1.sla!==''&&s2.sla!=null&&s2.sla!==''&&s3.sla!=null&&s3.sla!==''){
-            const s1Val=parseFloat(s1.sla);
-            const s2Val=parseFloat(s2.sla);
-            const s3Val=parseFloat(s3.sla);
-            const media=(s1Val+s2Val)/2;
-            if(media>0)return((media-s3Val)/media)*100;
-          }
-        }
-        if(chave==='csat'){
-          if(s1.csat!=null&&s1.csat!==''&&s2.csat!=null&&s2.csat!==''&&s3.csat!=null&&s3.csat!==''){
-            const s1Val=parseFloat(s1.csat);
-            const s2Val=parseFloat(s2.csat);
-            const s3Val=parseFloat(s3.csat);
-            const media=(s1Val+s2Val)/2;
-            if(media>0)return((s3Val-media)/media)*100;
-          }
-        }
-        if(chave==='tma'){
-          if(s1.tma!=null&&s1.tma!==''&&s2.tma!=null&&s2.tma!==''&&s3.tma!=null&&s3.tma!==''){
-            const s1Val=parseFloat(s1.tma);
-            const s2Val=parseFloat(s2.tma);
-            const s3Val=parseFloat(s3.tma);
-            const media=(s1Val+s2Val)/2;
-            if(media>0)return((media-s3Val)/media)*100;
-          }
-        }
-        if(chave==='recebidas'){
-          if(s1.recebidas!=null&&s1.recebidas!==''&&s2.recebidas!=null&&s2.recebidas!==''&&s3.recebidas!=null&&s3.recebidas!==''){
-            const s1Val=parseFloat(s1.recebidas);
-            const s2Val=parseFloat(s2.recebidas);
-            const s3Val=parseFloat(s3.recebidas);
-            const media=(s1Val+s2Val)/2;
-            if(media>0)return((s3Val-media)/media)*100;
-          }
-        }
-        if(chave==='fechadas'){
-          if(s1.fechadas!=null&&s1.fechadas!==''&&s2.fechadas!=null&&s2.fechadas!==''&&s3.fechadas!=null&&s3.fechadas!==''){
-            const s1Val=parseFloat(s1.fechadas);
-            const s2Val=parseFloat(s2.fechadas);
-            const s3Val=parseFloat(s3.fechadas);
-            const media=(s1Val+s2Val)/2;
-            if(media>0)return((s3Val-media)/media)*100;
-          }
-        }
-        return null;
-      }).filter(v=>v!==null);
-      
-      return vals.length?Math.round(vals.reduce((s,v)=>s+v,0)/vals.length*10)/10:null;
-    };
-    
-    const avgSla=calcEvol(analListaFiltrada,'sla');
-    const avgCsat=calcEvol(analListaFiltrada,'csat');
-    const avgTma=calcEvol(analListaFiltrada,'tma');
-    const avgRecebidas=calcEvol(analListaFiltrada,'recebidas');
-    const avgFechadas=calcEvol(analListaFiltrada,'fechadas');
-    
-    const mkCard=(label,val)=>{
-      if(val===null)return '';
-      const melhorou=val>0;
-      const sinal=val>0?'+':'';
-      return `<div style="background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:14px 16px">
-        <div style="font-size:10px;letter-spacing:.05em;text-transform:uppercase;opacity:.85;color:#fff">${label}</div>
-        <div style="font-family:'Inter',sans-serif;font-size:1.9em;font-weight:700;margin-top:6px;letter-spacing:-.5px;color:#fff">${sinal}${val}%</div>
-        <div style="font-size:.78em;opacity:.8;margin-top:2px;color:#fff">${melhorou?'↑ melhora':'↓ queda'}</div>
-      </div>`;
-    };
-    
-    const cards=[];
-    if(avgSla!==null) cards.push(mkCard('SLA 1ª RESP / MÉDIA (MIN)',avgSla));
-    if(avgCsat!==null) cards.push(mkCard('CSAT / SEMANAL',avgCsat));
-    if(avgTma!==null) cards.push(mkCard('TMA / MÉDIA (H)',avgTma));
-    if(avgRecebidas!==null) cards.push(mkCard('CHATS RECEBIDOS',avgRecebidas));
-    if(avgFechadas!==null) cards.push(mkCard('CHATS FECHADOS',avgFechadas));
-    
-    if(cards.length>0){
-      const semLabel=compareMode==='s1s3'?'S1 → S3':'S1 → S2';
-      evolCard=`${filterHTML}<div style="background:linear-gradient(120deg,#6d5de0,#5848c4);color:#fff;border-radius:var(--radius);padding:20px 22px;margin-bottom:18px">
-        <div style="font-family:'Inter',sans-serif;font-size:1.25em;font-weight:700;color:#fff;margin-bottom:14px">Evolução ${semLabel} — ${db.current} ✦</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
-          ${cards.join('')}
-        </div>
-      </div>`;
-    }
-
-    // ===== Evolução vs Meta (camada operacional) — mesma comparação, mas em % de atingimento da meta =====
-    const baseIdxs=compareMode==='s1s3'?[0,1]:[0];
-    const targetIdx=compareToIdx;
-    const metaResumo={};
-    OPERACIONAL_METRICS.forEach(m=>{
-      const deltas=[],atuais=[];
-      analListaFiltrada.forEach(a=>{
-        const caixa=a.caixa||'Silver';
-        const rawSem=a.semanas||[];
-        const sAt=Array.isArray(rawSem)?rawSem[targetIdx]:null;
-        if(!sAt||!sAt.operacional)return;
-        const dAt=sAt.operacional[m.key]||{};
-        const metaAt=metaEfetiva(caixa,m,dAt.meta);
-        const pctAt=metricaPct(m,dAt.real,metaAt);
-        if(pctAt==null)return;
-        const base=[];
-        baseIdxs.forEach(bi=>{
-          const sB=Array.isArray(rawSem)?rawSem[bi]:null;
-          if(!sB||!sB.operacional)return;
-          const dB=sB.operacional[m.key]||{};
-          const metaB=metaEfetiva(caixa,m,dB.meta);
-          const pctB=metricaPct(m,dB.real,metaB);
-          if(pctB!=null)base.push(pctB);
-        });
-        if(!base.length)return;
-        const baseMedia=base.reduce((s,v)=>s+v,0)/base.length;
-        deltas.push(pctAt-baseMedia);
-        atuais.push(pctAt);
-      });
-      if(deltas.length)metaResumo[m.key]={delta:deltas.reduce((s,v)=>s+v,0)/deltas.length,atual:atuais.reduce((s,v)=>s+v,0)/atuais.length};
-    });
-    const mkMetaCard=(m)=>{
-      const r=metaResumo[m.key];if(!r)return'';
-      const melhorou=r.delta>0;const sinal=r.delta>0?'+':'';
-      return `<div style="background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:14px 16px">
-        <div style="font-size:10px;letter-spacing:.05em;text-transform:uppercase;opacity:.85;color:#fff">${esc(m.label)}</div>
-        <div style="font-family:'Inter',sans-serif;font-size:1.9em;font-weight:700;margin-top:6px;letter-spacing:-.5px;color:#fff">${Math.round(r.atual)}%</div>
-        <div style="font-size:.78em;opacity:.85;margin-top:2px;color:#fff">${sinal}${round(r.delta,1)}p.p. ${melhorou?'↑ melhora':'↓ queda'} vs meta</div>
-      </div>`;
-    };
-    const metaCards=OPERACIONAL_METRICS.map(mkMetaCard).filter(Boolean);
-    if(metaCards.length>0){
-      const semLabel=compareMode==='s1s3'?'S1 → S3':'S1 → S2';
-      evolCard+=`<div style="background:linear-gradient(120deg,#0d9488,#0f766e);color:#fff;border-radius:var(--radius);padding:20px 22px;margin-bottom:18px">
-        <div style="font-family:'Inter',sans-serif;font-size:1.25em;font-weight:700;color:#fff;margin-bottom:2px">🎯 Evolução vs Meta ${semLabel} — ${db.current}</div>
-        <p style="font-size:.8em;opacity:.85;margin-bottom:14px">% de atingimento da meta (camada operacional) em ${compareMode==='s1s3'?'S3':'S2'}, e quanto mudou frente à ${compareMode==='s1s3'?'média de S1+S2':'S1'}.</p>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
-          ${metaCards.join('')}
-        </div>
-      </div>`;
-    } else if(cards.length>0){
-      evolCard+=`<div class="empty" style="margin-bottom:18px">Ainda sem dados na camada operacional (Rampagem — Semanas) para calcular a evolução vs meta.</div>`;
-    }
-  }
-  
-  return addBtn+(compareMode!=='none'?evolCard:'')+cards;
+  const teamSummary = teamSummaryHTML(lista, mainTab);
+  return addBtn+mainTabBar+teamSummary+cards;
 }
 
 function openImportAvaliacaoOnboarding(){
