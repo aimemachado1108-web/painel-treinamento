@@ -784,6 +784,24 @@ function toast(m){const t=document.getElementById('toast');t.textContent=m;t.cla
 function impPct(b,a,low){if(!b)return 0;return low?((b-a)/b*100):((a-b)/b*100);}
 function pdiMetrics(p){const m=p.m;return{sla:impPct(m.slaB,m.slaA,true),cr:impPct(m.crB,m.crA,false),cf:impPct(m.cfB,m.cfA,false),tma:impPct(m.tmaB,m.tmaA,true),cs:impPct(m.csB,m.csA,false),eval:impPct(m.evalB,m.evalA,false)};}
 function pdiOverall(p){const x=pdiMetrics(p);return(x.sla+x.cr+x.cf+x.tma+x.cs+x.eval)/6;}
+// A partir de Agosto/2026, PDI também compara o resultado pós-PDI com a meta da caixa de atendimento
+// (além da comparação de sempre, antes vs depois do próprio analista).
+const MESES_NOMES_PDI=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function mesParaNumero(mesStr){
+  if(!mesStr)return null;
+  const partes=mesStr.trim().split(' ');
+  if(partes.length<2)return null;
+  const idx=MESES_NOMES_PDI.findIndex(m=>m.toLowerCase()===partes[0].toLowerCase());
+  const ano=parseInt(partes[1]);
+  if(idx<0||isNaN(ano))return null;
+  return ano*12+idx;
+}
+const PDI_META_CUTOFF=mesParaNumero('Agosto 2026');
+function pdiTemMetaCaixa(p){
+  if(!p||!p.caixa)return false;
+  const n=mesParaNumero(p.month);
+  return n!=null&&PDI_META_CUTOFF!=null&&n>=PDI_META_CUTOFF;
+}
 function deltaTag(p){const up=p>=0;return `<span class="delta ${up?'up':'down'}">${up?'+':''}${round(p,1)}%</span>`;}
 function badge(t){return `<span class="badge" style="${badgeStyle(t)}">${esc(t)}</span>`;}
 function statusSelect(s,oc,opts){return `<select class="statussel" style="${statusStyle(s)}" onchange="${oc}">${opts.map(o=>`<option ${o===s?'selected':''}>${o}</option>`).join('')}</select>`;}
@@ -879,9 +897,10 @@ function calcularRampagem(acompanhamento, mesAtual) {
     const caixa=a.caixa||'Silver';
     const rawSem=a.semanas||[];
     const semanasArr=[0,1,2].map(i=>Array.isArray(rawSem)?rawSem[i]:(rawSem[i]??rawSem[String(i)]??null));
-    const ultima=[...semanasArr].reverse().find(s=>s&&s.operacional);
-    if(!ultima)return null;
-    const r=operacionalResumoCaixa(caixa,ultima.operacional);
+    let ultimaIdx=-1;
+    semanasArr.forEach((s,i)=>{if(s&&s.operacional)ultimaIdx=i;});
+    if(ultimaIdx<0)return null;
+    const r=operacionalResumoCaixa(caixa,semanasArr[ultimaIdx].operacional,ultimaIdx);
     if(r.pct==null)return null;
     return{nome:a.nome,caixa:a.caixa,pct:r.pct};
   }).filter(v=>v!==null);
@@ -1098,31 +1117,90 @@ function viewPdis(){
 function openPdi(id){route.pdiId=id;render();window.scrollTo(0,0);}
 function delPdiGroup(ids){const list=ids.split(',');const p=db.pdis.find(x=>x.id===list[0]);if(!p)return;if(!confirm('Excluir o(s) PDI(s) de "'+p.analyst+'"? Esta ação não pode ser desfeita.'))return;db.pdis=db.pdis.filter(x=>!list.includes(x.id));persist();render();toast('PDI excluído');}
 function delPdi(id){const p=db.pdis.find(x=>x.id===id);if(!p)return;if(!confirm('Excluir o PDI "'+p.title+'"?'))return;db.pdis=db.pdis.filter(x=>x.id!==id);persist();route.pdiId=null;render();toast('PDI excluído');}
+function pdiOperacionalResumo(p){
+  if(!pdiTemMetaCaixa(p))return null;
+  const caixa=p.caixa;
+  const op=p.operacional||{};
+  const pesos=pesosOperacionalCaixa(caixa);
+  const metricas={};
+  let sumW=0,sumWP=0,any=false;
+  OPERACIONAL_METRICS.forEach(m=>{
+    let real=null,manualMeta=null,avaliacoes=null,fechados=null;
+    // Produtividade = "Chats resp / média dia" (mesmo dado, só nome diferente entre as telas —
+    // não duplica campo de preenchimento). Só a meta é exclusiva daqui, porque ela muda a cada PDI.
+    if(m.key==='produtividade'){real=p.m.crA||null;manualMeta=(op.produtividade&&op.produtividade.meta)??null;}
+    else if(m.key==='csat'){real=p.m.csA||null;}
+    else if(m.key==='ttr'){real=p.m.tmaA||null;}
+    else if(m.key==='sla1'){real=p.m.slaA||null;}
+    else if(m.key==='avaliadas'){
+      // % avaliadas por fechados = "Avaliações recebidas" ÷ "Chats fech / média dia" — também
+      // reaproveita os campos que já existem no Acompanhamento pós-PDI, sem duplicar.
+      avaliacoes=p.m.evalA||null;fechados=p.m.cfA||null;
+      real=(avaliacoes!=null&&fechados)?round(avaliacoes/fechados*100,2):null;
+    }
+    const metaVal=metaEfetiva(caixa,m,manualMeta,null);
+    const pct=metricaPct(m,real,metaVal);
+    metricas[m.key]={real,meta:metaVal,pct,avaliacoes,fechados};
+    const peso=pesos[m.key]??0;
+    if(pct!=null){sumWP+=pct*peso;sumW+=peso;any=true;}
+  });
+  return{metricas,pesos,pctGeral:sumW?sumWP/sumW:null,any};
+}
+function pdiOperacionalGridHTML(p){
+  const resumo=pdiOperacionalResumo(p);
+  if(!resumo)return'';
+  const boxes=OPERACIONAL_METRICS.map(m=>{
+    const d=resumo.metricas[m.key];
+    let extraSub='';
+    if(m.key==='avaliadas'&&(d.avaliacoes!=null||d.fechados!=null))extraSub=`<div style="font-size:.65em;color:var(--text-3)">${d.avaliacoes??'—'}/${d.fechados??'—'}</div>`;
+    return metricBoxHTML(m,d.real,d.meta,extraSub,resumo.pesos[m.key]);
+  });
+  return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">${boxes.join('')}</div>`;
+}
 function viewPdiDetail(id){
   const p=db.pdis.find(x=>x.id===id);if(!p)return '<div class="empty">PDI não encontrado.</div>';
   const m=p.m,x=pdiMetrics(p);
+  const temMeta=pdiTemMetaCaixa(p);
   const cell=(k,b,a,u,im)=>`<div class="metcell"><div class="k">${k}</div><div class="v">${fmt(b)}${u}<span class="ar">→</span><b>${fmt(a)}${u}</b></div>${p.hasResults?deltaTag(im):''}</div>`;
+  const caixaInfo=p.caixa?`<span>📦 Caixa: ${esc(p.caixa)}</span>`:'';
+  const semCaixaAviso=(!p.caixa&&mesParaNumero(p.month)!=null&&PDI_META_CUTOFF!=null&&mesParaNumero(p.month)>=PDI_META_CUTOFF)
+    ?`<div class="hint" style="margin:8px 0 0;color:var(--amber-text)">⚠️ A partir de Agosto/2026 os PDIs comparam o resultado com a meta da caixa (Analista VS Meta) — defina a caixa em "✎ Editar PDI" pra essa comparação aparecer aqui.</div>`:'';
+  const opProd=(p.operacional&&p.operacional.produtividade)||{};
   return `<button class="btn sm" style="margin-bottom:16px" onclick="route.pdiId=null;render()">← Voltar para PDIs</button>
   <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px"><div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--purple-2),var(--purple-dark));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600">${esc(ini(p.analyst))}</div><div style="flex:1"><h1 class="tfont" style="font-size:1.85em;font-weight:600">${esc(p.analyst)}</h1><div style="color:var(--text-2);font-size:.92em">${esc(p.title)}</div></div><button class="btn" onclick="editPdiModal('${p.id}')">✎ Editar PDI</button><button class="btn" style="color:var(--red-text);border-color:var(--red)" onclick="delPdi('${p.id}')">✕ Excluir</button></div>
   <div class="acard ${p.status==='Concluído'?'done':''}" style="border-left-color:${PRIO[p.priority]}">
-    <div class="top"><div><h3>🎯 ${esc(p.title)}</h3><div class="who"><span>📅 ${esc(p.date)}</span><span>Prioridade: ${esc(p.priority)}</span></div></div><div class="rt">${statusSelect(p.status,`setPdiStatus('${p.id}',this.value)`,TRAIN_STATUS)}</div></div>
+    <div class="top"><div><h3>🎯 ${esc(p.title)}</h3><div class="who"><span>📅 ${esc(p.date)}</span><span>Prioridade: ${esc(p.priority)}</span>${caixaInfo}</div></div><div class="rt">${statusSelect(p.status,`setPdiStatus('${p.id}',this.value)`,TRAIN_STATUS)}</div></div>
     <div class="desc">${esc(p.obs)}</div>
+    ${semCaixaAviso}
     <div class="panel-h" style="margin:18px 0 8px"><div class="pi">▦</div><h2>Métricas — antes &amp; depois</h2></div>
     <div class="metgrid">${cell('SLA 1ª resp / média dia',m.slaB,m.slaA,'min',x.sla)}${cell('Chats resp / média dia',m.crB,m.crA,'',x.cr)}${cell('Chats fech / média dia',m.cfB,m.cfA,'',x.cf)}${cell('TMA / média dia',m.tmaB,m.tmaA,'h',x.tma)}${cell('CSAT / semanal',m.csB,m.csA,'%',x.cs)}${cell('Avaliações recebidas',m.evalB,m.evalA,'',x.eval)}</div>
+    ${temMeta?`<div class="panel-h" style="margin:20px 0 8px"><div class="pi">🎯</div><h2>Analista VS Meta <span style="font-weight:400;color:var(--text-3);font-size:.8em">— resultado pós-PDI comparado à meta/referência da caixa "${esc(p.caixa)}"</span></h2></div>${pdiOperacionalGridHTML(p)}`:''}
     <div class="panel-h" style="margin:20px 0 8px"><div class="pi">✎</div><h2>Acompanhamento pós-PDI <span style="font-weight:400;color:var(--text-3);font-size:.8em">— preencha durante os 15 dias após o PDI</span></h2></div>
     <div class="formrow">
       <div class="fld"><label>SLA 1ª resp / média dia (min)</label><input id="f_sla" value="${m.slaA||''}" placeholder="ex: 12,06"></div>
-      <div class="fld"><label>Chats resp / média dia</label><input id="f_cr" value="${m.crA||''}"></div>
-      <div class="fld"><label>Chats fech / média dia</label><input id="f_cf" value="${m.cfA||''}"></div>
+      <div class="fld"><label>Chats resp / média dia${temMeta?' <small style="color:var(--purple)">= Produtividade</small>':''}</label><input id="f_cr" value="${m.crA||''}"></div>
+      <div class="fld"><label>Chats fech / média dia${temMeta?' <small style="color:var(--purple)">usado no % avaliadas</small>':''}</label><input id="f_cf" value="${m.cfA||''}"></div>
       <div class="fld"><label>TMA / média dia (horas)</label><input id="f_tma" value="${m.tmaA||''}"></div>
       <div class="fld"><label>CSAT / semanal (%)</label><input id="f_cs" value="${m.csA||''}"></div>
-      <div class="fld"><label>Avaliações recebidas</label><input id="f_eval" value="${m.evalA||''}"></div>
+      <div class="fld"><label>Avaliações recebidas${temMeta?' <small style="color:var(--purple)">usado no % avaliadas</small>':''}</label><input id="f_eval" value="${m.evalA||''}"></div>
     </div>
+    ${temMeta?`<div class="fld" style="max-width:260px;margin-top:10px"><label>🎯 Meta/referência de Produtividade</label><input id="op_prod_meta" value="${opProd.meta??''}" placeholder="Ex: 181"><p class="hint" style="margin-top:4px">Só isso é exclusivo do Analista VS Meta — o resto reaproveita os campos acima. Muda a cada PDI, por isso é sempre manual.</p></div>`:''}
     <div style="display:flex;align-items:center;gap:14px;margin-top:12px"><span class="hint" style="margin:0;margin-right:auto">Os valores “antes” ficam fixos; aqui você atualiza os resultados “depois”.</span><button class="btn primary" onclick="savePdiResults('${p.id}')">Salvar resultados</button></div>
   </div>`;
 }
 function num(id){const v=document.getElementById(id).value.replace(',','.').trim();return v===''?0:parseFloat(v)||0;}
-function savePdiResults(id){const p=db.pdis.find(x=>x.id===id);p.m.slaA=num('f_sla');p.m.crA=num('f_cr');p.m.cfA=num('f_cf');p.m.tmaA=num('f_tma');p.m.csA=num('f_cs');p.m.evalA=num('f_eval');p.hasResults=!!(p.m.slaA||p.m.crA||p.m.cfA||p.m.tmaA||p.m.csA);persist();render();toast('Resultados salvos');}
+function savePdiResults(id){
+  const p=db.pdis.find(x=>x.id===id);
+  p.m.slaA=num('f_sla');p.m.crA=num('f_cr');p.m.cfA=num('f_cf');p.m.tmaA=num('f_tma');p.m.csA=num('f_cs');p.m.evalA=num('f_eval');
+  p.hasResults=!!(p.m.slaA||p.m.crA||p.m.cfA||p.m.tmaA||p.m.csA);
+  const metaEl=document.getElementById('op_prod_meta');
+  if(metaEl){
+    if(!p.operacional)p.operacional={};
+    const v=metaEl.value.replace(',','.').trim();
+    p.operacional.produtividade={meta:v===''?null:parseFloat(v)};
+  }
+  persist();render();toast('Resultados salvos');
+}
 function setPdiStatus(id,s){db.pdis.find(x=>x.id===id).status=s;persist();render();}
 
 /* ---------- IMPACTO - PDI ---------- */
@@ -1143,9 +1221,58 @@ function viewImpactoPdi(){
   const ad=(b,a,u,im)=>`${fmt(b)}${u}→<b>${fmt(a)}${u}</b> <span class="${im>=0?'pos':'neg'}">(${im>=0?'+':''}${round(im,1)}%)</span>`;
   const rt=pdis.map(p=>{const x=pdiMetrics(p),m=p.m;return `<tr><td><b>${esc(p.analyst)}</b></td><td style="color:var(--text-2)">${esc(p.title)}</td><td>${ad(m.slaB,m.slaA,'min',x.sla)}</td><td>${ad(m.crB,m.crA,'',x.cr)}</td><td>${ad(m.cfB,m.cfA,'',x.cf)}</td><td>${ad(m.tmaB,m.tmaA,'h',x.tma)}</td><td>${ad(m.csB,m.csA,'%',x.cs)}</td><td>${ad(m.evalB,m.evalA,'',x.eval)}</td><td class="pos">+${round(pdiOverall(p),1)}%</td></tr>`;}).join('');
   const filterBtns=analysts.map(a=>`<button class="ft ${pdiAnalystFilter===a?'on':''}" onclick="pdiAnalystFilter='${a.replace(/'/g,"\'")}';render()">${esc(a)}</button>`).join('');
+
+  // ===== Analista VS Meta: resultado pós-PDI vs meta/referência da caixa (Agosto/2026 em diante, com caixa definida) =====
+  const pdisComMeta=pdis.filter(p=>pdiTemMetaCaixa(p));
+  let metaSection='';
+  if(pdisComMeta.length){
+    const resumos=pdisComMeta.map(p=>({p,r:pdiOperacionalResumo(p)}));
+    const metaAvg=key=>{
+      const vals=resumos.map(({r})=>r.metricas[key].pct).filter(v=>v!=null);
+      return vals.length?round(vals.reduce((s,v)=>s+v,0)/vals.length,1):null;
+    };
+    const realMetaAvg=key=>{
+      const reais=resumos.map(({r})=>r.metricas[key].real).filter(v=>v!=null);
+      const metas=resumos.map(({r})=>r.metricas[key].meta).filter(v=>v!=null);
+      return{
+        real:reais.length?reais.reduce((s,v)=>s+v,0)/reais.length:null,
+        meta:metas.length?metas.reduce((s,v)=>s+v,0)/metas.length:null
+      };
+    };
+    const metaCard=(m)=>{
+      const v=metaAvg(m.key);
+      if(v==null)return'';
+      const{real,meta}=realMetaAvg(m.key);
+      const cor=v>=100?'var(--green)':v>=70?'var(--amber)':'#fca5a5';
+      const realTxt=real!=null?fmtUnidade(m,real):'—';
+      const metaTxt=meta!=null?fmtUnidade(m,meta):'—';
+      return `<div style="background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:14px 16px"><div style="font-size:10px;letter-spacing:.05em;text-transform:uppercase;opacity:.85">${esc(m.label)}</div><div style="font-family:'Inter',sans-serif;font-size:1.9em;font-weight:700;margin-top:6px;letter-spacing:-.5px;color:${cor}">${v}%</div><div style="font-size:.78em;opacity:.85;margin-top:4px">real: <b>${realTxt}</b> · meta ${metaTxt}</div></div>`;
+    };
+    const pill=(v,realTxt,metaTxt)=>{
+      if(v==null)return'<span style="color:var(--text-3)">—</span>';
+      const cor=v>=100?'var(--green-text)':v>=70?'var(--amber-text)':'var(--red-text)';
+      const bg=v>=100?'var(--green-soft)':v>=70?'var(--amber-soft)':'var(--red-soft)';
+      return `<span style="display:inline-block;padding:2px 8px;border-radius:999px;background:${bg};color:${cor};font-weight:700;font-size:.85em" title="Real: ${realTxt} · Meta: ${metaTxt}">${Math.round(v)}%</span>`;
+    };
+    const linhasMeta=resumos.map(({p,r})=>{
+      const tds=OPERACIONAL_METRICS.map(m=>{
+        const d=r.metricas[m.key];
+        return `<td>${pill(d.pct,fmtUnidade(m,d.real),d.meta!=null?fmtUnidade(m,d.meta):'—')}</td>`;
+      }).join('');
+      return `<tr><td><b>${esc(p.analyst)}</b></td><td style="color:var(--text-2)">${esc(p.title)}</td><td>${esc(p.caixa)}</td>${tds}</tr>`;
+    }).join('');
+    metaSection=`<div style="background:linear-gradient(120deg,#0d9488,#0f766e);color:#fff;border-radius:var(--radius);padding:20px 22px;margin-bottom:18px">
+      <div style="font-family:'Inter',sans-serif;font-size:1.25em;font-weight:700;margin-bottom:2px;color:#fff">🎯 Analista VS Meta — ${db.current}${pdiAnalystFilter!=='Todos'?' · '+esc(pdiAnalystFilter):''}</div>
+      <p style="font-size:.8em;opacity:.85;margin-bottom:14px">Válido a partir de Agosto/2026. Compara onde o analista chegou depois do PDI com a meta/referência da caixa de atendimento dele — além da evolução dele mesmo (antes vs depois), acima.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">${OPERACIONAL_METRICS.map(metaCard).join('')}</div>
+    </div>
+    <div class="panel" style="margin-bottom:18px"><div class="panel-h"><div class="pi">🎯</div><h2>Analista VS Meta, por PDI</h2></div><div class="wrap-x"><table class="tbl"><thead><tr><th>Analista</th><th>PDI</th><th>Caixa</th>${OPERACIONAL_METRICS.map(m=>`<th>${esc(m.label)}</th>`).join('')}</tr></thead><tbody>${linhasMeta}</tbody></table></div></div>`;
+  }
+
   return `<div class="page-h"><h1>${esc(T('impacto-pdi'))}</h1><p>Consolidado automático de todos os PDIs com resultados preenchidos.</p></div>
   <div class="filters" style="margin-bottom:18px"><span style="font-size:.85em;color:var(--text-3);align-self:center">Filtrar por analista:</span>${filterBtns}</div>
   <div style="background:linear-gradient(120deg,#6d5de0,#5848c4);color:#fff;border-radius:var(--radius);padding:20px 22px;margin-bottom:18px"><div style="font-family:'Inter',sans-serif;font-size:1.25em;font-weight:700;margin-bottom:14px;color:#fff">Impacto consolidado dos PDIs — ${db.current}${pdiAnalystFilter!=='Todos'?' · '+esc(pdiAnalystFilter):''} ✦</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">${card('SLA 1ª resp / média (min)',A.sla)}${card('Chats resp / média dia',A.cr)}${card('Chats fech / média dia',A.cf)}${card('TMA / média dia (h)',A.tma)}${card('CSAT / semanal',A.cs)}</div></div>
+  ${metaSection}
   <div class="grid2"><div class="panel"><div class="panel-h"><div class="pi">↑</div><h2>Evolução por métrica</h2></div>${evol}</div><div class="panel"><div class="panel-h"><div class="pi">◉</div><h2>Melhora por analista</h2></div>${impa}</div></div>
   <div class="panel"><div class="panel-h"><div class="pi">▦</div><h2>Detalhe por PDI</h2></div><div class="wrap-x"><table class="tbl"><thead><tr><th>Analista</th><th>PDI</th><th>SLA 1ª resp</th><th>Chats resp</th><th>Chats fech</th><th>TMA (h)</th><th>CSAT</th><th>Avaliações</th><th>Melhora geral</th></tr></thead><tbody>${rt}</tbody></table></div></div>`;
 }
@@ -2566,6 +2693,9 @@ function defaultRegrasScore(){
       'Vip/Saques':{sla1:3,ttr:24,csat:94,avaliadas:15},
       'Integração':{sla1:3,ttr:24,csat:97,avaliadas:15}
     },
+    // Meta de Produtividade na aba Semanal — fixa por número da semana (não muda por caixa).
+    // No mensal não tem padrão: a meta de Produtividade sempre precisa ser preenchida na mão.
+    metaProdutividadeSemanal:[60,90,125],
     // "Abaixo do esperado" não entra aqui — é implícito (quem não bate nenhuma faixa cai nela).
     // -Infinity não existe em JSON, então guardar essa faixa como dado salvo corrompia ao
     // sincronizar/recarregar (virava null, e null > -Infinity é true, duplicando a linha).
@@ -2600,6 +2730,7 @@ function cleanRegrasScoreForSync(r){
     pesosCamada:toList(r.pesosCamada),
     pesosOperacional:toList(r.pesosOperacional),
     metasCaixa:toList(r.metasCaixa),
+    metaProdutividadeSemanal:r.metaProdutividadeSemanal||[60,90,125],
     classificacaoFaixas:r.classificacaoFaixas||[],
     travaCsatPct:r.travaCsatPct,
     iqaAlertaAbaixo:r.iqaAlertaAbaixo
@@ -2613,6 +2744,7 @@ function restoreRegrasScoreFromSync(cleaned){
     pesosCamada:Object.keys(fromList(cleaned.pesosCamada)).length?fromList(cleaned.pesosCamada):def.pesosCamada,
     pesosOperacional:Object.keys(fromList(cleaned.pesosOperacional)).length?fromList(cleaned.pesosOperacional):def.pesosOperacional,
     metasCaixa:Object.keys(fromList(cleaned.metasCaixa)).length?fromList(cleaned.metasCaixa):def.metasCaixa,
+    metaProdutividadeSemanal:(Array.isArray(cleaned.metaProdutividadeSemanal)&&cleaned.metaProdutividadeSemanal.length)?cleaned.metaProdutividadeSemanal:def.metaProdutividadeSemanal,
     classificacaoFaixas:(cleaned.classificacaoFaixas&&cleaned.classificacaoFaixas.length)?cleaned.classificacaoFaixas:def.classificacaoFaixas,
     travaCsatPct:cleaned.travaCsatPct!=null?cleaned.travaCsatPct:def.travaCsatPct,
     iqaAlertaAbaixo:cleaned.iqaAlertaAbaixo!=null?cleaned.iqaAlertaAbaixo:def.iqaAlertaAbaixo
@@ -2629,8 +2761,8 @@ const CLASSIFICACOES_INFO={
   'Abaixo do esperado':{emoji:'🔻',cor:'var(--red-text)',bg:'var(--red-soft)',barra:'var(--red)'}
 };
 // Selo semanal = média ponderada pelos pesos da caixa (sem régua adicional — isso é só pro mensal)
-function weeklyStatusInfoCaixa(caixa,operacional){
-  const r=operacionalResumoCaixa(caixa,operacional);
+function weeklyStatusInfoCaixa(caixa,operacional,semanaIdx){
+  const r=operacionalResumoCaixa(caixa,operacional,semanaIdx);
   const info=weeklyStatusInfo(r.pct);
   return{...info,pct:r.pct};
 }
@@ -2681,9 +2813,14 @@ function fmtUnidade(m,v){
   return Math.round(n)+'';
 }
 // Meta "efetiva": usa o que foi digitado manualmente; se vazio, cai no padrão da caixa (exceto Produtividade, que é sempre manual)
-function metaEfetiva(caixa,m,metaManual){
+function metaEfetiva(caixa,m,metaManual,semanaIdx){
   if(metaManual!=null&&metaManual!=='')return parseFloat(metaManual);
-  if(m.key==='produtividade')return null;
+  if(m.key==='produtividade'){
+    if(semanaIdx==null)return null; // mensal: sempre manual, a meta varia mês a mês
+    const r=getRegrasScore();
+    const arr=r.metaProdutividadeSemanal||[60,90,125];
+    return arr[semanaIdx]!=null?arr[semanaIdx]:null;
+  }
   const mc=metasCaixaOf(caixa);
   return mc[m.key]!=null?mc[m.key]:null;
 }
@@ -2693,13 +2830,13 @@ function metricaPct(m,real,metaEfetivaVal){
   if(isNaN(r)||isNaN(mt)||mt===0)return null;
   return m.invert?(mt/r*100):(r/mt*100);
 }
-function operacionalResumoCaixa(caixa,op){
+function operacionalResumoCaixa(caixa,op,semanaIdx){
   if(!op)return{pct:null,any:false};
   const pesos=pesosOperacionalCaixa(caixa);
   let sumW=0,sumWP=0,any=false;
   OPERACIONAL_METRICS.forEach(m=>{
     const d=op[m.key]||{};
-    const metaVal=metaEfetiva(caixa,m,d.meta);
+    const metaVal=metaEfetiva(caixa,m,d.meta,semanaIdx);
     const pct=metricaPct(m,d.real,metaVal);
     const peso=pesos[m.key]??0;
     if(pct!=null){sumWP+=pct*peso;sumW+=peso;any=true;}
@@ -2780,29 +2917,30 @@ function computeMesResultado(caixa,mesObj){
   return{notaBruta,classificacao:travas.classificacao,classificacaoBase:classifBase,operacionalPct:op.pct,iqaPct,liderPct,travaRegua:travas.travaRegua,travaCsat:travas.travaCsat,iqaAlerta,alertaMultiplo,any,indicadoresAbaixo:travas.indicadoresAbaixo,csatInfo:travas.csatInfo};
 }
 /* ===== Grade de métricas unificada — usada nas Semanas e nos Meses (mesmo layout nas duas abas) ===== */
-function metricBoxHTML(m,real,metaVal,extraSub){
+function metricBoxHTML(m,real,metaVal,extraSub,pesoTxt){
   const pct=metricaPct(m,real,metaVal);
   const cor=pct==null?'var(--text)':(pct>=100?'var(--green)':pct>=70?'var(--amber)':'var(--red-text)');
   const valorTxt=fmtUnidade(m,real);
   const metaTxt=metaVal==null?'':(m.unitLabel==='min'?fmtMinutos(metaVal):m.unitLabel==='h'?round(metaVal,1)+'h':m.unitLabel==='%'?round(metaVal,1)+'%':Math.round(metaVal));
   return `<div>
-    <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">${esc(m.label)}</div>
+    <div style="font-size:.62em;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">${esc(m.label)}${pesoTxt!=null?` <span style="text-transform:none;letter-spacing:0">· peso ${pesoTxt}%</span>`:''}</div>
     <div style="font-size:1.05em;font-weight:700;font-family:'Inter',sans-serif;color:${cor}">${valorTxt}</div>
     ${metaVal!=null?`<div style="font-size:.68em;color:var(--text-3)">meta: ${metaTxt}</div>`:''}
     ${pct!=null?`<div style="font-size:.7em;font-weight:700;color:${cor}">${Math.round(pct)}% da meta</div>`:''}
     ${extraSub||''}
   </div>`;
 }
-function unifiedMetricsGridHTML(caixa,op,classic){
+function unifiedMetricsGridHTML(caixa,op,classic,semanaIdx){
   op=op||{};
+  const pesos=pesosOperacionalCaixa(caixa);
   const boxes=OPERACIONAL_METRICS.map(m=>{
     const d=op[m.key]||{};
-    const metaVal=metaEfetiva(caixa,m,d.meta);
+    const metaVal=metaEfetiva(caixa,m,d.meta,semanaIdx);
     let extraSub='';
     if(m.key==='avaliadas'&&(d.avaliacoes!=null||d.fechados!=null)){
       extraSub=`<div style="font-size:.65em;color:var(--text-3)">${d.avaliacoes??'—'}/${d.fechados??'—'}</div>`;
     }
-    return metricBoxHTML(m,d.real,metaVal,extraSub);
+    return metricBoxHTML(m,d.real,metaVal,extraSub,pesos[m.key]);
   });
   if(classic){
     // "Chats recebidos" some daqui de propósito: é o mesmo número da Produtividade (tickets/chats
@@ -2835,10 +2973,13 @@ function monthGridHTML(acompId,a){
         <div style="padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;border-bottom:1px solid var(--border);flex-wrap:wrap">
           <div><div style="font-weight:700;font-size:.85em">Mês ${mi+1}</div>
           <div style="font-size:.72em;color:var(--purple);margin-top:1px">${m.periodo?esc(m.periodo):'<span style="color:var(--text-3)">sem período — clique em ✎ para definir</span>'}</div></div>
-          <div style="display:flex;align-items:center;gap:6px">
+          <div style="display:flex;align-items:center;gap:8px">
             ${alerta}
-            ${flag?`<div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">${statusBadgeHTML(flag,'')}<span style="font-size:.68em;color:var(--text-3)">${esc(res.classificacao)}</span></div>`:''}
-            <button class="btn sm" style="padding:3px 8px;font-size:.78em" onclick="openEditOperacional('${acompId}','mes',${mi})" title="Registrar mês ${mi+1}">✎</button>
+            ${flag?`<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">${statusBadgeHTML(flag,'')}${res.classificacao?(()=>{const ci=classifCor(res.classificacao);return `<span style="font-size:.66em;font-weight:700;color:${ci.cor};background:${ci.bg};padding:3px 9px;border-radius:999px;white-space:nowrap">${esc(res.classificacao)}</span>`;})():''}</div>`:''}
+            <div style="display:flex;gap:4px">
+              <button class="btn sm" style="padding:3px 8px;font-size:.78em" onclick="openEditMeta('${acompId}','mes',${mi})" title="Editar meta/referência">🎯</button>
+              <button class="btn sm" style="padding:3px 8px;font-size:.78em" onclick="openEditReal('${acompId}','mes',${mi})" title="Editar o que a analista entregou de verdade">✎</button>
+            </div>
           </div>
         </div>
         <div style="padding:10px 12px">
@@ -2855,9 +2996,8 @@ function monthGridHTML(acompId,a){
     }).join('')}
   </div>`;
 }
-function openEditOperacional(acompId,kind,idx){
-  const a=(db.acompanhamento||[]).find(x=>x.id===acompId);if(!a)return;
-  const caixa=a.caixa||'Silver';
+function ensureOperacionalObj(acompId,kind,idx){
+  const a=(db.acompanhamento||[]).find(x=>x.id===acompId);if(!a)return null;
   let obj;
   if(kind==='semana'){
     if(!Array.isArray(a.semanas))a.semanas=[null,null,null];
@@ -2872,86 +3012,135 @@ function openEditOperacional(acompId,kind,idx){
     if(!a.meses[idx].operacional)a.meses[idx].operacional={};
     obj=a.meses[idx];
   }
+  return{a,obj};
+}
+
+/* ===== ✎ REAL — o que a analista entregou de verdade (sem meta aqui) ===== */
+function openEditReal(acompId,kind,idx){
+  const found=ensureOperacionalObj(acompId,kind,idx);if(!found)return;
+  const{a,obj}=found;
   const op=obj.operacional;
-  const pesos=pesosOperacionalCaixa(caixa);
-  const metasCx=metasCaixaOf(caixa);
+  const isMes=kind==='mes';
   const rows=OPERACIONAL_METRICS.map(m=>{
     const d=op[m.key]||{};
-    const metaPadrao=m.key==='produtividade'?null:metasCx[m.key];
     if(m.key==='avaliadas'){
       const pctAtual=(d.fechados&&d.avaliacoes!=null&&d.fechados>0)?round(d.avaliacoes/d.fechados*100,1):null;
-      return `<div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr) minmax(0,.8fr) minmax(0,.9fr);gap:8px;align-items:end;margin-bottom:4px">
-        <div><label style="font-size:.78em;color:var(--text-3)">${esc(m.label)}<br><span style="color:var(--text-3);font-size:.9em">peso ${pesos[m.key]??0}% da camada</span></label></div>
-        <div><label style="font-size:.7em;color:var(--text-3)">Avaliações</label><input type="number" step="any" id="op_avaliadas_aval" value="${d.avaliacoes??''}" oninput="atualizaAvaliadasPreview()" style="margin-top:2px"></div>
-        <div><label style="font-size:.7em;color:var(--text-3)">Chats fechados</label><input type="number" step="any" id="op_avaliadas_fech" value="${d.fechados??''}" oninput="atualizaAvaliadasPreview()" style="margin-top:2px"></div>
-        <div><label style="font-size:.7em;color:var(--text-3)">Meta (%)${metaPadrao!=null?` <span title="Padrão da caixa">ℹ️</span>`:''}</label><input type="number" step="any" id="op_avaliadas_meta" value="${d.meta??''}" placeholder="${metaPadrao!=null?metaPadrao:''}" style="margin-top:2px"></div>
+      return `<div style="display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,.8fr) minmax(0,.8fr);gap:8px;align-items:end;margin-bottom:4px">
+        <div><label style="font-size:.78em;color:var(--text-3)">${esc(m.label)}</label></div>
+        <div><label style="font-size:.7em;color:var(--text-3)">Avaliações</label><input type="number" step="any" id="real_avaliadas_aval" value="${d.avaliacoes??''}" oninput="atualizaAvaliadasPreviewReal()" style="margin-top:2px"></div>
+        <div><label style="font-size:.7em;color:var(--text-3)">Chats fechados</label><input type="number" step="any" id="real_avaliadas_fech" value="${d.fechados??''}" oninput="atualizaAvaliadasPreviewReal()" style="margin-top:2px"></div>
       </div>
-      <div id="op_avaliadas_preview" style="font-size:.72em;color:var(--text-3);margin:0 0 10px 0">${pctAtual!=null?`= ${pctAtual}% avaliadas`:'preencha as duas quantidades'}</div>`;
+      <div id="real_avaliadas_preview" style="font-size:.72em;color:var(--text-3);margin:0 0 10px 0">${pctAtual!=null?`= ${pctAtual}% avaliadas`:'preencha as duas quantidades'}</div>`;
     }
-    return `<div style="display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:8px;align-items:end;margin-bottom:10px">
-      <div><label style="font-size:.78em;color:var(--text-3)">${esc(m.label)}<br><span style="color:var(--text-3);font-size:.9em">peso ${pesos[m.key]??0}% da camada</span></label></div>
-      <div><label style="font-size:.7em;color:var(--text-3)">Real (${m.unitLabel})</label><input type="number" step="any" id="op_${m.key}_real" value="${d.real??''}" style="margin-top:2px"></div>
-      <div><label style="font-size:.7em;color:var(--text-3)">Meta (${m.unitLabel})${metaPadrao!=null?` <span title="Padrão da caixa">ℹ️ ${m.unitLabel==='min'?fmtMinutos(metaPadrao):m.unitLabel==='h'?metaPadrao+'h':''}</span>`:''}</label><input type="number" step="any" id="op_${m.key}_meta" value="${d.meta??''}" placeholder="${metaPadrao!=null?metaPadrao:''}" style="margin-top:2px"></div>
+    return `<div style="display:grid;grid-template-columns:1.6fr 1fr;gap:8px;align-items:end;margin-bottom:10px">
+      <div><label style="font-size:.78em;color:var(--text-3)">${esc(m.label)}</label></div>
+      <div><label style="font-size:.7em;color:var(--text-3)">Real (${m.unitLabel})</label><input type="number" step="any" id="real_${m.key}" value="${d.real??''}" style="margin-top:2px"></div>
     </div>`;
   }).join('');
-  const isMes=kind==='mes';
-  const mesFields=isMes?`
-    <div class="fld" style="margin-bottom:10px"><label style="font-size:.78em;color:var(--text-3)">Período do mês</label><input type="text" id="mes_periodo" value="${esc(obj.periodo||'')}" placeholder="Ex: Julho/2026 ou 01/07/2026 - 31/07/2026" style="margin-top:4px"></div>
+  const periodoField=kind==='semana'
+    ?`<div class="fld" style="margin-bottom:12px"><label style="font-size:.78em;color:var(--text-3)">Período da semana</label><input type="text" id="real_periodo" value="${esc(a['periodo'+(idx+1)]||'')}" placeholder="13/07/2026–17/07/2026" style="margin-top:4px"></div>`
+    :`<div class="fld" style="margin-bottom:12px"><label style="font-size:.78em;color:var(--text-3)">Período do mês</label><input type="text" id="real_periodo" value="${esc(obj.periodo||'')}" placeholder="Ex: Julho/2026 ou 01/07/2026 - 31/07/2026" style="margin-top:4px"></div>`;
+  const mesExtra=isMes?`
     <div style="border-top:1px solid var(--border);margin-top:6px;padding-top:14px">
-      <p style="font-weight:700;font-size:.85em;margin-bottom:4px">Avaliação mensal</p>
-      <p class="hint" style="margin-bottom:10px">IQA e Líder são notas de 0 a 5 — a % de cada camada e o Score Final (nota bruta 0-10) são calculados automaticamente pelas regras da Appmax.</p>
+      <p style="font-weight:700;font-size:.85em;margin-bottom:10px">Avaliação mensal</p>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-        <div><label style="font-size:.78em;color:var(--text-3)">IQA — nota (0 a 5)</label><input type="number" step="0.01" min="0" max="5" id="op_iqa_nota" value="${obj.iqaNota??''}" placeholder="sem nota = camada excluída" style="margin-top:4px"></div>
-        <div><label style="font-size:.78em;color:var(--text-3)">Líder — nota (0 a 5)</label><input type="number" step="0.01" min="0" max="5" id="op_lider_nota" value="${obj.liderNota??''}" placeholder="sem nota = 100% (neutro)" style="margin-top:4px"></div>
+        <div><label style="font-size:.78em;color:var(--text-3)">IQA — nota (0 a 5)</label><input type="number" step="0.01" min="0" max="5" id="real_iqa_nota" value="${obj.iqaNota??''}" placeholder="sem nota = camada excluída" style="margin-top:4px"></div>
+        <div><label style="font-size:.78em;color:var(--text-3)">Líder — nota (0 a 5)</label><input type="number" step="0.01" min="0" max="5" id="real_lider_nota" value="${obj.liderNota??''}" placeholder="sem nota = 100% (neutro)" style="margin-top:4px"></div>
       </div>
-      <label style="font-size:.78em;color:var(--text-3)">Observação</label>
-      <textarea id="op_obs" style="height:70px;margin-top:4px;width:100%">${esc(obj.observacao||'')}</textarea>
-    </div>
-  `:'';
+    </div>`:'';
+  const obsField=`<label style="font-size:.78em;color:var(--text-3)">Observação</label><textarea id="real_obs" style="height:70px;margin-top:4px;width:100%">${esc((isMes?obj.observacao:obj.obs)||'')}</textarea>`;
   const periodoLabel=kind==='semana'?'Semana '+(idx+1):'Mês '+(idx+1);
-  show(`<div class="modal" style="width:620px;max-height:82vh;overflow-y:auto"><h2>🏆 ${periodoLabel} — ${esc(a.nome)} <button class="close" onclick="closeModal()">✕</button></h2>
-    <p class="hint" style="margin-bottom:14px">Preencha o real de cada métrica. A meta usa o padrão da caixa "${esc(caixa)}" automaticamente (você pode sobrescrever) — só Produtividade precisa de meta manual.</p>
+  show(`<div class="modal" style="width:560px;max-height:82vh;overflow-y:auto"><h2>✎ ${periodoLabel} — ${esc(a.nome)} <button class="close" onclick="closeModal()">✕</button></h2>
+    <p class="hint" style="margin-bottom:14px">O que a analista entregou de verdade nesse período. A meta/referência fica separada, no botão 🎯.</p>
+    ${periodoField}
     ${rows}
-    ${mesFields}
-    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveOperacional('${acompId}','${kind}',${idx})">Salvar</button></div>
+    ${mesExtra}
+    ${obsField}
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveReal('${acompId}','${kind}',${idx})">Salvar</button></div>
   </div>`);
 }
-function atualizaAvaliadasPreview(){
-  const el=document.getElementById('op_avaliadas_preview');if(!el)return;
-  const a=parseFloat((document.getElementById('op_avaliadas_aval')||{}).value);
-  const f=parseFloat((document.getElementById('op_avaliadas_fech')||{}).value);
+function atualizaAvaliadasPreviewReal(){
+  const el=document.getElementById('real_avaliadas_preview');if(!el)return;
+  const a=parseFloat((document.getElementById('real_avaliadas_aval')||{}).value);
+  const f=parseFloat((document.getElementById('real_avaliadas_fech')||{}).value);
   if(!isNaN(a)&&!isNaN(f)&&f>0)el.textContent='= '+round(a/f*100,1)+'% avaliadas';
   else el.textContent='preencha as duas quantidades';
 }
-function saveOperacional(acompId,kind,idx){
+function saveReal(acompId,kind,idx){
   const a=(db.acompanhamento||[]).find(x=>x.id===acompId);if(!a)return;
   const obj=kind==='semana'?a.semanas[idx]:a.meses[idx];
   if(!obj)return;
-  const op={};
+  if(!obj.operacional)obj.operacional={};
+  const op=obj.operacional;
   OPERACIONAL_METRICS.forEach(m=>{
+    if(!op[m.key])op[m.key]={};
     if(m.key==='avaliadas'){
-      const av=(document.getElementById('op_avaliadas_aval')||{}).value;
-      const fe=(document.getElementById('op_avaliadas_fech')||{}).value;
-      const mv=(document.getElementById('op_avaliadas_meta')||{}).value;
+      const av=(document.getElementById('real_avaliadas_aval')||{}).value;
+      const fe=(document.getElementById('real_avaliadas_fech')||{}).value;
       const avN=av!==''?parseFloat(av):null;
       const feN=fe!==''?parseFloat(fe):null;
       const real=(avN!=null&&feN!=null&&feN>0)?round(avN/feN*100,2):null;
-      op[m.key]={avaliacoes:avN,fechados:feN,real,meta:mv!==''?parseFloat(mv):null};
+      op[m.key].avaliacoes=avN;op[m.key].fechados=feN;op[m.key].real=real;
       return;
     }
-    const rv=(document.getElementById('op_'+m.key+'_real')||{}).value;
-    const mv=(document.getElementById('op_'+m.key+'_meta')||{}).value;
-    op[m.key]={real:rv!==''?parseFloat(rv):null,meta:mv!==''?parseFloat(mv):null};
+    const rv=(document.getElementById('real_'+m.key)||{}).value;
+    op[m.key].real=rv!==''?parseFloat(rv):null;
   });
-  obj.operacional=op;
-  if(kind==='mes'){
-    const g=id=>((document.getElementById(id)||{}).value||'').trim();
-    const iqaNota=g('op_iqa_nota'),liderNota=g('op_lider_nota'),obs=g('op_obs'),periodo=g('mes_periodo');
+  const g=id=>((document.getElementById(id)||{}).value||'').trim();
+  const periodo=g('real_periodo');
+  if(kind==='semana'){
+    a['periodo'+(idx+1)]=periodo;
+    obj.obs=g('real_obs');
+    // mantém "Chats fechados" clássico em sincronia com o que foi digitado aqui, pra continuar aparecendo no card
+    if(op.avaliadas&&op.avaliadas.fechados!=null)obj.fechadas=op.avaliadas.fechados;
+  } else {
+    obj.periodo=periodo;
+    obj.observacao=g('real_obs');
+    const iqaNota=g('real_iqa_nota'),liderNota=g('real_lider_nota');
     obj.iqaNota=iqaNota!==''?parseFloat(iqaNota):null;
     obj.liderNota=liderNota!==''?parseFloat(liderNota):null;
-    obj.observacao=obs;
-    obj.periodo=periodo;
   }
+  persist();closeModal();setTimeout(()=>{render();toast('✓ Salvo');},50);
+}
+
+/* ===== 🎯 META — a referência/alvo de cada métrica (sem real aqui) ===== */
+function openEditMeta(acompId,kind,idx){
+  const found=ensureOperacionalObj(acompId,kind,idx);if(!found)return;
+  const{a,obj}=found;
+  const caixa=a.caixa||'Silver';
+  const op=obj.operacional;
+  const pesos=pesosOperacionalCaixa(caixa);
+  const semanaIdx=kind==='semana'?idx:null;
+  const rows=OPERACIONAL_METRICS.map(m=>{
+    const d=op[m.key]||{};
+    const metaPadrao=metaEfetiva(caixa,m,null,semanaIdx);
+    const padraoTxt=metaPadrao==null?'':(m.unitLabel==='min'?fmtMinutos(metaPadrao):m.unitLabel==='h'?metaPadrao+'h':m.unitLabel==='%'?metaPadrao+'%':metaPadrao);
+    return `<div style="display:grid;grid-template-columns:1.6fr 1fr;gap:8px;align-items:end;margin-bottom:10px">
+      <div><label style="font-size:.78em;color:var(--text-3)">${esc(m.label)}<br><span style="color:var(--text-3);font-size:.9em">peso ${pesos[m.key]??0}% da camada</span></label></div>
+      <div><label style="font-size:.7em;color:var(--text-3)">Meta (${m.unitLabel})${metaPadrao!=null?` <span title="Padrão">ℹ️ ${padraoTxt}</span>`:''}</label><input type="number" step="any" id="meta_${m.key}" value="${d.meta??''}" placeholder="${metaPadrao!=null?metaPadrao:''}" style="margin-top:2px"></div>
+    </div>`;
+  }).join('');
+  const infoTxt=kind==='semana'
+    ?`Produtividade já vem com a meta padrão da semana ${idx+1} (Semana 1: 60 · Semana 2: 90 · Semana 3: 125) — só mude se esse caso for diferente. As outras usam o padrão da caixa "${esc(caixa)}".`
+    :`Produtividade não tem padrão — a meta muda todo mês, então precisa ser preenchida sempre. As outras usam o padrão da caixa "${esc(caixa)}" automaticamente.`;
+  const periodoLabel=kind==='semana'?'Semana '+(idx+1):'Mês '+(idx+1);
+  show(`<div class="modal" style="width:520px;max-height:82vh;overflow-y:auto"><h2>🎯 ${periodoLabel} — ${esc(a.nome)} <button class="close" onclick="closeModal()">✕</button></h2>
+    <p class="hint" style="margin-bottom:14px">${infoTxt}</p>
+    ${rows}
+    <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="saveMeta('${acompId}','${kind}',${idx})">Salvar</button></div>
+  </div>`);
+}
+function saveMeta(acompId,kind,idx){
+  const a=(db.acompanhamento||[]).find(x=>x.id===acompId);if(!a)return;
+  const obj=kind==='semana'?a.semanas[idx]:a.meses[idx];
+  if(!obj)return;
+  if(!obj.operacional)obj.operacional={};
+  const op=obj.operacional;
+  OPERACIONAL_METRICS.forEach(m=>{
+    if(!op[m.key])op[m.key]={};
+    const mv=(document.getElementById('meta_'+m.key)||{}).value;
+    op[m.key].meta=mv!==''?parseFloat(mv):null;
+  });
   persist();closeModal();setTimeout(()=>{render();toast('✓ Salvo');},50);
 }
 function openRegrasMetas(tab){
@@ -2976,7 +3165,18 @@ function openRegrasMetas(tab){
       </tr>`;}).join('')}
     </table>
     </div>
-    <p class="hint" style="margin-top:14px">🔸 Retenção está temporariamente fora do modelo. Caixas fora desta lista (ex.: Max, Suporte Ativo) não entram neste cálculo.</p>`;
+    <p class="hint" style="margin-top:14px">🔸 Retenção está temporariamente fora do modelo. Caixas fora desta lista (ex.: Max, Suporte Ativo) não entram neste cálculo.</p>
+    <p class="hint" style="margin:20px 0 10px">Meta de Produtividade na aba <b>Semanal</b> — fixa por número da semana, igual pra todas as caixas (no Mensal ela sempre precisa ser preenchida na mão, pois varia mês a mês).</p>
+    <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse">
+      <tr>${th('Semana 1','right')}${th('Semana 2','right')}${th('Semana 3','right')}</tr>
+      <tr>
+        ${td(inputSm('rm_prod_sem_0',(r.metaProdutividadeSemanal||[60,90,125])[0]??''),'right')}
+        ${td(inputSm('rm_prod_sem_1',(r.metaProdutividadeSemanal||[60,90,125])[1]??''),'right')}
+        ${td(inputSm('rm_prod_sem_2',(r.metaProdutividadeSemanal||[60,90,125])[2]??''),'right')}
+      </tr>
+    </table>
+    </div>`;
   } else if(tab==='score'){
     body=`<p class="hint" style="margin-bottom:10px">Pesos das camadas — Operacional + IQA + Líder devem somar 100% em cada caixa.</p>
     <div style="border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:22px">
@@ -3057,6 +3257,8 @@ function saveRegrasMetas(tab){
       r.metasCaixa[cx]=r.metasCaixa[cx]||{};
       ['sla1','ttr','csat','avaliadas'].forEach(k=>{const v=g('rm_meta_'+cx+'_'+k);if(v!=='')r.metasCaixa[cx][k]=parseFloat(v);});
     });
+    if(!Array.isArray(r.metaProdutividadeSemanal))r.metaProdutividadeSemanal=[60,90,125];
+    [0,1,2].forEach(i=>{const v=g('rm_prod_sem_'+i);if(v!=='')r.metaProdutividadeSemanal[i]=parseFloat(v);});
   } else if(tab==='score'){
     caixasScore.forEach(cx=>{
       r.pesosCamada[cx]=r.pesosCamada[cx]||{};
@@ -3088,8 +3290,9 @@ function teamSummaryHTML(lista,mainTab){
     if(mainTab==='semanal'){
       const rawSem=a.semanas||[];
       const semanasArr=[0,1,2].map(si=>Array.isArray(rawSem)?rawSem[si]:null);
-      const ultima=[...semanasArr].reverse().find(s=>s&&s.operacional);
-      info=weeklyStatusInfoCaixa(a.caixa||'Silver',ultima?ultima.operacional:null);
+      let ultimaIdx=-1;
+      semanasArr.forEach((s,i)=>{if(s&&s.operacional)ultimaIdx=i;});
+      info=weeklyStatusInfoCaixa(a.caixa||'Silver',ultimaIdx>=0?semanasArr[ultimaIdx].operacional:null,ultimaIdx>=0?ultimaIdx:null);
     } else {
       const resultadosMeses=[0,1,2].map(mi=>computeMesResultado(a.caixa||'Silver',(a.meses||[])[mi]));
       const ultimo=[...resultadosMeses].reverse().find(r=>r.notaBruta!=null)||null;
@@ -3161,9 +3364,10 @@ function viewAcompanhamento(){
     let statusInfo,statusExtra,trendPcts;
     let classifDetalhe='',classifBaseDetalhe='';
     if(mainTab==='semanal'){
-      trendPcts=semanas.map(sem=>operacionalResumoCaixa(a.caixa||'Silver',sem.d?.operacional).pct);
-      const ultimaSemana=[...semanas].reverse().find(sem=>sem.d&&sem.d.operacional);
-      statusInfo=weeklyStatusInfoCaixa(a.caixa||'Silver',ultimaSemana?ultimaSemana.d.operacional:null);
+      trendPcts=semanas.map((sem,si)=>operacionalResumoCaixa(a.caixa||'Silver',sem.d?.operacional,si).pct);
+      let ultimaIdx=-1;
+      semanas.forEach((sem,si)=>{if(sem.d&&sem.d.operacional)ultimaIdx=si;});
+      statusInfo=weeklyStatusInfoCaixa(a.caixa||'Silver',ultimaIdx>=0?semanas[ultimaIdx].d.operacional:null,ultimaIdx>=0?ultimaIdx:null);
       statusExtra=statusInfo.pct!=null?Math.round(statusInfo.pct)+'%':'';
     } else {
       const resultadosMeses=[0,1,2].map(mi=>computeMesResultado(a.caixa||'Silver',(a.meses||[])[mi]));
@@ -3194,7 +3398,7 @@ function viewAcompanhamento(){
             <span>${statusInfo.emoji}</span><span>${esc(statusInfo.label)}</span>
             ${statusExtra?`<span style="opacity:.7;font-weight:600">· ${statusExtra}</span>`:''}
           </div>
-          ${classifDetalhe?`<span style="font-size:.72em;color:var(--text-3);padding-right:4px">${esc(classifDetalhe)}</span>`:''}
+          ${classifDetalhe?(()=>{const ci=classifCor(classifDetalhe);return `<span style="font-size:.7em;font-weight:700;color:${ci.cor};background:${ci.bg};padding:3px 9px;border-radius:999px;white-space:nowrap">${esc(classifDetalhe)}</span>`;})():''}
         </div>
         <button class="btn sm edit-only" style="color:var(--red-text);border-color:var(--red);flex-shrink:0" onclick="event.stopPropagation();deletarAnalistaById('${acompId}')">✕</button>
       </div>
@@ -3205,7 +3409,8 @@ function viewAcompanhamento(){
         ${semanas.map((sem,si)=>{
           const s=sem.d;
           const prev=si>0?semanas[si-1].d:null;
-          const filled=s&&(s.sla!==null||s.csat!==null||s.recebidas!==null||s.fechadas!==null||s.tma!==null);
+          const temOperacional=s&&s.operacional&&Object.values(s.operacional).some(d=>d&&(d.real!=null&&d.real!==''));
+          const filled=s&&(s.sla!==null||s.csat!==null||s.recebidas!==null||s.fechadas!==null||s.tma!==null||temOperacional);
 
           // Delta vs semana anterior
           function delta(curr,prevV,maiorMelhor){
@@ -3224,13 +3429,14 @@ function viewAcompanhamento(){
                 ${sem.periodo?`<div style="font-size:.72em;color:var(--purple);margin-top:1px">${esc(sem.periodo)}</div>`:`<div style="font-size:.72em;color:var(--text-3);margin-top:1px">sem período</div>`}
               </div>
               <div style="display:flex;gap:6px;align-items:center">
-                ${(()=>{const info=weeklyStatusInfoCaixa(a.caixa||'Silver',s?.operacional);return info.pct!=null?statusBadgeHTML(info,Math.round(info.pct)+'%'):`<button class="btn sm" style="padding:3px 8px;font-size:.78em" onclick="openEditOperacional('${acompId}','semana',${si})" title="Regras 2026: % de atingimento da meta (peso por caixa)">🎯 Meta 2026</button>`;})()}
-                <button class="btn sm" style="padding:3px 8px;font-size:.78em" onclick="openEditSemanaById('${acompId}',${si})" title="Registrar semana ${si+1}">✎</button>
+                ${(()=>{const info=weeklyStatusInfoCaixa(a.caixa||'Silver',s?.operacional,si);return info.pct!=null?statusBadgeHTML(info,Math.round(info.pct)+'%'):`<span style="font-size:.72em;color:var(--text-3)">sem dados</span>`;})()}
+                <button class="btn sm" style="padding:3px 8px;font-size:.78em" onclick="openEditMeta('${acompId}','semana',${si})" title="Editar meta/referência">🎯</button>
+                <button class="btn sm" style="padding:3px 8px;font-size:.78em" onclick="openEditReal('${acompId}','semana',${si})" title="Editar o que a analista entregou de verdade">✎</button>
               </div>
             </div>
             <div style="padding:10px 12px">
               ${filled?`
-              ${unifiedMetricsGridHTML(a.caixa||'Silver',s?.operacional,{recebidas:s.recebidas,fechadas:s.fechadas})}
+              ${unifiedMetricsGridHTML(a.caixa||'Silver',s?.operacional,{recebidas:s.recebidas,fechadas:s.fechadas},si)}
               ${s.obs?`<div style="border-top:1px solid var(--border);padding-top:6px;margin-top:8px;font-size:.75em;color:var(--text-3);line-height:1.4">${esc(s.obs)}</div>`:''}
               `:`<div style="font-size:.82em;color:var(--text-3);padding:4px 0 6px">Sem registros</div>`}
             </div>
@@ -4039,6 +4245,7 @@ function saveDoc(){const title=document.getElementById('d_title').value.trim();i
 function openPdiModal(){modalPrio='Média';show(`<div class="modal"><h2>Novo PDI <button class="close" onclick="closeModal()">✕</button></h2>
     <div class="full fld"><label>Analista</label><input id="pd_an" placeholder="Nome do analista"></div>
     <div class="row"><div class="fld"><label>Data da solicitação</label><input id="pd_solic" placeholder="dd/mm/aaaa"></div><div class="fld"><label>Data de conclusão</label><input id="pd_conc" placeholder="dd/mm/aaaa"></div></div>
+    <div class="full fld"><label>Caixa de atendimento</label><select id="pd_caixa"><option value="">— selecione —</option>${db.caixas.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select></div>
     <div class="full fld"><label>Tema / Título</label><input id="pd_title" placeholder="Ex: Organização e produtividade nos chats"></div>
     <div class="full fld"><label>Observação</label><textarea id="pd_obs" rows="2" placeholder="Objetivo do acompanhamento…"></textarea></div>
     ${prioBlock()}
@@ -4049,13 +4256,15 @@ function openPdiModal(){modalPrio='Média';show(`<div class="modal"><h2>Novo PDI
     <div class="modal-foot"><button class="btn" onclick="closeModal()">Cancelar</button><button class="btn primary" onclick="savePdi(null)">Salvar PDI</button></div></div>`);}
 function gv(id){const v=document.getElementById(id).value.replace(',','.').trim();return v===''?0:parseFloat(v)||0;}
 function savePdi(editId){const an=document.getElementById('pd_an').value.trim(),title=document.getElementById('pd_title').value.trim();if(!an||!title){toast('Informe analista e título');return;}
+  const caixa=(document.getElementById('pd_caixa')||{}).value||'';
   const m={slaB:gv('pd_sla'),slaA:0,crB:gv('pd_cr'),crA:0,cfB:gv('pd_cf'),cfA:0,tmaB:gv('pd_tma'),tmaA:0,csB:gv('pd_cs'),csA:0,evalB:gv('pd_eval'),evalA:0};
-  if(editId){const p=db.pdis.find(x=>x.id===editId);if(p){p.analyst=an;p.title=title;p.dataSolic=document.getElementById('pd_solic').value.trim();p.dateConc=document.getElementById('pd_conc').value.trim();p.obs=document.getElementById('pd_obs').value.trim();p.m.slaB=m.slaB||p.m.slaB;p.m.crB=m.crB||p.m.crB;p.m.cfB=m.cfB||p.m.cfB;p.m.tmaB=m.tmaB||p.m.tmaB;p.m.csB=m.csB||p.m.csB;p.m.evalB=m.evalB||p.m.evalB;}}
-  else db.pdis.push({id:'p'+Date.now(),analyst:an,title,dataSolic:document.getElementById('pd_solic').value.trim(),dateConc:document.getElementById('pd_conc').value.trim(),priority:modalPrio,status:'Pendente',month:db.current,obs:document.getElementById('pd_obs').value.trim(),m,hasResults:false});
+  if(editId){const p=db.pdis.find(x=>x.id===editId);if(p){p.analyst=an;p.title=title;p.caixa=caixa||p.caixa;p.dataSolic=document.getElementById('pd_solic').value.trim();p.dateConc=document.getElementById('pd_conc').value.trim();p.obs=document.getElementById('pd_obs').value.trim();p.m.slaB=m.slaB||p.m.slaB;p.m.crB=m.crB||p.m.crB;p.m.cfB=m.cfB||p.m.cfB;p.m.tmaB=m.tmaB||p.m.tmaB;p.m.csB=m.csB||p.m.csB;p.m.evalB=m.evalB||p.m.evalB;}}
+  else db.pdis.push({id:'p'+Date.now(),analyst:an,title,caixa,dataSolic:document.getElementById('pd_solic').value.trim(),dateConc:document.getElementById('pd_conc').value.trim(),priority:modalPrio,status:'Pendente',month:db.current,obs:document.getElementById('pd_obs').value.trim(),m,hasResults:false});
   persist(true);closeModal();go('pdis');toast(editId?'PDI atualizado':'PDI criado');}
 function editPdiModal(id){const p=db.pdis.find(x=>x.id===id);if(!p)return;show(`<div class="modal"><h2>Editar PDI <button class="close" onclick="closeModal()">✕</button></h2>
     <div class="full fld"><label>Analista</label><input id="pd_an" value="${esc(p.analyst)}"></div>
     <div class="row"><div class="fld"><label>Data da solicitação</label><input id="pd_solic" value="${esc(p.dataSolic||'')}"></div><div class="fld"><label>Data de conclusão</label><input id="pd_conc" value="${esc(p.dateConc||'')}"></div></div>
+    <div class="full fld"><label>Caixa de atendimento</label><select id="pd_caixa"><option value="">— selecione —</option>${db.caixas.map(c=>`<option value="${esc(c)}" ${p.caixa===c?'selected':''}>${esc(c)}</option>`).join('')}</select></div>
     <div class="full fld"><label>Tema / Título</label><input id="pd_title" value="${esc(p.title)}"></div>
     <div class="full fld"><label>Observação</label><textarea id="pd_obs" rows="2">${esc(p.obs||'')}</textarea></div>
     <div style="font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--text-3);font-weight:600;margin:6px 0 8px">Métricas — antes</div>
